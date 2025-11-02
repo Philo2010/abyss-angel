@@ -11,6 +11,8 @@ dependencies = [
  "rocket",
  "sea-orm",
  "sea-schema 0.16.2",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
