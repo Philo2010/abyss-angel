@@ -16,9 +16,17 @@ pub const YEARSINSERT: phf::Map<i32, fn(db: &DatabaseConnection, json: serde_jso
     2025i32 =>  Model::insert
 };
 
+pub const YEARSGRAPH: phf::Map<i32, fn(event: Option<String>, team: i32, db: &DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_map! {
+    2025i32 =>  Model::graph
+};
+
+pub const YEARSAVG: phf::Map<i32, fn(event: Option<String>, db: & DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_map! {
+    2025i32 =>  Model::averages
+};
+
 type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, Box<dyn Error>>> + Send + 'a>>;
 
-use crate::{boxed_async, user};
+use crate::{SETTINGS, boxed_async, user};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "user")]
@@ -69,7 +77,7 @@ trait ScoutYear {
     fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32>;
     fn search<'a>(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn averages<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
-    fn graph<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
+    fn graph<'a>(event: Option<String>, team: i32, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn get<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>;
 }
 
@@ -181,13 +189,15 @@ impl ScoutYear for Model {
         })
     }
 
-    fn graph<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value> {
+    fn graph<'a>(event: Option<String>, team: i32, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value> {
         boxed_async!(async move {
             let models = if let Some(eve) = event {
                 Entity::find()
-                    .filter(Column::EventCode.contains(eve)).all(db).await?
+                    .filter(Column::EventCode.contains(eve))
+                    .filter(Column::Team.eq(team)).all(db).await?
             } else {
-                Entity::find().all(db).await?
+                Entity::find()
+                .filter(Column::Team.eq(team)).all(db).await?
             };
             //Custom code needs to be genertated for this
 
@@ -210,8 +220,7 @@ impl ScoutYear for Model {
 fn init_tables() {
     let name = Entity.table_name();
     println!("SCHEMA CREATOR: CREATE TABLE {name}");
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://localhost/testdb".to_string());
+    let database_url = SETTINGS.db_path.to_string();
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
         Model::create_table_postgres(&database_url)
