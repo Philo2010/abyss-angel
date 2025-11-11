@@ -1,4 +1,5 @@
-use std::fmt::Error;
+use std::error::Error;
+use std::pin::Pin;
 
 use rocket::http::uri::Query;
 use rocket::tokio;
@@ -7,10 +8,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sea_orm::sea_query::{Alias, Expr, Func, SelectStatement};
 use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
+use phf::phf_map;
 
 
 
-use crate::user;
+pub const YEARSINSERT: phf::Map<i32, fn(db: &DatabaseConnection, json: serde_json::Value) -> BoxFuture<i32>> = phf_map! {
+    2025i32 =>  Model::insert
+};
+
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, Box<dyn Error>>> + Send + 'a>>;
+
+use crate::{boxed_async, user};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "user")]
@@ -58,11 +66,11 @@ impl ActiveModelBehavior for ActiveModel {
 }
 
 trait ScoutYear {
-    async fn insert(db: &DatabaseConnection, json: serde_json::Value) -> Result<i32, Box<dyn std::error::Error>>;
-    async fn search (event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>>;
-    async fn averages(event: Option<String>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>>;
-    async fn graph(event: Option<String>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>>;
-    async fn get(db: &DatabaseConnection, id: &i32) -> Result<serde_json::Value, Box<dyn std::error::Error>>;
+    fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32>;
+    fn search<'a>(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
+    fn averages<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
+    fn graph<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
+    fn get<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>;
 }
 
 impl Model {
@@ -80,29 +88,28 @@ impl Model {
 }
 
 impl ScoutYear for Model {
-    async fn insert(db: &DatabaseConnection, json: serde_json::Value) -> Result<i32, Box<dyn std::error::Error>> {
-        
-        let mut active_model = user::ActiveModel {
-            ..Default::default()
-        };
-
-        let _a = active_model.set_from_json(json)?;
-
-        let inserted = ActiveModel::insert(active_model, db).await?;
-
-        Ok(inserted.id)
+    fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32> {
+        boxed_async!(async move {
+            let mut active_model = user::ActiveModel { ..Default::default() };
+            let _a = active_model.set_from_json(json)?;
+            let inserted = ActiveModel::insert(active_model, db).await?;
+            Ok(inserted.id)
+        })
     }
 
-    async fn get(db: &DatabaseConnection, id: &i32) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-        let model = Entity::find_by_id(*id)
-        .one(db)
-        .await?
-        .ok_or_else(|| Box::<dyn std::error::Error>::from("Record not found"))?;
-        
-        Ok(serde_json::to_value(model)?)
+
+    fn get<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>{
+        Box::pin(async move {
+            let model = Entity::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or_else(|| Box::<dyn std::error::Error>::from("Record not found"))?;
+            
+            Ok(serde_json::to_value(model)?)
+        })
     }
     
-    async fn search(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    fn search<'a>(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value> {
         use user::Entity; // bring the generated Entity into scope
         use user::Column;
 
@@ -122,14 +129,16 @@ impl ScoutYear for Model {
             query = query.filter(Column::Team.eq(team_id));
         }
 
-        // Execute the query
-        let results = query.all(db).await?;
-        let res = serde_json::to_value(&results)?;
+        boxed_async!(async move {
+            // Execute the query
+            let results = query.all(db).await?;
+            let res = serde_json::to_value(&results)?;
 
-        Ok(res)
+            Ok(res)
+        })
     }
 
-    async fn averages(event: Option<String>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    fn averages<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value> {
 
         //Create the query
         let query: SelectStatement = if let Some(eve) = event {
@@ -149,47 +158,51 @@ impl ScoutYear for Model {
             .to_owned()   
         };
 
-        // Run the query
-        let row = db.query_one(&query).await?;
+        boxed_async!(async move {
+            // Run the query
+            let row = db.query_one(&query).await?;
 
-        //Convert to json
-        let result = row.map(|r| {
-            json!({
-                "Hehe": r.try_get_by::<f64, _>(0).unwrap_or(0.0),
-                "Hoohoo": r.try_get_by::<f64, _>(1).unwrap_or(0.0),
-                "Total_score": r.try_get_by::<f64, _>(2).unwrap_or(0.0),
-            })
-        }).unwrap_or_else(|| {
-            json!({
-                "Hehe": 0.0,
-                "Hoohoo": 0.0,
-                "Total_score": 0.0,
-            })
-        });
+            //Convert to json
+            let result = row.map(|r| {
+                json!({
+                    "Hehe": r.try_get_by::<f64, _>(0).unwrap_or(0.0),
+                    "Hoohoo": r.try_get_by::<f64, _>(1).unwrap_or(0.0),
+                    "Total_score": r.try_get_by::<f64, _>(2).unwrap_or(0.0),
+                })
+            }).unwrap_or_else(|| {
+                json!({
+                    "Hehe": 0.0,
+                    "Hoohoo": 0.0,
+                    "Total_score": 0.0,
+                })
+            });
 
-        Ok(result)
+            Ok(result)
+        })
     }
 
-    async fn graph(event: Option<String>, db: &DatabaseConnection) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-        let models = if let Some(eve) = event {
-            Entity::find()
-                .filter(Column::EventCode.contains(eve)).all(db).await?
-        } else {
-            Entity::find().all(db).await?
-        };
-        //Custom code needs to be genertated for this
+    fn graph<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value> {
+        boxed_async!(async move {
+            let models = if let Some(eve) = event {
+                Entity::find()
+                    .filter(Column::EventCode.contains(eve)).all(db).await?
+            } else {
+                Entity::find().all(db).await?
+            };
+            //Custom code needs to be genertated for this
 
-        let json_vec: Vec<_> = models.into_iter().map(|m| {
-            json!({
-                "Total Score": m.total_score,
-                "HehePoints": m.hehe,
-                "HoohooPoints": m.hoohoo
-            })
-        }).collect();
+            let json_vec: Vec<_> = models.into_iter().map(|m| {
+                json!({
+                    "Total Score": m.total_score,
+                    "HehePoints": m.hehe,
+                    "HoohooPoints": m.hoohoo
+                })
+            }).collect();
 
-        let json_output = serde_json::Value::Array(json_vec);
+            let json_output = serde_json::Value::Array(json_vec);
 
-        Ok(json_output)
+            Ok(json_output)
+        })
     }
 }
 

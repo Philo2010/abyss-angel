@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-rocket = "0.5.1"
+rocket = { version = "0.5.1", features = ["json"] }
 sea-orm = { version = "2.0.0-rc", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros" ] }
 abyss-macro = { path = "abyss-macro" }
 ctor = "0.6.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
+phf = { version = "0.12", features = ["macros"] }
