@@ -24,6 +24,10 @@ pub const YEARSAVG: phf::Map<i32, fn(event: Option<String>, db: & DatabaseConnec
     2025i32 =>  Model::averages
 };
 
+pub const YEARSSEARCH: phf::Map<i32, fn(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: & DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_map! {
+    2025i32 =>  Model::search,
+};
+
 type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, Box<dyn Error>>> + Send + 'a>>;
 
 use crate::{SETTINGS, boxed_async, user};
