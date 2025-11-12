@@ -10,7 +10,7 @@ use crate::user::YEARSINSERT;
 
 
 #[post("/scout_form", data = "<body>")]
-async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> String {
+pub async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> String {
     let insrfunc = YEARSINSERT[&SETTINGS.year];
     let e = match insrfunc(db.inner(), body.into_inner()).await {
         Ok(a) => {

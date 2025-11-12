@@ -1,5 +1,5 @@
 #[macro_use] extern crate rocket;
-use rocket::build;
+use rocket::{build, fs::FileServer, fs::relative};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, Schema, sea_query::PostgresQueryBuilder};
 
 use crate::setting::Settings;
@@ -39,5 +39,8 @@ async fn rocket() -> _ {
 
     rocket::build()
     .manage(db_conn)
-    .mount("/", routes![placeholder])
+    .mount("/", routes![placeholder,
+    frontend::graph::graph,
+    frontend::scout::scout_take])
+    .mount("/", FileServer::from(relative!("static")))
 }

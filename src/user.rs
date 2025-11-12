@@ -3,13 +3,14 @@ use std::pin::Pin;
 
 use rocket::http::uri::Query;
 use rocket::tokio;
+use sea_orm::ActiveValue::Unchanged;
+use sea_orm::sqlx::types::chrono::Utc;
 use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sea_orm::sea_query::{Alias, Expr, Func, SelectStatement};
 use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
 use phf::phf_map;
-
 
 
 pub const YEARSINSERT: phf::Map<i32, fn(db: &DatabaseConnection, json: serde_json::Value) -> BoxFuture<i32>> = phf_map! {
@@ -46,6 +47,10 @@ pub struct Model {
     pub team: i32,
     #[serde(rename = "Match ID")]
     pub matchid: i32,
+    #[serde(rename = "Set")]
+    pub set: i32,
+
+    #[serde(skip_deserializing)]
     #[serde(rename = "Total Score")]
     pub total_score: i32,
     #[serde(rename = "Event Code")]
@@ -54,8 +59,6 @@ pub struct Model {
     pub tournament_level: String,
     #[serde(rename = "Station")]
     pub station: String,
-    #[serde(rename = "Is Verified")]
-    pub is_verified: String,
     #[serde(rename = "Created At")]
     #[sea_orm(auto_create_time)] 
     pub created_at: DateTime,
@@ -95,15 +98,53 @@ impl Model {
         db.execute(&stmt).await?;
         Ok(())
     }
-    
+}
+
+impl ActiveModel {
+    ///TODO Must create auto total  
+    pub fn total(&mut self) {
+        let hehe = match self.hehe {
+            Set(a) | Unchanged(a) => a,
+            entity::ActiveValue::NotSet => 0,
+        };
+
+        let hoohoo = match self.hoohoo {
+            Set(a) | Unchanged(a) => a,
+            entity::ActiveValue::NotSet => 0,
+        };
+
+        self.total_score = Set(hehe + hoohoo);
+    }
+    fn debug_set_from_json(&mut self, json: &serde_json::Value) {
+        for (k, v) in json.as_object().unwrap() {
+            println!("Trying field '{}' with value {:?}", k, v);
+        }
+        self.user = Set(json.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string());
+self.team = Set(json.get("team").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+self.matchid = Set(json.get("matchid").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+self.set = Set(json.get("set").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+self.event_code = Set(json.get("event_code").and_then(|v| v.as_str()).unwrap_or("").to_string());
+self.tournament_level = Set(json.get("tournament_level").and_then(|v| v.as_str()).unwrap_or("").to_string());
+self.station = Set(json.get("station").and_then(|v| v.as_str()).unwrap_or("").to_string());
+self.hehe = Set(json.get("hehe").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+self.hoohoo = Set(json.get("hoohoo").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+    }
 
 }
 
 impl ScoutYear for Model {
     fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32> {
         boxed_async!(async move {
+            println!("Received JSON: {:#?}", json);
             let mut active_model = user::ActiveModel { ..Default::default() };
-            let _a = active_model.set_from_json(json)?;
+            let a = active_model.debug_set_from_json(&json);
+
+
+            active_model.total();
+            active_model.created_at = Set(Utc::now().naive_utc());
+            
+            println!("{:#?}", active_model);
+
             let inserted = ActiveModel::insert(active_model, db).await?;
             Ok(inserted.id)
         })

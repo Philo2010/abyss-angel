@@ -16,8 +16,8 @@ struct GraphForm {
 }
 
 
-#[post("/graph", data = "<body>")]
-async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> String {
+#[post("/graph_sub", data = "<body>")]
+pub async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> String {
     //Get the function
     let insrfunc = YEARSGRAPH[&SETTINGS.year];
     
