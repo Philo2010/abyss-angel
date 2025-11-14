@@ -41,31 +41,31 @@ pub struct Model {
 
     // Common header
     
-    #[serde(rename = "User")]
+    //#[serde(rename = "User")]
     pub user: String, // Foreign key to user.id
-    #[serde(rename = "Team")]
+    //#[serde(rename = "Team")]
     pub team: i32,
-    #[serde(rename = "Match ID")]
+    //#[serde(rename = "Match ID")]
     pub matchid: i32,
-    #[serde(rename = "Set")]
+    //#[serde(rename = "Set")]
     pub set: i32,
 
     #[serde(skip_deserializing)]
-    #[serde(rename = "Total Score")]
+    //#[serde(rename = "Total Score")]
     pub total_score: i32,
-    #[serde(rename = "Event Code")]
+    //#[serde(rename = "Event Code")]
     pub event_code: String,
-    #[serde(rename = "Tournament Level")]
+    //#[serde(rename = "Tournament Level")]
     pub tournament_level: String,
-    #[serde(rename = "Station")]
+    //#[serde(rename = "Station")]
     pub station: String,
-    #[serde(rename = "Created At")]
+    //#[serde(rename = "Created At")]
     #[sea_orm(auto_create_time)] 
     pub created_at: DateTime,
 
-    #[serde(rename = "Hehe")]
+    //#[serde(rename = "Hehe")]
     pub hehe: i32,
-    #[serde(rename = "Hoohoo")]
+    //#[serde(rename = "Hoohoo")]
     pub hoohoo: i32,
 }
 
@@ -137,7 +137,7 @@ impl ScoutYear for Model {
         boxed_async!(async move {
             println!("Received JSON: {:#?}", json);
             let mut active_model = user::ActiveModel { ..Default::default() };
-            let a = active_model.debug_set_from_json(&json);
+            let a = active_model.set_from_json(json);
 
 
             active_model.total();

@@ -13,7 +13,7 @@ mod frontend;
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
-    db_path: "postgres://localhost/testdb",
+    db_path: "postgres://postgres:newpassword@localhost/scoutscrobbleraa",
 };
 
 
