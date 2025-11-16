@@ -196,17 +196,17 @@ impl ScoutYear for Model {
         //Create the query
         let query: SelectStatement = if let Some(eve) = event {
             sea_orm::sea_query::Query::select()
-            .expr_as(Func::avg(Expr::col(user::Column::Hehe)), "avg_hehe")
-            .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)), "avg_hoohoo")
-            .expr_as(Func::avg(Expr::col(user::Column::TotalScore)), "avg_total")
+            .expr_as(Func::avg(Expr::col(user::Column::Hehe)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hehe")
+            .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hoohoo")
+            .expr_as(Func::avg(Expr::col(user::Column::TotalScore)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_total")
             .and_where(Column::EventCode.eq(eve))
             .from(Entity)
             .to_owned()
         } else {
             sea_orm::sea_query::Query::select()
-            .expr_as(Func::avg(Expr::col(user::Column::Hehe)), "avg_hehe")
-            .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)), "avg_hoohoo")
-            .expr_as(Func::avg(Expr::col(user::Column::TotalScore)), "avg_total")
+            .expr_as(Func::avg(Expr::col(user::Column::Hehe).cast_as(Alias::new("DOUBLE PRECISION"))), "avg_hehe")
+            .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hoohoo")
+            .expr_as(Func::avg(Expr::col(user::Column::TotalScore)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_total")
             .from(Entity)
             .to_owned()   
         };

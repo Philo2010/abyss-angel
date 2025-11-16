@@ -9,24 +9,24 @@ use crate::SETTINGS;
 use crate::user::{YEARSAVG, YEARSINSERT};
 
 
-
+#[get("/averages_d")]
+pub async fn averages_empty(db: &State<DatabaseConnection>) -> String {
+    averages_impl(None, db).await
+}
 
 #[get("/averages_d/<event>")]
-async fn averages(event: Option<&str>, db: &State<DatabaseConnection>) -> String {
-    let avgfunc = YEARSAVG[&SETTINGS.year];
-    let event_str: Option<String> = match event {
-        Some(a) => Some(a.to_string()),
-        None => None,
-    };
+pub async fn averages_event(event: String, db: &State<DatabaseConnection>) -> String {
+    averages_impl(Some(&event), db).await
+}
 
-    let e = match avgfunc(event_str, db).await {
+async fn averages_impl(event: Option<&str>, db: &State<DatabaseConnection>) -> String {
+    let avgfunc = YEARSAVG[&SETTINGS.year];
+    
+    let e = match avgfunc(event.map(|x| x.to_string()), db).await {
         Ok(a) => a,
         Err(a) => {
-            let errormessage = format!("Error! Could not find avgrage: {a}");
-            return errormessage;
+            return format!("Error! Could not find average: {a}");
         },
     };
-
-
     e.to_string()
 }

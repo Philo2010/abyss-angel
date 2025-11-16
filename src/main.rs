@@ -43,6 +43,8 @@ async fn rocket() -> _ {
     .attach(Template::fairing())
     .mount("/", routes![placeholder,
     frontend::graph::graph,
-    frontend::scout::scout_take])
+    frontend::scout::scout_take,
+    frontend::averages::averages_empty,
+    frontend::averages::averages_event])
     .mount("/", FileServer::from(relative!("static")))
 }
