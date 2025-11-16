@@ -120,14 +120,14 @@ impl ActiveModel {
             println!("Trying field '{}' with value {:?}", k, v);
         }
         self.user = Set(json.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string());
-self.team = Set(json.get("team").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
-self.matchid = Set(json.get("matchid").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
-self.set = Set(json.get("set").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
-self.event_code = Set(json.get("event_code").and_then(|v| v.as_str()).unwrap_or("").to_string());
-self.tournament_level = Set(json.get("tournament_level").and_then(|v| v.as_str()).unwrap_or("").to_string());
-self.station = Set(json.get("station").and_then(|v| v.as_str()).unwrap_or("").to_string());
-self.hehe = Set(json.get("hehe").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
-self.hoohoo = Set(json.get("hoohoo").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.team = Set(json.get("team").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.matchid = Set(json.get("matchid").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.set = Set(json.get("set").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.event_code = Set(json.get("event_code").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.tournament_level = Set(json.get("tournament_level").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.station = Set(json.get("station").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.hehe = Set(json.get("hehe").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.hoohoo = Set(json.get("hoohoo").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
     }
 
 }
@@ -250,7 +250,8 @@ impl ScoutYear for Model {
                 json!({
                     "Total Score": m.total_score,
                     "HehePoints": m.hehe,
-                    "HoohooPoints": m.hoohoo
+                    "HoohooPoints": m.hoohoo,
+                    "Time": m.created_at
                 })
             }).collect();
 

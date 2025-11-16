@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Teams</title>
+</head>
+<body>
+<h2>Graph Teams</h2>
+<form action="/graph_sub" method="POST" id="teamForm">
+    <label>Event:</label>
+    <input type="text" name="event" required>
+    <br><br>
+    <div id="teamContainer">
+        <div class="team-input">
+            <label>Team:</label>
+            <input type="number" name="teams" required>
+            <button type="button" class="remove-btn" onclick="removeTeam(this)">Remove</button>
+        </div>
+    </div>
+    <button type="button" id="addTeamBtn">Add Team</button>
+    <br><br>
+    <input type="submit" value="Graph">
+</form>
+<script>
+    const teamContainer = document.getElementById('teamContainer');
+    
+    document.getElementById('addTeamBtn').addEventListener('click', () => {
+        const div = document.createElement('div');
+        div.className = 'team-input';
+        div.innerHTML = `
+            <label>Team:</label>
+            <input type="number" name="teams" required>
+            <button type="button" class="remove-btn" onclick="removeTeam(this)">Remove</button>
+        `;
+        teamContainer.appendChild(div);
+    });
+    
+    function removeTeam(btn) {
+        const container = document.getElementById('teamContainer');
+        // Prevent removing the last team input
+        if (container.children.length > 1) {
+            btn.parentElement.remove();
+        } else {
+            alert('At least one team is required');
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 #[macro_use] extern crate rocket;
 use rocket::{build, fs::FileServer, fs::relative};
+use rocket_dyn_templates::Template;
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, Schema, sea_query::PostgresQueryBuilder};
 
 use crate::setting::Settings;
@@ -39,6 +40,7 @@ async fn rocket() -> _ {
 
     rocket::build()
     .manage(db_conn)
+    .attach(Template::fairing())
     .mount("/", routes![placeholder,
     frontend::graph::graph,
     frontend::scout::scout_take])
