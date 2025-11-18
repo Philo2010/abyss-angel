@@ -196,39 +196,39 @@ impl ScoutYear for Model {
         //Create the query
         let query: SelectStatement = if let Some(eve) = event {
             sea_orm::sea_query::Query::select()
+            .expr_as(Expr::col(user::Column::Team),"team")
             .expr_as(Func::avg(Expr::col(user::Column::Hehe)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hehe")
             .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hoohoo")
             .expr_as(Func::avg(Expr::col(user::Column::TotalScore)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_total")
-            .and_where(Column::EventCode.eq(eve))
             .from(Entity)
+            .and_where(Column::EventCode.eq(eve))
+            .group_by_col(user::Column::Team)
             .to_owned()
         } else {
             sea_orm::sea_query::Query::select()
+            .expr_as(Expr::col(user::Column::Team),"team")
             .expr_as(Func::avg(Expr::col(user::Column::Hehe).cast_as(Alias::new("DOUBLE PRECISION"))), "avg_hehe")
             .expr_as(Func::avg(Expr::col(user::Column::Hoohoo)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_hoohoo")
             .expr_as(Func::avg(Expr::col(user::Column::TotalScore)).cast_as(Alias::new("DOUBLE PRECISION")), "avg_total")
             .from(Entity)
+            .group_by_col(user::Column::Team)
             .to_owned()   
         };
 
         boxed_async!(async move {
             // Run the query
-            let row = db.query_one(&query).await?;
+            let row = db.query_all(&query).await?;
 
             //Convert to json
-            let result = row.map(|r| {
+            println!("{:?}", row);
+            let result = row.into_iter().map(|r| {
                 json!({
-                    "Hehe": r.try_get_by::<f64, _>(0).unwrap_or(0.0),
-                    "Hoohoo": r.try_get_by::<f64, _>(1).unwrap_or(0.0),
-                    "Total_score": r.try_get_by::<f64, _>(2).unwrap_or(0.0),
+                    "User": r.try_get_by::<i32, _>(0).unwrap_or(0),
+                    "Hehe": r.try_get_by::<f64, _>(1).unwrap_or(0.0),
+                    "Hoohoo": r.try_get_by::<f64, _>(2).unwrap_or(0.0),
+                    "Total_score": r.try_get_by::<f64, _>(3).unwrap_or(0.0),
                 })
-            }).unwrap_or_else(|| {
-                json!({
-                    "Hehe": 0.0,
-                    "Hoohoo": 0.0,
-                    "Total_score": 0.0,
-                })
-            });
+            }).collect();
 
             Ok(result)
         })

@@ -16,7 +16,7 @@ pub async fn get_event_default(db: &DatabaseConnection) -> Option<String> {
             a.map(|x| x.event)
         },
         Err(a) => {
-            println!("Failed to get event!");
+            println!("Failed to get event! {a}");
             None
         },
     }

@@ -15,7 +15,7 @@ mod models;
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
-    db_path: "postgres://postgres:newpassword@localhost/scoutscrobbleraa",
+    db_path: "postgres://philipbedrosian@localhost/testdb",
 };
 #[get("/")]
 async fn placeholder() -> &'static str {

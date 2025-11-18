@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Search Results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js"></script>
+<style>
+body { background-color: #2a2727; color: white; font-family: monospace; text-align: center; margin:0; padding:1rem; }
+h1 { margin-bottom: 1rem; }
+.table-wrapper { overflow-x:auto; }
+table { border-collapse: collapse; width:100%; min-width:800px; margin: 0 auto 2rem auto;}
+th, td { border:1px solid #555; padding:0.5rem 0.75rem; text-align:left;}
+th { background-color:#3a3737; cursor:pointer; position:relative; user-select:none;}
+th.sortable::after { content:"⇅"; position:absolute; right:8px; font-size:0.8em; opacity:0.4;}
+th.tablesort-up::after { content:"▲"; opacity:0.8; }
+th.tablesort-down::after { content:"▼"; opacity:0.8;}
+tr:nth-child(even){background-color:#353131;}
+.bool-true {background-color:#4caf50;color:black;font-weight:bold;}
+.bool-false {background-color:#f44336;color:black;font-weight:bold;}
+.optional { color:#ccc; }
+</style>
+</head>
+<body>
+<h1>Search Results</h1>
+{% if entries | length > 0 %}
+<div class="table-wrapper">
+<table id="results">
+<thead>
+<tr>
+    {% set first_row = entries[0] %}
+    {% for key, value in first_row %}
+        {% set class = "sortable" %}
+        {% if value is number %}
+            {% set class = class ~ " numeric" %}
+        {% endif %}
+        <th class="{{ class }}">{{ key }}</th>
+    {% endfor %}
+</tr>
+</thead>
+<tbody>
+{% for row in entries %}
+<tr>
+    {% for key, value in row %}
+        {% if value == true %}
+            <td class="bool-true" data-sort="1">✔</td>
+        {% elif value == false %}
+            <td class="bool-false" data-sort="0">✖</td>
+        {% elif value is number %}
+            <td data-sort="{{ value }}">{{ value }}</td>
+        {% else %}
+            <td data-sort="{{ value }}">{{ value }}</td>
+        {% endif %}
+    {% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p>No results found.</p>
+{% endif %}
+<script>
+Tablesort.extend('numeric', function(item) {
+    return !isNaN(parseFloat(item.replace(/[^0-9.\-]/g, '')));
+}, function(a, b) {
+    return parseFloat(a.replace(/[^0-9.\-]/g, '')) - parseFloat(b.replace(/[^0-9.\-]/g, ''));
+});
+new Tablesort(document.getElementById('results'));
+</script>
+</body>
+</html>
