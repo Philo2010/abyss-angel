@@ -1,4 +1,5 @@
 
+mod setevent;
 
 
 //Singleton that stores all major settings for the scouter

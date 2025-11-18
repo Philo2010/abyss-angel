@@ -43,6 +43,8 @@ async fn rocket() -> _ {
     frontend::scout::scout_take,
     frontend::averages::averages_empty,
     frontend::averages::averages_event,
-    frontend::allentry::allentry])
+    frontend::allentry::allentry,
+    frontend::search::search,
+    frontend::search::search_default])
     .mount("/", FileServer::from(relative!("static")))
 }

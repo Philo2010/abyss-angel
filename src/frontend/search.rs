@@ -3,6 +3,7 @@ use std::error::Error;
 use rocket::State;
 use rocket::form::Form;
 use rocket::{post, serde::json::Json};
+use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 use serde_json::Value;
 
@@ -25,7 +26,7 @@ struct SearchDefault {
 
 
 #[post("/search_all", data="<body>")]
-async fn search(body: Form<SearchForm>, db: &State<DatabaseConnection>) -> String {
+pub async fn search(body: Form<SearchForm>, db: &State<DatabaseConnection>) -> String {
     let avgfunc = YEARSSEARCH[&SETTINGS.year];
 
     let e = match avgfunc(body.event.clone(), body.scouter.clone(), body.team, db).await {
@@ -41,17 +42,17 @@ async fn search(body: Form<SearchForm>, db: &State<DatabaseConnection>) -> Strin
 }
 
 #[post("/search", data="<body>")]
-async fn search_default(body: Form<SearchDefault>, db: &State<DatabaseConnection>) -> String {
+pub async fn search_default(body: Form<SearchDefault>, db: &State<DatabaseConnection>) -> Template {
     let avgfunc = YEARSSEARCH[&SETTINGS.year];
 
     let e = match avgfunc(sexymac::get_event_default(db.inner()).await, body.scouter.clone(), body.team, db).await {
         Ok(a) => a,
         Err(a) => {
             let errormessage = format!("Error! Could not find avgrage: {a}");
-            return errormessage;
+            return Template::render("error", context! {error: errormessage});
         },
     };
 
 
-    e.to_string()
+    Template::render("table", context! {entries: e})
 }
