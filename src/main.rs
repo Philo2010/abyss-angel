@@ -1,14 +1,15 @@
 #[macro_use] extern crate rocket;
-use rocket::{build, fs::FileServer, fs::relative};
+use rocket::{build, fs::{FileServer, relative}, tokio::sync::RwLock};
 use rocket_dyn_templates::Template;
-use sea_orm::{ConnectionTrait, Database, DatabaseConnection, Schema, sea_query::PostgresQueryBuilder};
+use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Schema, sea_query::PostgresQueryBuilder};
 
-use crate::setting::Settings;
+use crate::setting::{Settings};
 
 mod user;
 mod sexymac;
 mod setting;
 mod frontend;
+mod models;
 
 
 //For now, before i make a setting menu, i will hardcode values
@@ -16,8 +17,6 @@ const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
     db_path: "postgres://postgres:newpassword@localhost/scoutscrobbleraa",
 };
-
-
 #[get("/")]
 async fn placeholder() -> &'static str {
     "Hello!"
@@ -36,8 +35,6 @@ async fn rocket() -> _ {
         },
     };
 
-
-
     rocket::build()
     .manage(db_conn)
     .attach(Template::fairing())
@@ -45,6 +42,7 @@ async fn rocket() -> _ {
     frontend::graph::graph,
     frontend::scout::scout_take,
     frontend::averages::averages_empty,
-    frontend::averages::averages_event])
+    frontend::averages::averages_event,
+    frontend::allentry::allentry])
     .mount("/", FileServer::from(relative!("static")))
 }

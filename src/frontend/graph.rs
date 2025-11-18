@@ -2,12 +2,13 @@ use std::error::Error;
 
 use rocket::State;
 use rocket::form::Form;
+use rocket::serde::json;
 use rocket::{post, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 use serde_json::{Value, json};
 
-use crate::SETTINGS;
+use crate::{SETTINGS, sexymac};
 use crate::user::{YEARSGRAPH, YEARSINSERT};
 
 #[derive(FromForm, Debug)]
@@ -21,7 +22,8 @@ struct GraphForm {
 pub async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> Template {
     //Get the function
     let insrfunc = YEARSGRAPH[&SETTINGS.year];
-    
+
+
 
     //Check values
     if body.teams.is_empty() {
@@ -31,10 +33,19 @@ pub async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> Tem
     let mut team_data: Vec<Value> = Vec::new();
 
     for team in body.teams.iter() {
-        let mut e = match insrfunc(body.event.clone(), team.clone(), db).await {
-            Ok(a) => a,
-            Err(_) => {continue;},
-        };
+
+        let mut e;
+        if body.event.is_none() {
+            e = match insrfunc(sexymac::get_event_default(db.inner()).await, *team, db).await {
+                Ok(a) => a,
+                Err(_) => {continue;},
+            }
+        } else {
+            e = match insrfunc(body.event.clone(), *team, db).await {
+                Ok(a) => a,
+                Err(_) => {continue;},
+            };
+        }
 
         if let Value::Array(ref mut vec) = e {
             vec.insert(0, json!(team));

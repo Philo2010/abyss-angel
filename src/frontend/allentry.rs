@@ -11,15 +11,11 @@ use crate::user::{YEARSAVG, YEARSINSERT, YEARSSEARCH};
 
 
 
-#[get("/allentry/<event>")]
-async fn allentry(event: Option<&str>, db: &State<DatabaseConnection>) -> String {
+#[get("/allentry")]
+pub async fn allentry(db: &State<DatabaseConnection>) -> String {
     let avgfunc = YEARSSEARCH[&SETTINGS.year];
-    let event_str: Option<String> = match event {
-        Some(a) => Some(a.to_string()),
-        None => None,
-    };
 
-    let e = match avgfunc(event_str, None, None, db).await {
+    let e = match avgfunc(None, None, None, db).await {
         Ok(a) => a,
         Err(a) => {
             let errormessage = format!("Error! Could not find avgrage: {a}");
