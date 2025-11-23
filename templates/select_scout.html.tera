@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Match Scouter Assignment</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        .autofill-section { background: #e8f4f8; border: 2px solid #3498db; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+        .autofill-title { margin: 0 0 15px 0; color: #2c3e50; font-size: 1.2em; }
+        .autofill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .autofill-item { display: flex; flex-direction: column; }
+        .autofill-item label { font-weight: bold; margin-bottom: 5px; color: #2c3e50; }
+        .autofill-item.blue label { color: #3498db; }
+        .autofill-item.red label { color: #e74c3c; }
+        .autofill-input { padding: 8px; border: 2px solid #ddd; border-radius: 4px; font-size: 1em; }
+        .autofill-input:focus { outline: none; border-color: #3498db; }
+        .autofill-btn { background: #27ae60; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; margin-top: 15px; font-weight: bold; }
+        .autofill-btn:hover { background: #229954; }
+        .match-container { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .match-header { background: #2c3e50; color: white; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; }
+        .match-title { margin: 0; font-size: 1.3em; }
+        .match-info { margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9; }
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .game-card { border: 2px solid #ddd; border-radius: 5px; padding: 15px; background: #fafafa; }
+        .game-card.blue { border-left: 5px solid #3498db; }
+        .game-card.red { border-left: 5px solid #e74c3c; }
+        .game-header { font-weight: bold; margin-bottom: 10px; color: #2c3e50; }
+        .game-detail { margin: 5px 0; color: #555; }
+        .scouter-input { width: 100%; padding: 8px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .scouter-input:focus { outline: none; border-color: #3498db; }
+        .scouter-input.filled { background: #d4edda; border-color: #28a745; }
+        .submit-btn { background: #3498db; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; margin-top: 20px; font-weight: bold; }
+        .submit-btn:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <h1>🏆 Match Scouter Assignment - {{ event_code }}</h1>
+    
+    <!-- Auto-fill Section -->
+    <div class="autofill-section">
+        <h3 class="autofill-title">⚡ Quick Assign Scouters by Station</h3>
+        <p style="margin-top: 0; color: #555;">Fill in scouter names below and click "Auto-Fill All Games" to assign them to all matching stations.</p>
+        <div class="autofill-grid">
+            <div class="autofill-item blue">
+                <label for="blue1">Blue 1:</label>
+                <input type="text" id="blue1" class="autofill-input" placeholder="Scouter name">
+            </div>
+            <div class="autofill-item blue">
+                <label for="blue2">Blue 2:</label>
+                <input type="text" id="blue2" class="autofill-input" placeholder="Scouter name">
+            </div>
+            <div class="autofill-item blue">
+                <label for="blue3">Blue 3:</label>
+                <input type="text" id="blue3" class="autofill-input" placeholder="Scouter name">
+            </div>
+            <div class="autofill-item red">
+                <label for="red1">Red 1:</label>
+                <input type="text" id="red1" class="autofill-input" placeholder="Scouter name">
+            </div>
+            <div class="autofill-item red">
+                <label for="red2">Red 2:</label>
+                <input type="text" id="red2" class="autofill-input" placeholder="Scouter name">
+            </div>
+            <div class="autofill-item red">
+                <label for="red3">Red 3:</label>
+                <input type="text" id="red3" class="autofill-input" placeholder="Scouter name">
+            </div>
+        </div>
+        <button type="button" class="autofill-btn" onclick="autoFillScouters()">🚀 Auto-Fill All Games</button>
+    </div>
+    
+    <form method="post" action="/assign_scouts/{{ event_code }}">
+        {% for match_data in data %}
+        <div class="match-container">
+            <div class="match-header">
+                <h2 class="match-title">Match #{{ match_data.0.match_number }} - {{ match_data.0.tournament_level }}</h2>
+                <p class="match-info">Set {{ match_data.0.set_number }} | Match ID: {{ match_data.0.id }}</p>
+            </div>
+            
+            <div class="games-grid">
+                {% for game in match_data.1 %}
+                <div class="game-card {% if game.station is containing('Blue') %}blue{% else %}red{% endif %}">
+                    <div class="game-header">{{ game.station }}</div>
+                    <div class="game-detail"><strong>Team:</strong> {{ game.team }}</div>
+                    <div class="game-detail"><strong>Game ID:</strong> {{ game.id }}</div>
+                    <input type="text" 
+                           class="scouter-input" 
+                           name="scouter_{{ game.id }}" 
+                           data-station="{{ game.station }}"
+                           placeholder="Enter scouter name"
+                           value="{% if game.scouter %}{{ game.scouter }}{% endif %}">
+                    <input type="hidden" name="game_id_{{ game.id }}" value="{{ game.id }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="submit-btn">📋 Submit Scouter Assignments</button>
+    </form>
+
+    <script>
+        function autoFillScouters() {
+            // Get values from auto-fill inputs safely
+            const getInputValue = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : '';
+            };
+
+            const stations = {
+                'Blue 1': getInputValue('blue1'),
+                'Blue 2': getInputValue('blue2'),
+                'Blue 3': getInputValue('blue3'),
+                'Red 1': getInputValue('red1'),
+                'Red 2': getInputValue('red2'),
+                'Red 3': getInputValue('red3')
+            };
+
+            // Get all scouter input fields
+            const scouterInputs = document.querySelectorAll('.scouter-input');
+            let filledCount = 0;
+
+            scouterInputs.forEach(input => {
+                const station = input.getAttribute('data-station');
+                const scouterName = stations[station];
+                
+                if (scouterName) {
+                    input.value = scouterName;
+                    input.classList.add('filled');
+                    filledCount++;
+                }
+            });
+
+            // Show confirmation
+            if (filledCount > 0) {
+                alert(`✅ Successfully filled ${filledCount} game assignments!`);
+            } else {
+                alert('⚠️ Please enter at least one scouter name in the auto-fill section.');
+            }
+        }
+
+        // Add visual feedback when inputs are manually changed
+        document.addEventListener('DOMContentLoaded', function() {
+            const scouterInputs = document.querySelectorAll('.scouter-input');
+            scouterInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value.trim()) {
+                        this.classList.add('filled');
+                    } else {
+                        this.classList.remove('filled');
+                    }
+                });
+                
+                // Check initial values
+                if (input.value.trim()) {
+                    input.classList.add('filled');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
