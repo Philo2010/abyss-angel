@@ -10,7 +10,6 @@ pub struct Model {
     pub event_code: String,
     pub match_number: i32,
     pub set_number: i32,
-    pub description: String,
     pub tournament_level: String,
 }
 

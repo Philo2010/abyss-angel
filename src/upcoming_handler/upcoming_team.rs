@@ -9,6 +9,7 @@ pub struct Model {
     pub id: i32,
     pub station: String,
     pub team: i32,
+    pub scouter: Option<String>,
     pub game_id: i32,
 }
 

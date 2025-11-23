@@ -3,5 +3,3 @@
 pub mod prelude;
 
 pub mod dyn_settings;
-pub mod upcoming_game;
-pub mod upcoming_team;

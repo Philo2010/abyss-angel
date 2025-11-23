@@ -2,6 +2,7 @@
 use rocket::{build, fs::{FileServer, relative}, tokio::sync::RwLock};
 use rocket_dyn_templates::Template;
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Schema, sea_query::PostgresQueryBuilder};
+use rocket::local::asynchronous::Client;
 
 use crate::setting::{Settings};
 
@@ -10,12 +11,14 @@ mod sexymac;
 mod setting;
 mod frontend;
 mod models;
+mod upcoming_handler;
 
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
     db_path: "postgres://philipbedrosian@localhost/testdb",
+    blue_api_key: "{{ INSERT_API_KEY }}"
 };
 #[get("/")]
 async fn placeholder() -> &'static str {
@@ -35,8 +38,12 @@ async fn rocket() -> _ {
         },
     };
 
+    let client = reqwest::Client::new();
+
+
     rocket::build()
     .manage(db_conn)
+    .manage(client)
     .attach(Template::fairing())
     .mount("/", routes![placeholder,
     frontend::graph::graph,

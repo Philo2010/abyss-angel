@@ -33,7 +33,6 @@ impl MigrationTrait for Migration {
                     .col(string(UpcomingGame::EventCode))
                     .col(integer(UpcomingGame::MatchNumber))
                     .col(integer(UpcomingGame::SetNumber))
-                    .col(string(UpcomingGame::Description))
                     .col(string(UpcomingGame::TournamentLevel))
                     .to_owned(),
             )
@@ -50,6 +49,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(UpcomingTeam::Id))
                     .col(string(UpcomingTeam::Station))
                     .col(integer(UpcomingTeam::Team))
+                    .col(string(UpcomingTeam::Scouter).null())
                     .col(integer(UpcomingTeam::GameId))
                     .foreign_key(
                         ForeignKey::create()
@@ -92,5 +92,6 @@ enum  UpcomingTeam {
     Id,
     Station,
     Team,
+    Scouter,
     GameId
 }
