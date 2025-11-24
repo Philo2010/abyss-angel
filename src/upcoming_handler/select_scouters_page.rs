@@ -9,7 +9,7 @@ use crate::upcoming_handler::{self, pull_event_data, upcoming_game, upcoming_tea
 #[get("/select_scouts/<event>")]
 pub async fn select_scouts(db: &State<DatabaseConnection>, event: &str) -> Template {
 
-    let data = match pull_event_data::pull_event_data(db.inner(), event).await {
+    let data = match pull_event_data::pull_event_data(db.inner(), Some(event)).await {
         Ok(a) => a,
         Err(pull_event_data::EventDataErr::Data(a)) => {
             return Template::render("error", context! {error: format!("Problem getting match data: {a}")});

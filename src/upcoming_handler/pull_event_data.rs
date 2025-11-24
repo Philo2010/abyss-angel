@@ -10,14 +10,25 @@ pub enum EventDataErr {
 
 }
 
-pub async fn pull_event_data(db: &DatabaseConnection, event: &str) -> Result<Vec<(upcoming_game::Model, Vec<upcoming_team::Model>)> , EventDataErr> {
-    let data = match upcoming_handler::upcoming_game::Entity::find()
-        .filter(upcoming_game::Column::EventCode.contains(event)).all(db).await {
+pub async fn pull_event_data(db: &DatabaseConnection, event: Option<&str>) -> Result<Vec<(upcoming_game::Model, Vec<upcoming_team::Model>)> , EventDataErr> {
+    
+    let data;
+    if let Some(e) = event {
+        data = match upcoming_handler::upcoming_game::Entity::find()
+        .filter(upcoming_game::Column::EventCode.contains(e)).all(db).await {
             Ok(a) => a,
             Err(a) => {
                 return Err(EventDataErr::Data(a));
             },
         };
+    } else {
+        data = match upcoming_handler::upcoming_game::Entity::find().all(db).await {
+            Ok(a) => a,
+            Err(a) => {
+                return Err(EventDataErr::Data(a));
+            },
+        };
+    }
 
     let mut teams: Vec<Vec<upcoming_team::Model>> = Vec::with_capacity(data.len());
 

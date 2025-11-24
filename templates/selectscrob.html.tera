@@ -1,0 +1,127 @@
+{{ matches | json_encode(pretty=true) }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Match Selector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Mobile scaling -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 10px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 15px 0 20px;
+      font-size: clamp(20px, 5vw, 32px); /* Scales on small screens */
+    }
+
+    .match-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .match-card {
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+      transition: transform 0.15s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .match-card:hover {
+      transform: scale(1.02);
+    }
+
+    .match-card h2 {
+      margin: 0 0 8px;
+      font-size: 1.1em;
+      color: #333;
+    }
+
+    .match-card p {
+      margin: 4px 0;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .team-link {
+      display: inline-block;
+      margin: 6px 6px 0 0;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9em;
+      transition: opacity 0.15s ease-in-out;
+      white-space: nowrap;
+    }
+
+    .team-link.red1,
+    .team-link.red2,
+    .team-link.red3 {
+      background: crimson;
+    }
+
+    .team-link.blue1,
+    .team-link.blue2,
+    .team-link.blue3 {
+      background: royalblue;
+    }
+
+    .team-link.green1,
+    .team-link.green2,
+    .team-link.green3 {
+      background: seagreen;
+    }
+
+    .team-link:hover {
+      opacity: 0.85;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 500px) {
+      .match-card {
+        padding: 12px;
+      }
+      .team-link {
+        display: block;       /* stack buttons vertically on very small screens */
+        margin: 6px 0;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Select a Match</h1>
+  <div class="match-list">
+    {% for match in matches %}
+      <div class="match-card">
+        <h2>Match: {{ match.0.match_number }} {{ match.0.tournament_level }} Set: {{ match.0.set_number }}</h2>
+        <p>Event: {{ match.0.event_code }}</p>
+        <p>Match #{{ match.0.match_number }}</p>
+
+        {% for team in match.1 %}
+          <a
+            class="team-link {{ team.station | lower | replace(from=' ', to='') }}"
+            href="/scout_site?bar={{ team.station }}&team={{ team.team }}&matchid={{ match.0.match_number }}&eventcode={{ match.0.event_code }}&level={{ match.0.tournament_level }}&id={{ team.id }}"
+          >
+            {{ team.station }} - Team {{ team.team }} - Assigned: {{ team.scouter | default(value="Unassigned") }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

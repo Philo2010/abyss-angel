@@ -69,7 +69,7 @@
         <button type="button" class="autofill-btn" onclick="autoFillScouters()">🚀 Auto-Fill All Games</button>
     </div>
     
-    <form method="post" action="/assign_scouts/{{ event_code }}">
+    <form method="post" action="/assign_scouts">
         {% for match_data in data %}
         <div class="match-container">
             <div class="match-header">
@@ -78,18 +78,21 @@
             </div>
             
             <div class="games-grid">
-                {% for game in match_data.1 %}
-                <div class="game-card {% if game.station is containing('Blue') %}blue{% else %}red{% endif %}">
-                    <div class="game-header">{{ game.station }}</div>
-                    <div class="game-detail"><strong>Team:</strong> {{ game.team }}</div>
-                    <div class="game-detail"><strong>Game ID:</strong> {{ game.id }}</div>
+                {% for team_match in match_data.1 %}
+                <div class="game-card {% if team_match.station is containing('Blue') %}blue{% else %}red{% endif %}">
+                    <div class="game-header">{{ team_match.station }}</div>
+                    <div class="game-detail"><strong>Team:</strong> {{ team_match.team }}</div>
+                    <div class="game-detail"><strong>Game ID:</strong> {{ team_match.id }}</div>
+                    
+                    <!-- Rocket-friendly: Use array notation with index -->
+                    <input type="hidden" name="assignments[{{ loop.index0 }}].team_match_id" value="{{ team_match.id }}">
                     <input type="text" 
                            class="scouter-input" 
-                           name="scouter_{{ game.id }}" 
-                           data-station="{{ game.station }}"
+                           name="assignments[{{ loop.index0 }}].scouter" 
+                           data-station="{{ team_match.station }}"
+                           data-index="{{ loop.index0 }}"
                            placeholder="Enter scouter name"
-                           value="{% if game.scouter %}{{ game.scouter }}{% endif %}">
-                    <input type="hidden" name="game_id_{{ game.id }}" value="{{ game.id }}">
+                           value="{% if team_match.scouter %}{{ team_match.scouter }}{% endif %}">
                 </div>
                 {% endfor %}
             </div>
@@ -101,7 +104,6 @@
 
     <script>
         function autoFillScouters() {
-            // Get values from auto-fill inputs safely
             const getInputValue = (id) => {
                 const el = document.getElementById(id);
                 return el ? el.value.trim() : '';
@@ -116,7 +118,6 @@
                 'Red 3': getInputValue('red3')
             };
 
-            // Get all scouter input fields
             const scouterInputs = document.querySelectorAll('.scouter-input');
             let filledCount = 0;
 
@@ -131,7 +132,6 @@
                 }
             });
 
-            // Show confirmation
             if (filledCount > 0) {
                 alert(`✅ Successfully filled ${filledCount} game assignments!`);
             } else {
@@ -139,7 +139,6 @@
             }
         }
 
-        // Add visual feedback when inputs are manually changed
         document.addEventListener('DOMContentLoaded', function() {
             const scouterInputs = document.querySelectorAll('.scouter-input');
             scouterInputs.forEach(input => {
@@ -151,7 +150,6 @@
                     }
                 });
                 
-                // Check initial values
                 if (input.value.trim()) {
                     input.classList.add('filled');
                 }

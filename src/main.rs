@@ -1,5 +1,5 @@
 #[macro_use] extern crate rocket;
-use rocket::{build, fs::{FileServer, relative}, tokio::sync::RwLock};
+use rocket::{Config, build, data::{ByteUnit, Limits}, fs::{FileServer, relative}, tokio::sync::RwLock};
 use rocket_dyn_templates::Template;
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Schema, sea_query::PostgresQueryBuilder};
 use rocket::local::asynchronous::Client;
@@ -40,8 +40,14 @@ async fn rocket() -> _ {
 
     let client = reqwest::Client::new();
 
+    let limits = Limits::default()
+        .limit("form", ByteUnit::Megabyte(5));  // Note: "form" not "forms"!
 
-    rocket::build()
+    let figment = Config::figment()
+        .merge(("limits", limits));
+
+
+    rocket::custom(figment)
     .manage(db_conn)
     .manage(client)
     .attach(Template::fairing())
@@ -55,6 +61,8 @@ async fn rocket() -> _ {
     frontend::search::search_default,
     upcoming_handler::query_game::queue,
     upcoming_handler::select_scouters_page::select_scouts,
+    upcoming_handler::submit_scout::assign_scout,
+    frontend::scout_auto::scout_auto,
     ])
     .mount("/", FileServer::from(relative!("static")))
 }
