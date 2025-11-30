@@ -1,9 +1,9 @@
-use rocket::{State, data::ToByteUnit, form::Form, serde::json::Json};
+use rocket::{State, data::ToByteUnit, form::Form, http::CookieJar, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
 use serde_json::Value;
 
-use crate::upcoming_handler::{upcoming_team};
+use crate::{auth, upcoming_handler::upcoming_team};
 
 #[derive(Debug, FromForm)]
 pub struct AssignmentForm {
@@ -21,7 +21,11 @@ pub struct ScoutAssignment {
 
 
 #[post("/assign_scouts", data = "<data>")]
-pub async fn assign_scout(db: &State<DatabaseConnection>, data: Form<AssignmentForm>) -> Template {
+pub async fn assign_scout(db: &State<DatabaseConnection>, data: Form<AssignmentForm>, cookies: &CookieJar<'_>) -> Template {
+
+    if !(auth::check::check(cookies, db).await) {
+        return Template::render("error", context! {error: "Failed to auth (are you logined?)"});
+    }
 
     for assignment in &data.assignments {
         if !assignment.scouter.trim().is_empty() {

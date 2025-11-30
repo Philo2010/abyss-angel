@@ -12,11 +12,13 @@ mod setting;
 mod frontend;
 mod models;
 mod upcoming_handler;
+mod auth;
 
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
+    bcrypt: 12,
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "{{ INSERT_API_KEY }}"
 };
@@ -63,6 +65,8 @@ async fn rocket() -> _ {
     upcoming_handler::select_scouters_page::select_scouts,
     upcoming_handler::submit_scout::assign_scout,
     frontend::scout_auto::scout_auto,
+    auth::create_user::create_user,
+    auth::login::login,
     ])
     .mount("/", FileServer::from(relative!("static")))
 }

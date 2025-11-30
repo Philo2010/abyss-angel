@@ -1,9 +1,9 @@
-use rocket::{State, form::Form, time::error::Parse};
+use rocket::{State, form::Form, http::CookieJar, time::error::Parse};
 use reqwest::Client;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
-use crate::upcoming_handler::{blue::pull_from_blue, to_upcoming_game};
+use crate::{auth, upcoming_handler::{blue::pull_from_blue, to_upcoming_game}};
 
 
 
@@ -13,7 +13,11 @@ struct QueryForm {
 }
 
 #[post("/queue_game", data = "<form>")]
-pub async fn queue(form: Form<QueryForm>, client: &State<reqwest::Client>, db: &State<DatabaseConnection>) -> Template {
+pub async fn queue(form: Form<QueryForm>, client: &State<reqwest::Client>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Template {
+
+    if !(auth::check::check(cookies, db).await) {
+        return Template::render("error", context! {error: "Failed to auth (are you logined?)"});
+    }
 
     let request_result = match pull_from_blue(client, &form.game).await {
         Ok(a) => a,

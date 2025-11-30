@@ -12,6 +12,8 @@ serde = "1.0.228"
 serde_json = "1.0.145"
 phf = { version = "0.12", features = ["macros"] }
 reqwest = {version = "0.12.24", features = ["json"] }
+uuid = {version = "1.18.1", features = ["v4"] }
+bcrypt = "0.17.1"
 
 
 [dependencies.rocket_dyn_templates]

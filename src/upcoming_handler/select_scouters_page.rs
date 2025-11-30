@@ -1,13 +1,17 @@
-use rocket::State;
+use rocket::{State, http::CookieJar};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, ModelTrait, QueryFilter};
 
-use crate::upcoming_handler::{self, pull_event_data, upcoming_game, upcoming_team};
+use crate::{auth, upcoming_handler::{self, pull_event_data, upcoming_game, upcoming_team}};
 
 
 
 #[get("/select_scouts/<event>")]
-pub async fn select_scouts(db: &State<DatabaseConnection>, event: &str) -> Template {
+pub async fn select_scouts(db: &State<DatabaseConnection>, event: &str, cookies: &CookieJar<'_>) -> Template {
+
+    if !(auth::check::check(cookies, db).await) {
+        return Template::render("error", context! {error: "Failed to auth (are you logined?)"});
+    }
 
     let mut data = match pull_event_data::pull_event_data(db.inner(), Some(event)).await {
         Ok(a) => a,
