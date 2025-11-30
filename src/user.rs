@@ -13,7 +13,7 @@ use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
 use phf::phf_map;
 
 
-pub const YEARSINSERT: phf::Map<i32, fn(db: &DatabaseConnection, json: serde_json::Value) -> BoxFuture<i32>> = phf_map! {
+pub const YEARSINSERT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32>> = phf_map! {
     2025i32 =>  Model::insert
 };
 
@@ -81,7 +81,7 @@ impl ActiveModelBehavior for ActiveModel {
 }
 
 trait ScoutYear {
-    fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32>;
+    fn insert<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32>;
     fn search<'a>(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn averages<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn graph<'a>(event: Option<String>, team: i32, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
@@ -116,9 +116,6 @@ impl ActiveModel {
         self.total_score = Set(hehe + hoohoo);
     }
     fn debug_set_from_json(&mut self, json: &serde_json::Value) {
-        for (k, v) in json.as_object().unwrap() {
-            println!("Trying field '{}' with value {:?}", k, v);
-        }
         self.user = Set(json.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string());
         self.team = Set(json.get("team").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
         self.matchid = Set(json.get("matchid").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
@@ -133,17 +130,15 @@ impl ActiveModel {
 }
 
 impl ScoutYear for Model {
-    fn insert<'a>(db: &'a DatabaseConnection, json: serde_json::Value) -> BoxFuture<'a, i32> {
+    fn insert<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32> {
         boxed_async!(async move {
-            println!("Received JSON: {:#?}", json);
             let mut active_model = user::ActiveModel { ..Default::default() };
-            let a = active_model.set_from_json(json);
+            let a = active_model.debug_set_from_json(&json);
 
 
             active_model.total();
             active_model.created_at = Set(Utc::now().naive_utc());
             
-            println!("{:#?}", active_model);
 
             let inserted = ActiveModel::insert(active_model, db).await?;
             Ok(inserted.id)

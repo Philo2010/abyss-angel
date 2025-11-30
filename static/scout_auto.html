@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<body>
+<form id="scoutForm">
+<label>Hehe:</label><br>
+<input type="number" name="hehe"><br>
+<label>Hoohoo:</label><br>
+<input type="number" name="hoohoo"><br>
+<input type="submit" value="Submit">
+</form>
+<script>
+function numOrStr(v) {
+if (v === null || v === undefined) return v;
+const num = Number(v);
+return (!isNaN(num) && v !== "") ? num : v;
+}
+const params = new URLSearchParams(window.location.search);
+const station = params.get("station");
+const team = params.get("team");
+const match_id = params.get("matchid");
+const event_code = params.get("eventcode");
+const level = params.get("level");
+const teamid = params.get("teamid");
+const scouter = params.get("scouter");
+const set = params.get("set");
+console.log("station: " + station);
+console.log("team: " + team);
+console.log("match id " + match_id);
+console.log("event code " + event_code);
+console.log("level " + level);
+console.log("id " + teamid);
+console.log("scouter: " + scouter);
+document.getElementById("scoutForm").addEventListener("submit", async (event) => {
+event.preventDefault();
+const formData = new FormData(event.target);
+const formObject = {};
+// Add additional fields
+formObject.station = station;
+formObject.tournament_level = level;
+formObject["event_code"] = event_code;
+formObject.match = match_id;
+formObject.team = team;
+formObject.teamid = teamid;
+formObject.user = scouter;
+formObject.auto = true;
+formObject.matchid = match_id;
+formObject.set = set;
+// Convert FormData to plain object
+const formDataObject = {};
+for (const [key, value] of formData.entries()) {
+formDataObject[key] = numOrStr(value);
+}
+// Convert all formObject values, number-if-possible
+for (const key in formObject) {
+formObject[key] = numOrStr(formObject[key]);
+}
+// Merge objects (formDataObject will override formObject if there are duplicate keys)
+const final = {...formObject, ...formDataObject};
+console.log(final);
+console.log(formDataObject);
+try {
+const res = await fetch("/scout_form", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(final),
+});
+const text = await res.text();
+alert("Server responded: " + text);
+} catch (err) {
+alert("Error sending form: " + err);
+}
+});
+</script>
+</body>
+</html>

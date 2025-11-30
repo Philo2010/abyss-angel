@@ -1,8 +1,10 @@
+use std::cmp::Ordering;
+
 use rocket::State;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
-use crate::upcoming_handler::{self, pull_event_data, upcoming_game};
+use crate::upcoming_handler::{self, pull_event_data, sort_matches, upcoming_game};
 
  
 
@@ -11,7 +13,7 @@ use crate::upcoming_handler::{self, pull_event_data, upcoming_game};
 pub async fn scout_auto(db: &State<DatabaseConnection>) -> Template{
 
 
-    let matches = match upcoming_handler::pull_event_data::pull_event_data(db.inner(), None).await {
+    let mut matches = match upcoming_handler::pull_event_data::pull_event_data(db.inner(), None).await {
         Ok(a) => a,
         Err(pull_event_data::EventDataErr::Data(a)) => {
             return Template::render("error", context! {error: format!("Problem getting match data: {a}")});
@@ -20,6 +22,8 @@ pub async fn scout_auto(db: &State<DatabaseConnection>) -> Template{
             return Template::render("error", context! {error: format!("Problem getting team data: {a}")});
         }
     };
+
+    upcoming_handler::sort_matches::sort_matches(&mut matches);
 
 
 
