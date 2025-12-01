@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout Form</title>
+</head>
+<body>
+    <h2>Scout Form</h2>
+    <form id="scoutForm">
+        <label>User:</label>
+        <input type="number" name="user" required>
+        
+        <label>Team:</label>
+        <input type="number" name="team" required>
+        
+        <label>Event Code:</label>
+        <input type="number" name="event_code" required>
+        
+        <label>Height:</label>
+        <input type="number" name="height" required>
+        
+        <label>Width:</label>
+        <input type="number" name="width" required>
+        
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        document.getElementById("scoutForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = {};
+            
+            for (const [key, value] of formData.entries()) {
+                // Convert to number if numeric
+                const num = Number(value);
+                data[key] = !isNaN(num) && value.trim() !== "" ? num : value;
+            }
+            
+            try {
+                const res = await fetch("/pit/insert", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+                const text = await res.text();
+                alert("Server responded: " + text);
+                
+                // Optionally clear the form after successful submission
+                event.target.reset();
+            } catch (err) {
+                alert("Error sending form: " + err);
+            }
+        });
+    </script>
+</body>
+</html>

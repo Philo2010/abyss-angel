@@ -81,11 +81,8 @@ pub struct Model {
     pub hoohoo: i32,
 }
 
-
-#[derive(Debug, Clone, EnumIter, DeriveRelation)]
-pub enum Relation {
-    //No relation needed, emtiy
-}
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
 
 
 impl ActiveModelBehavior for ActiveModel {

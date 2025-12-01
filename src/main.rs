@@ -13,6 +13,7 @@ mod frontend;
 mod models;
 mod upcoming_handler;
 mod auth;
+mod pit;
 
 
 //For now, before i make a setting menu, i will hardcode values
@@ -73,6 +74,11 @@ async fn rocket() -> _ {
     frontend::scout_auto::scout_auto,
     auth::create_user::create_user,
     auth::login::login,
+    pit::insert::insert_pit,
+    pit::view::pit_view,
+    pit::edit_page::edit_page,
+    pit::edit_submit::edit_submit,
+    pit::delete::pit_delete,
     ])
     .mount("/", FileServer::from(relative!("static")))
 }

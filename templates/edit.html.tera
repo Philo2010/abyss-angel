@@ -1,4 +1,3 @@
-{{ entry | json_encode(pretty=true) | safe }}
 <!DOCTYPE html>
 <html>
   <body>
