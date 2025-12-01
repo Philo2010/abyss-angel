@@ -1,0 +1,66 @@
+{{ entry | json_encode(pretty=true) | safe }}
+<!DOCTYPE html>
+<html>
+  <body>
+    <form id="scoutForm">
+      <label>User:</label><br>
+      <input type="text" name="user" value="{{ entry.user }}"><br>
+
+      <label>Team:</label><br>
+      <input type="number" name="team" value="{{ entry.team }}"><br>
+
+      <label>Match ID:</label><br>
+      <input type="number" name="matchid" value="{{ entry.matchid }}"><br>
+
+      <label>Set:</label><br>
+      <input type="number" name="set" value="{{ entry.set }}"><br>
+
+      <label>Event Code:</label><br>
+      <input type="text" name="event_code" value="{{ entry.event_code }}"><br>
+
+      <label>Tournament Level:</label><br>
+      <input type="text" name="tournament_level" value="{{ entry.tournament_level }}"><br>
+
+      <label>Station:</label><br>
+      <input type="text" name="station" value="{{ entry.station }}"><br>
+
+      <label>Hehe:</label><br>
+      <input type="number" name="hehe"value="{{ entry.hehe }}" ><br>
+
+      <label>Hoohoo:</label><br>
+      <input type="number" name="hoohoo" value="{{ entry.hoohoo }}"><br>
+
+      <input type="submit" value="Submit">
+    </form>
+
+    <script>
+      document.getElementById("scoutForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const data = {};
+
+        for (const [key, value] of formData.entries()) {
+          // Convert to number if numeric
+          const num = Number(value);
+          data[key] = !isNaN(num) && value.trim() !== "" ? num : value;
+        }
+        //Add id
+        data["id"] = {{ entry.id }};
+
+        try {
+          const res = await fetch("/edit_form", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const text = await res.text();
+          alert("Server responded: " + text);
+        } catch (err) {
+          alert("Error sending form: " + err);
+        }
+      });
+    </script>
+  </body>
+</html>

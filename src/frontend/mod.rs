@@ -4,3 +4,7 @@ pub mod averages;
 pub mod allentry;
 pub mod search;
 pub mod scout_auto;
+pub mod edit;
+pub mod delete;
+pub mod edit_page;
+pub mod edit_form;

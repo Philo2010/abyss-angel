@@ -3,12 +3,12 @@ use std::pin::Pin;
 
 use rocket::http::uri::Query;
 use rocket::tokio;
-use sea_orm::ActiveValue::Unchanged;
+use sea_orm::ActiveValue::{NotSet, Unchanged};
 use sea_orm::sqlx::types::chrono::Utc;
 use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sea_orm::sea_query::{Alias, Expr, Func, SelectStatement};
+use sea_orm::sea_query::{Alias, Expr, Func, Mode, SelectStatement};
 use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
 use phf::phf_map;
 
@@ -27,6 +27,18 @@ pub const YEARSAVG: phf::Map<i32, fn(event: Option<String>, db: & DatabaseConnec
 
 pub const YEARSSEARCH: phf::Map<i32, fn(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: & DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_map! {
     2025i32 =>  Model::search,
+};
+
+pub const YEARDELETE: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<()>> = phf_map! {
+    2025i32 => Model::delete_scout,
+};
+
+pub const YEARSGET: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<serde_json::Value>> = phf_map! {
+    2025i32 => Model::get_scout,
+};
+
+pub const YEARSEDIT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, ()>> = phf_map! {
+    2025i32 => Model::edit,
 };
 
 type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, Box<dyn Error>>> + Send + 'a>>;
@@ -85,7 +97,9 @@ trait ScoutYear {
     fn search<'a>(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn averages<'a>(event: Option<String>, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
     fn graph<'a>(event: Option<String>, team: i32, db: &'a DatabaseConnection) -> BoxFuture<'a, serde_json::Value>;
-    fn get<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>;
+    fn get_scout<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>;
+    fn delete_scout<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, ()>;
+    fn edit<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, ()>;
 }
 
 impl Model {
@@ -126,10 +140,56 @@ impl ActiveModel {
         self.hehe = Set(json.get("hehe").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
         self.hoohoo = Set(json.get("hoohoo").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
     }
+    fn debug_set_from_json_full(&mut self, json: &serde_json::Value) {
+        let a = match json.get("id").and_then(|v| v.as_i64()) {
+            Some(a) => Set(a as i32),
+            None => {
+                NotSet
+            },
+        };
+
+        self.id = a;
+        self.user = Set(json.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.team = Set(json.get("team").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.matchid = Set(json.get("matchid").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.set = Set(json.get("set").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.event_code = Set(json.get("event_code").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.tournament_level = Set(json.get("tournament_level").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.station = Set(json.get("station").and_then(|v| v.as_str()).unwrap_or("").to_string());
+        self.hehe = Set(json.get("hehe").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+        self.hoohoo = Set(json.get("hoohoo").and_then(|v| v.as_i64()).unwrap_or(0) as i32);
+    }
 
 }
 
 impl ScoutYear for Model {
+
+    fn edit<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, ()> {
+        boxed_async!(async move {
+
+            let mut active_model = user::ActiveModel { ..Default::default() };
+            let a = active_model.debug_set_from_json_full(&json);
+
+            active_model.total();
+
+            
+            println!("{:?}", active_model);
+
+            active_model.update(db).await.map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+            Ok(())
+        })
+    }
+
+    fn delete_scout<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, ()> {
+        boxed_async!(async move {
+            user::Entity::delete_by_id(id)
+            .exec(db)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+            Ok(())
+        })
+    }
+
     fn insert<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32> {
         boxed_async!(async move {
             let mut active_model = user::ActiveModel { ..Default::default() };
@@ -146,7 +206,7 @@ impl ScoutYear for Model {
     }
 
 
-    fn get<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>{
+    fn get_scout<'a>(db: &'a DatabaseConnection, id: i32) -> BoxFuture<'a, serde_json::Value>{
         Box::pin(async move {
             let model = Entity::find_by_id(id)
             .one(db)

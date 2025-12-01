@@ -1,5 +1,5 @@
 
-mod setevent;
+pub mod setevent;
 
 
 //Singleton that stores all major settings for the scouter (not dyn like event)
