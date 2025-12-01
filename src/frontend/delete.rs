@@ -6,7 +6,7 @@ use crate::{SETTINGS, user::YEARDELETE};
 
 
 
-#[post("/delete/<id>")]
+#[get("/delete/<id>")]
 pub async fn delete_scout(id: i32, db: &State<DatabaseConnection>) -> Template {
     let deletfunc = YEARDELETE[&SETTINGS.year];
 
