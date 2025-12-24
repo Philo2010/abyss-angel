@@ -7,7 +7,7 @@ use sea_orm::{DatabaseConnection, EntityOrSelect, EntityTrait};
 use sea_orm::dynamic::DynSelector;
 use serde_json::Value;
 
-use crate::{SETTINGS, models, sexymac};
+use crate::{SETTINGS, sexymac};
 use crate::user::{YEARSAVG, YEARSINSERT};
 
 

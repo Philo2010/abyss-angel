@@ -10,7 +10,6 @@ mod user;
 mod sexymac;
 mod setting;
 mod frontend;
-mod models;
 mod upcoming_handler;
 mod auth;
 mod pit;

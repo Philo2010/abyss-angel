@@ -1,6 +1,5 @@
 use sea_orm::{DatabaseConnection, EntityTrait};
 
-use crate::models;
 
 #[macro_export]
 macro_rules! boxed_async {
@@ -11,7 +10,7 @@ macro_rules! boxed_async {
 
 
 pub async fn get_event_default(db: &DatabaseConnection) -> Option<String> {
-    match models::dyn_settings::Entity::find().one(db).await {
+    match crate::setting::dyn_settings::Entity::find().one(db).await {
         Ok(a) => {
             a.map(|x| x.event)
         },

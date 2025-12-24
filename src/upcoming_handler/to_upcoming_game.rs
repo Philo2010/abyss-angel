@@ -3,7 +3,7 @@ use std::{error::Error, num::ParseIntError};
 use rocket::figment::value;
 use sea_orm::{ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 
-use crate::{models::dyn_settings::ActiveModel, upcoming_handler::{blue::TbaMatch, upcoming_game, upcoming_team}};
+use crate::{setting::dyn_settings::ActiveModel, upcoming_handler::{blue::TbaMatch, upcoming_game, upcoming_team}};
 
 pub enum UpcomingGameError {
     Database(DbErr),
