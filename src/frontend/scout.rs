@@ -1,9 +1,8 @@
-use std::error::Error;
 
 use rocket::State;
 use rocket::{post, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
-use sea_orm::{DatabaseConnection, EntityOrSelect, EntityTrait, ModelTrait, PaginatorTrait, QuerySelect};
+use sea_orm::{DatabaseConnection, EntityTrait, ModelTrait, PaginatorTrait};
 use serde_json::Value;
 
 use crate::SETTINGS;
@@ -17,8 +16,8 @@ pub async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> Te
 
     let body_value = body.into_inner();
 
-    let e = match insrfunc(db.inner(), &body_value).await {
-        Ok(a) => {
+    match insrfunc(db.inner(), &body_value).await {
+        Ok(_) => {
             Template::render("suc", context! {message: "Properly scouted"})
         },
         Err(a) => {
@@ -41,7 +40,7 @@ pub async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> Te
             
             let res = upcoming_team::Entity::delete_by_id(teamidvalue as i32).exec(db.inner()).await;
             match res {
-                Ok(a) =>  {
+                Ok(_) =>  {
                     //Now we must check if that was the last one we truely had
                     let game = match upcoming_game::Entity::find_by_id(ent.game_id).one(db.inner()).await {
                         Ok(Some(a)) => a,
@@ -55,17 +54,17 @@ pub async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> Te
 
                     let count = match game.find_related(upcoming_team::Entity).count(db.inner()).await {
                         Ok(a) => a,
-                        Err(a) => {
+                        Err(_) => {
                             return Template::render("error", context! {error: "Failed to get count!"});
                         },
                     };
 
                     if count == 0 {
                         match upcoming_game::Entity::delete_by_id(ent.game_id).exec(db.inner()).await {
-                            Ok(a) => {
+                            Ok(_) => {
                                 return Template::render("suc", context! {message: "Properly scouted"});
                             },
-                            Err(a) => {
+                            Err(_) => {
                                 return Template::render("error", context! {error: "Able to insert into database, but unable to remove queued match!"});
                             },
                         }
@@ -85,6 +84,4 @@ pub async fn scout_take(body: Json<Value>, db: &State<DatabaseConnection>) -> Te
         //Dont do anything, most likey a manual scout
         return Template::render("suc", context! {message: "Properly scouted, however, please avoid using manual scout (unless directly requested)!"});
     }
-
-    e
 }

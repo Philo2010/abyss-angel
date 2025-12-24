@@ -1,7 +1,6 @@
-use rocket::{State, data::ToByteUnit, form::Form, http::CookieJar, serde::json::Json};
+use rocket::{State, form::Form, http::CookieJar};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::{ActiveValue::Set, DatabaseConnection, EntityTrait};
-use serde_json::Value;
 
 use crate::{auth, upcoming_handler::upcoming_team};
 

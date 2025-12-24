@@ -1,14 +1,10 @@
-use std::error::Error;
 
 use rocket::State;
-use rocket::{post, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
-use sea_orm::{DatabaseConnection, EntityOrSelect, EntityTrait};
-use sea_orm::dynamic::DynSelector;
-use serde_json::Value;
+use sea_orm::DatabaseConnection;
 
 use crate::{SETTINGS, sexymac};
-use crate::user::{YEARSAVG, YEARSINSERT};
+use crate::user::YEARSAVG;
 
 
 #[get("/averages_d")]

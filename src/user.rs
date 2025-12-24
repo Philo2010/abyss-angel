@@ -1,15 +1,14 @@
 use std::error::Error;
 use std::pin::Pin;
 
-use rocket::http::uri::Query;
 use rocket::tokio;
 use sea_orm::ActiveValue::{NotSet, Unchanged};
 use sea_orm::sqlx::types::chrono::Utc;
-use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
+use sea_orm::{ActiveValue::Set, Schema, entity, prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sea_orm::sea_query::{Alias, Expr, Func, Mode, SelectStatement};
-use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
+use sea_orm::sea_query::{Alias, Expr, Func, SelectStatement};
+use sea_orm::query::*;
 use phf::phf_map;
 
 
@@ -165,7 +164,7 @@ impl ScoutYear for Model {
         boxed_async!(async move {
 
             let mut active_model = user::ActiveModel { ..Default::default() };
-            let a = active_model.debug_set_from_json_full(&json);
+            active_model.debug_set_from_json_full(json);
 
             active_model.total();
 
@@ -190,7 +189,7 @@ impl ScoutYear for Model {
     fn insert<'a>(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32> {
         boxed_async!(async move {
             let mut active_model = user::ActiveModel { ..Default::default() };
-            let a = active_model.debug_set_from_json(&json);
+            active_model.debug_set_from_json(json);
 
 
             active_model.total();

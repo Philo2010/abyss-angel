@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{SETTINGS, auth::admin};
 
 #[derive(FromForm)]
-struct CreateUserForm {
+pub struct CreateUserForm {
     username: String,
     password: String
 }
@@ -20,18 +20,18 @@ pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnecti
         },
     };
 
-    let mut acvmodel = admin::ActiveModel {
+    let acvmodel = admin::ActiveModel {
         id: sea_orm::Set(Uuid::new_v4()),
         name: sea_orm::Set(data.username.clone()),
         bcrypt_hash: sea_orm::Set(hash),
     };
 
     match admin::ActiveModel::insert(acvmodel, db.inner()).await {
-        Ok(a) => {
-            return Template::render("suc", context! {message: "User Created!"});
+        Ok(_) => {
+            Template::render("suc", context! {message: "User Created!"})
         },
         Err(a) => {
-            return Template::render("error", context! {error: format!("Could not insert into database: {a}")});
+            Template::render("error", context! {error: format!("Could not insert into database: {a}")})
         },
     }
 }

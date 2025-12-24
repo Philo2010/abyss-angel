@@ -8,7 +8,7 @@ use crate::auth::{UUID_COOKIE_NAME, admin};
 
 
 #[derive(FromForm)]
-struct LoginForm {
+pub struct LoginForm {
     username: String,
     password: String
 }
@@ -39,8 +39,8 @@ pub async fn login(data: Form<LoginForm>, db: &State<DatabaseConnection>, cookie
     if res {
         //Good
         cookies.add(Cookie::new(UUID_COOKIE_NAME, a.id.to_string()));
-        return Template::render("suc", context! {message: "Logined!"});
+        Template::render("suc", context! {message: "Logined!"})
     } else {
-        return Template::render("error", context! {error: format!("Wrong password!")});
+        Template::render("error", context! {error: format!("Wrong password!")})
     }
 }

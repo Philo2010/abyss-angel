@@ -1,8 +1,8 @@
 use rocket::{State, http::CookieJar};
 use rocket_dyn_templates::{Template, context};
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, ModelTrait, QueryFilter};
+use sea_orm::DatabaseConnection;
 
-use crate::{auth, upcoming_handler::{self, pull_event_data, upcoming_game, upcoming_team}};
+use crate::{auth, upcoming_handler::{self, pull_event_data}};
 
 
 

@@ -1,0 +1,1214 @@
+    Checking abyss-angel v0.1.0 (/Users/philipbedrosian/code/abyss-angel)
+warning: failed to automatically apply fixes suggested by rustc to crate `abyss_angel`
+
+after fixes were automatically applied the compiler reported errors within these files:
+
+  * src/auth/check.rs
+  * src/auth/create_user.rs
+  * src/frontend/scout.rs
+  * src/pit/edit_page.rs
+  * src/pit/insert.rs
+  * src/pit/pit2025.rs
+  * src/user.rs
+
+This likely indicates a bug in either rustc or cargo itself,
+and we would appreciate a bug report! You're likely to see
+a number of compiler warnings after this message which cargo
+attempted to fix but failed. If you could open an issue at
+https://github.com/rust-lang/rust-clippy/issues
+quoting the full output of this command we'd be very appreciative!
+Note that you may be able to make some more progress in the near-term
+fixing code with the `--broken-code` flag
+
+The following errors were reported:
+error: expected identifier, found reserved identifier `_`
+   --> src/user.rs:167:31
+    |
+167 |             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+    |                               ^ expected identifier, found reserved identifier
+
+error: expected identifier, found reserved identifier `_`
+   --> src/user.rs:192:31
+    |
+192 |             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+    |                               ^ expected identifier, found reserved identifier
+
+error: expected identifier, found reserved identifier `_`
+   --> src/pit/pit2025.rs:137:31
+    |
+137 |             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+    |                               ^ expected identifier, found reserved identifier
+
+error: expected identifier, found reserved identifier `_`
+   --> src/pit/pit2025.rs:160:31
+    |
+160 |             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+    |                               ^ expected identifier, found reserved identifier
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `pit`
+   --> src/user.rs:167:17
+    |
+167 |             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+    |                 ^^^ use of unresolved module or unlinked crate `pit`
+    |
+help: to make use of source file src/pit/mod.rs, use `mod pit` in this file to declare the module
+   --> src/main.rs:1:1
+    |
+  1 + mod pit;
+    |
+help: consider importing this module
+    |
+  1 + use crate::pit::pit2025;
+    |
+help: if you import `pit2025`, refer to it directly
+    |
+167 -             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+167 +             let pit2025::_ = active_model.debug_set_from_json_full(json);
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `pit`
+   --> src/user.rs:192:17
+    |
+192 |             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+    |                 ^^^ use of unresolved module or unlinked crate `pit`
+    |
+help: to make use of source file src/pit/mod.rs, use `mod pit` in this file to declare the module
+   --> src/main.rs:1:1
+    |
+  1 + mod pit;
+    |
+help: consider importing this module
+    |
+  1 + use crate::pit::pit2025;
+    |
+help: if you import `pit2025`, refer to it directly
+    |
+192 -             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+192 +             let pit2025::_ = active_model.debug_set_from_json(json);
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `pit`
+   --> src/pit/pit2025.rs:137:17
+    |
+137 |             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+    |                 ^^^ use of unresolved module or unlinked crate `pit`
+    |
+    = help: if you wanted to use a crate named `pit`, use `cargo add pit` to add it to your `Cargo.toml`
+help: consider importing this module
+    |
+  1 + use crate::pit::pit2025;
+    |
+help: if you import `pit2025`, refer to it directly
+    |
+137 -             let pit::pit2025::_ = active_model.debug_set_from_json_full(json);
+137 +             let pit2025::_ = active_model.debug_set_from_json_full(json);
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `pit`
+   --> src/pit/pit2025.rs:160:17
+    |
+160 |             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+    |                 ^^^ use of unresolved module or unlinked crate `pit`
+    |
+    = help: if you wanted to use a crate named `pit`, use `cargo add pit` to add it to your `Cargo.toml`
+help: consider importing this module
+    |
+  1 + use crate::pit::pit2025;
+    |
+help: if you import `pit2025`, refer to it directly
+    |
+160 -             let pit::pit2025::_ = active_model.debug_set_from_json(json);
+160 +             let pit2025::_ = active_model.debug_set_from_json(json);
+    |
+
+warning: unreachable expression
+  --> src/frontend/scout.rs:88:5
+   |
+42 | /             match res {
+43 | |                 Ok(a) =>  {
+44 | |                     //Now we must check if that was the last one we truely had
+45 | |                     let game = match upcoming_game::Entity::find_by_id(ent.game_id).one(db.inner()).await {
+...  |
+78 | |                 },
+79 | |             }
+   | |_____________- any code following this `match` expression is unreachable, as all arms diverge
+...
+88 |       e
+   |       ^ unreachable expression
+   |
+   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `e`
+  --> src/frontend/scout.rs:19:9
+   |
+19 |     let e = match insrfunc(db.inner(), &body_value).await {
+   |         ^ help: if this is intentional, prefix it with an underscore: `_e`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:20:12
+   |
+20 |         Ok(a) => {
+   |            ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:43:20
+   |
+43 |                 Ok(a) =>  {
+   |                    ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:57:29
+   |
+57 |                         Err(a) => {
+   |                             ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:64:32
+   |
+64 | ...                   Ok(a) => {
+   |                          ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:67:33
+   |
+67 | ...                   Err(a) => {
+   |                           ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/auth/create_user.rs:30:12
+   |
+30 |         Ok(a) => {
+   |            ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/auth/check.rs:28:17
+   |
+28 |         Ok(Some(a)) => {
+   |                 ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused import: `QuerySelect`
+ --> src/user.rs:7:33
+  |
+7 | use sea_orm::{ActiveValue::Set, QuerySelect, Schema, entity, prelude::*};
+  |                                 ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `sqlx::Value`
+ --> src/pit/edit_page.rs:3:35
+  |
+3 | use sea_orm::{DatabaseConnection, sqlx::Value};
+  |                                   ^^^^^^^^^^^
+
+warning: unused import: `sqlx::Value`
+ --> src/pit/insert.rs:3:35
+  |
+3 | use sea_orm::{DatabaseConnection, sqlx::Value};
+  |                                   ^^^^^^^^^^^
+
+warning: unused import: `sea_orm::query`
+ --> src/pit/pit2025.rs:9:5
+  |
+9 | use sea_orm::query::*;
+  |     ^^^^^^^^^^^^^^
+
+error: aborting due to 8 previous errors; 13 warnings emitted
+
+For more information about this error, try `rustc --explain E0433`.
+Original diagnostics will follow.
+
+warning: unused imports: `build` and `tokio::sync::RwLock`
+ --> src/main.rs:2:22
+  |
+2 | use rocket::{Config, build, data::{ByteUnit, Limits}, fs::{FileServer, relative}, tokio::sync::RwLock};
+  |                      ^^^^^                                                        ^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `ConnectionTrait`, `DatabaseConnection`, `Database`, `EntityTrait`, `Schema`, and `sea_query::PostgresQueryBuilder`
+ --> src/main.rs:4:15
+  |
+4 | use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Schema, sea_query::PostgresQueryBuilder};
+  |               ^^^^^^^^^^^^^^^  ^^^^^^^^  ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rocket::local::asynchronous::Client`
+ --> src/main.rs:5:5
+  |
+5 | use rocket::local::asynchronous::Client;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rocket::http::uri::Query`
+ --> src/user.rs:4:5
+  |
+4 | use rocket::http::uri::Query;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `FromQueryResult`
+ --> src/user.rs:8:33
+  |
+8 | use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
+  |                                 ^^^^^^^^^^^^^^^
+
+warning: unused import: `Mode`
+  --> src/user.rs:11:45
+   |
+11 | use sea_orm::sea_query::{Alias, Expr, Func, Mode, SelectStatement};
+   |                                             ^^^^
+
+warning: unused imports: `DatabaseBackend`, `Database`, and `StatementBuilder`
+  --> src/user.rs:12:15
+   |
+12 | use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
+   |               ^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused import: `phf::Set`
+ --> src/setting/setevent.rs:1:5
+  |
+1 | use phf::Set;
+  |     ^^^^^^^^
+
+warning: unused import: `sexymac::get_event_default`
+ --> src/setting/setevent.rs:7:22
+  |
+7 | use crate::{setting, sexymac::get_event_default};
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::error::Error`
+ --> src/frontend/scout.rs:1:5
+  |
+1 | use std::error::Error;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `EntityOrSelect` and `QuerySelect`
+ --> src/frontend/scout.rs:6:35
+  |
+6 | use sea_orm::{DatabaseConnection, EntityOrSelect, EntityTrait, ModelTrait, PaginatorTrait, QuerySelect};
+  |                                   ^^^^^^^^^^^^^^                                           ^^^^^^^^^^^
+
+warning: unused import: `std::error::Error`
+ --> src/frontend/graph.rs:1:5
+  |
+1 | use std::error::Error;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rocket::serde::json`
+ --> src/frontend/graph.rs:5:5
+  |
+5 | use rocket::serde::json;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde::json::Json`
+ --> src/frontend/graph.rs:6:20
+  |
+6 | use rocket::{post, serde::json::Json};
+  |                    ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `YEARSINSERT`
+  --> src/frontend/graph.rs:12:31
+   |
+12 | use crate::user::{YEARSGRAPH, YEARSINSERT};
+   |                               ^^^^^^^^^^^
+
+warning: unused import: `std::error::Error`
+ --> src/frontend/averages.rs:1:5
+  |
+1 | use std::error::Error;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `post` and `serde::json::Json`
+ --> src/frontend/averages.rs:4:14
+  |
+4 | use rocket::{post, serde::json::Json};
+  |              ^^^^  ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `EntityOrSelect` and `EntityTrait`
+ --> src/frontend/averages.rs:6:35
+  |
+6 | use sea_orm::{DatabaseConnection, EntityOrSelect, EntityTrait};
+  |                                   ^^^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `sea_orm::dynamic::DynSelector`
+ --> src/frontend/averages.rs:7:5
+  |
+7 | use sea_orm::dynamic::DynSelector;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde_json::Value`
+ --> src/frontend/averages.rs:8:5
+  |
+8 | use serde_json::Value;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `YEARSINSERT`
+  --> src/frontend/averages.rs:11:29
+   |
+11 | use crate::user::{YEARSAVG, YEARSINSERT};
+   |                             ^^^^^^^^^^^
+
+warning: unused import: `std::error::Error`
+ --> src/frontend/allentry.rs:1:5
+  |
+1 | use std::error::Error;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `post` and `serde::json::Json`
+ --> src/frontend/allentry.rs:4:14
+  |
+4 | use rocket::{post, serde::json::Json};
+  |              ^^^^  ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde_json::Value`
+ --> src/frontend/allentry.rs:7:5
+  |
+7 | use serde_json::Value;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `YEARSAVG` and `YEARSINSERT`
+  --> src/frontend/allentry.rs:11:19
+   |
+11 | use crate::user::{YEARSAVG, YEARSINSERT, YEARSSEARCH};
+   |                   ^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `std::error::Error`
+ --> src/frontend/search.rs:1:5
+  |
+1 | use std::error::Error;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde::json::Json`
+ --> src/frontend/search.rs:5:20
+  |
+5 | use rocket::{post, serde::json::Json};
+  |                    ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde_json::Value`
+ --> src/frontend/search.rs:8:5
+  |
+8 | use serde_json::Value;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `YEARSAVG` and `YEARSINSERT`
+  --> src/frontend/search.rs:11:19
+   |
+11 | use crate::user::{YEARSAVG, YEARSINSERT, YEARSSEARCH};
+   |                   ^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `std::cmp::Ordering`
+ --> src/frontend/scout_auto.rs:1:5
+  |
+1 | use std::cmp::Ordering;
+  |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `sort_matches` and `upcoming_game`
+ --> src/frontend/scout_auto.rs:7:54
+  |
+7 | use crate::upcoming_handler::{self, pull_event_data, sort_matches, upcoming_game};
+  |                                                      ^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `form::Form`
+ --> src/frontend/edit.rs:1:21
+  |
+1 | use rocket::{State, form::Form};
+  |                     ^^^^^^^^^^
+
+warning: unused import: `YEARSINSERT`
+ --> src/frontend/edit_page.rs:5:40
+  |
+5 | use crate::{SETTINGS, user::{YEARSGET, YEARSINSERT}};
+  |                                        ^^^^^^^^^^^
+
+warning: unused import: `time::error::Parse`
+ --> src/upcoming_handler/query_game.rs:1:50
+  |
+1 | use rocket::{State, form::Form, http::CookieJar, time::error::Parse};
+  |                                                  ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `reqwest::Client`
+ --> src/upcoming_handler/query_game.rs:2:5
+  |
+2 | use reqwest::Client;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `reqwest::header::HeaderMap`
+ --> src/upcoming_handler/blue.rs:5:5
+  |
+5 | use reqwest::header::HeaderMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `error::Error`
+ --> src/upcoming_handler/to_upcoming_game.rs:1:11
+  |
+1 | use std::{error::Error, num::ParseIntError};
+  |           ^^^^^^^^^^^^
+
+warning: unused import: `rocket::figment::value`
+ --> src/upcoming_handler/to_upcoming_game.rs:3:5
+  |
+3 | use rocket::figment::value;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `setting::dyn_settings::ActiveModel`
+ --> src/upcoming_handler/to_upcoming_game.rs:6:13
+  |
+6 | use crate::{setting::dyn_settings::ActiveModel, upcoming_handler::{blue::TbaMatch, upcoming_game, upcoming_team}};
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:16:17
+   |
+16 |         "qm" => ("Qualification".to_string()),
+   |                 ^                           ^
+   |
+   = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+   |
+16 -         "qm" => ("Qualification".to_string()),
+16 +         "qm" => "Qualification".to_string(),
+   |
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:17:17
+   |
+17 |         "sf" => ("Playoff".to_string()),
+   |                 ^                     ^
+   |
+help: remove these parentheses
+   |
+17 -         "sf" => ("Playoff".to_string()),
+17 +         "sf" => "Playoff".to_string(),
+   |
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:18:16
+   |
+18 |         "f" => ("Playoff/Finals".to_string()),
+   |                ^                            ^
+   |
+help: remove these parentheses
+   |
+18 -         "f" => ("Playoff/Finals".to_string()),
+18 +         "f" => "Playoff/Finals".to_string(),
+   |
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:19:17
+   |
+19 |         "ef" => ("Playoff/Eighth-Finals".to_string()),
+   |                 ^                                   ^
+   |
+help: remove these parentheses
+   |
+19 -         "ef" => ("Playoff/Eighth-Finals".to_string()),
+19 +         "ef" => "Playoff/Eighth-Finals".to_string(),
+   |
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:20:17
+   |
+20 |         "qf" => ("Playoff/Quarterfinals".to_string()), 
+   |                 ^                                   ^
+   |
+help: remove these parentheses
+   |
+20 -         "qf" => ("Playoff/Quarterfinals".to_string()), 
+20 +         "qf" => "Playoff/Quarterfinals".to_string(), 
+   |
+
+warning: unnecessary parentheses around match arm expression
+  --> src/upcoming_handler/to_upcoming_game.rs:21:13
+   |
+21 |         a=> (a.to_string()), // Fallback
+   |             ^             ^
+   |
+help: remove these parentheses
+   |
+21 -         a=> (a.to_string()), // Fallback
+21 +         a=> a.to_string(), // Fallback
+   |
+
+warning: unused imports: `ColumnTrait`, `EntityOrSelect`, `EntityTrait`, `ModelTrait`, and `QueryFilter`
+ --> src/upcoming_handler/select_scouters_page.rs:3:15
+  |
+3 | use sea_orm::{ColumnTrait, DatabaseConnection, EntityOrSelect, EntityTrait, ModelTrait, QueryFilter};
+  |               ^^^^^^^^^^^                      ^^^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused imports: `upcoming_game` and `upcoming_team`
+ --> src/upcoming_handler/select_scouters_page.rs:5:61
+  |
+5 | use crate::{auth, upcoming_handler::{self, pull_event_data, upcoming_game, upcoming_team}};
+  |                                                             ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `rocket::http::CookieJar`
+ --> src/upcoming_handler/pull_event_data.rs:1:5
+  |
+1 | use rocket::http::CookieJar;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Template` and `context`
+ --> src/upcoming_handler/pull_event_data.rs:2:28
+  |
+2 | use rocket_dyn_templates::{Template, context};
+  |                            ^^^^^^^^  ^^^^^^^
+
+warning: unused import: `crate::auth`
+ --> src/upcoming_handler/pull_event_data.rs:5:5
+  |
+5 | use crate::auth;
+  |     ^^^^^^^^^^^
+
+warning: unused imports: `data::ToByteUnit` and `serde::json::Json`
+ --> src/upcoming_handler/submit_scout.rs:1:21
+  |
+1 | use rocket::{State, data::ToByteUnit, form::Form, http::CookieJar, serde::json::Json};
+  |                     ^^^^^^^^^^^^^^^^                               ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `serde_json::Value`
+ --> src/upcoming_handler/submit_scout.rs:4:5
+  |
+4 | use serde_json::Value;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `rocket::http::uri::Query`
+ --> src/pit/pit2025.rs:4:5
+  |
+4 | use rocket::http::uri::Query;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Unchanged`
+ --> src/pit/pit2025.rs:6:36
+  |
+6 | use sea_orm::ActiveValue::{NotSet, Unchanged};
+  |                                    ^^^^^^^^^
+
+warning: unused imports: `FromQueryResult`, `QuerySelect`, and `entity`
+ --> src/pit/pit2025.rs:8:33
+  |
+8 | use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
+  |                                 ^^^^^^^^^^^^^^^  ^^^^^^^^^^^          ^^^^^^
+
+warning: unused import: `serde_json::json`
+  --> src/pit/pit2025.rs:10:5
+   |
+10 | use serde_json::json;
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Alias`, `Expr`, `Func`, `Mode`, and `SelectStatement`
+  --> src/pit/pit2025.rs:11:26
+   |
+11 | use sea_orm::sea_query::{Alias, Expr, Func, Mode, SelectStatement};
+   |                          ^^^^^  ^^^^  ^^^^  ^^^^  ^^^^^^^^^^^^^^^
+
+warning: unused imports: `DatabaseBackend`, `Database`, and `StatementBuilder`
+  --> src/pit/pit2025.rs:12:15
+   |
+12 | use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
+   |               ^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+
+warning: unused imports: `PITYEARDELETE` and `PITYEARSGET`
+ --> src/pit/view.rs:5:38
+  |
+5 | use crate::{SETTINGS, pit::pit2025::{PITYEARDELETE, PITYEARSGET, PITYEARSGETEVENTTEAM}};
+  |                                      ^^^^^^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `serde::json::Json`
+ --> src/pit/edit_page.rs:1:21
+  |
+1 | use rocket::{State, serde::json::Json};
+  |                     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `self`
+ --> src/pit/edit_page.rs:4:38
+  |
+4 | use crate::{SETTINGS, pit::pit2025::{self, PITYEARSGET}};
+  |                                      ^^^^
+
+warning: unused import: `user::YEARSEDIT`
+ --> src/pit/edit_submit.rs:6:51
+  |
+6 | use crate::{SETTINGS, pit::pit2025::PITYEARSEDIT, user::YEARSEDIT};
+  |                                                   ^^^^^^^^^^^^^^^
+
+warning: unreachable expression
+  --> src/frontend/scout.rs:89:5
+   |
+43 | /             match res {
+44 | |                 Ok(a) =>  {
+45 | |                     //Now we must check if that was the last one we truely had
+46 | |                     let game = match upcoming_game::Entity::find_by_id(ent.game_id).one(db.inner()).await {
+...  |
+79 | |                 },
+80 | |             }
+   | |_____________- any code following this `match` expression is unreachable, as all arms diverge
+...
+89 |       e
+   |       ^ unreachable expression
+   |
+   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `e`
+  --> src/frontend/scout.rs:20:9
+   |
+20 |     let e = match insrfunc(db.inner(), &body_value).await {
+   |         ^ help: if this is intentional, prefix it with an underscore: `_e`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:21:12
+   |
+21 |         Ok(a) => {
+   |            ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:44:20
+   |
+44 |                 Ok(a) =>  {
+   |                    ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:58:29
+   |
+58 |                         Err(a) => {
+   |                             ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:65:32
+   |
+65 | ...                   Ok(a) => {
+   |                          ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/frontend/scout.rs:68:33
+   |
+68 | ...                   Err(a) => {
+   |                           ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused variable: `a`
+  --> src/auth/create_user.rs:30:12
+   |
+30 |         Ok(a) => {
+   |            ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: variable does not need to be mutable
+  --> src/auth/create_user.rs:23:9
+   |
+23 |     let mut acvmodel = admin::ActiveModel {
+   |         ----^^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `a`
+  --> src/auth/check.rs:28:17
+   |
+28 |         Ok(Some(a)) => {
+   |                 ^ help: if this is intentional, prefix it with an underscore: `_a`
+
+warning: unused import: `QuerySelect`
+ --> src/user.rs:8:50
+  |
+8 | use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
+  |                                                  ^^^^^^^^^^^
+
+warning: unused import: `sqlx::Value`
+ --> src/pit/edit_page.rs:3:35
+  |
+3 | use sea_orm::{DatabaseConnection, sqlx::Value};
+  |                                   ^^^^^^^^^^^
+
+warning: unused import: `sqlx::Value`
+ --> src/pit/insert.rs:3:35
+  |
+3 | use sea_orm::{DatabaseConnection, sqlx::Value};
+  |                                   ^^^^^^^^^^^
+
+warning: unused import: `query`
+  --> src/pit/pit2025.rs:12:60
+   |
+12 | use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
+   |                                                            ^^^^^
+
+warning: unused variable: `a`
+   --> src/user.rs:168:17
+    |
+168 |             let a = active_model.debug_set_from_json_full(&json);
+    |                 ^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+168 |             let _a = active_model.debug_set_from_json_full(&json);
+    |                 +
+help: you might have meant to pattern match on the similarly named constant `_`
+    |
+168 -             let a = active_model.debug_set_from_json_full(&json);
+168 +             let pit::pit2025::_ = active_model.debug_set_from_json_full(&json);
+    |
+
+warning: unused variable: `a`
+   --> src/user.rs:193:17
+    |
+193 |             let a = active_model.debug_set_from_json(&json);
+    |                 ^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+193 |             let _a = active_model.debug_set_from_json(&json);
+    |                 +
+help: you might have meant to pattern match on the similarly named constant `_`
+    |
+193 -             let a = active_model.debug_set_from_json(&json);
+193 +             let pit::pit2025::_ = active_model.debug_set_from_json(&json);
+    |
+
+warning: unused variable: `a`
+   --> src/pit/pit2025.rs:140:17
+    |
+140 |             let a = active_model.debug_set_from_json_full(&json);
+    |                 ^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+140 |             let _a = active_model.debug_set_from_json_full(&json);
+    |                 +
+help: you might have meant to pattern match on the similarly named constant `_`
+    |
+140 -             let a = active_model.debug_set_from_json_full(&json);
+140 +             let pit::pit2025::_ = active_model.debug_set_from_json_full(&json);
+    |
+
+warning: unused variable: `a`
+   --> src/pit/pit2025.rs:163:17
+    |
+163 |             let a = active_model.debug_set_from_json(&json);
+    |                 ^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+163 |             let _a = active_model.debug_set_from_json(&json);
+    |                 +
+help: you might have meant to pattern match on the similarly named constant `_`
+    |
+163 -             let a = active_model.debug_set_from_json(&json);
+163 +             let pit::pit2025::_ = active_model.debug_set_from_json(&json);
+    |
+
+warning: type `frontend::graph::GraphForm` is more private than the item `frontend::graph::graph`
+  --> src/frontend/graph.rs:22:1
+   |
+22 | pub async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> Template {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `frontend::graph::graph` is reachable at visibility `pub(crate)`
+   |
+note: but type `frontend::graph::GraphForm` is only usable at visibility `pub(self)`
+  --> src/frontend/graph.rs:15:1
+   |
+15 | struct GraphForm {
+   | ^^^^^^^^^^^^^^^^
+   = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `frontend::search::SearchForm` is more private than the item `frontend::search::search`
+  --> src/frontend/search.rs:29:1
+   |
+29 | pub async fn search(body: Form<SearchForm>, db: &State<DatabaseConnection>) -> String {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `frontend::search::search` is reachable at visibility `pub(crate)`
+   |
+note: but type `frontend::search::SearchForm` is only usable at visibility `pub(self)`
+  --> src/frontend/search.rs:15:1
+   |
+15 | struct SearchForm {
+   | ^^^^^^^^^^^^^^^^^
+
+warning: type `frontend::search::SearchDefault` is more private than the item `frontend::search::search_default`
+  --> src/frontend/search.rs:45:1
+   |
+45 | pub async fn search_default(body: Form<SearchDefault>, db: &State<DatabaseConnection>) -> Template {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `frontend::search::search_default` is reachable at visibility `pub(crate)`
+   |
+note: but type `frontend::search::SearchDefault` is only usable at visibility `pub(self)`
+  --> src/frontend/search.rs:22:1
+   |
+22 | struct SearchDefault {
+   | ^^^^^^^^^^^^^^^^^^^^
+
+warning: type `upcoming_handler::query_game::QueryForm` is more private than the item `upcoming_handler::query_game::queue`
+  --> src/upcoming_handler/query_game.rs:16:1
+   |
+16 | pub async fn queue(form: Form<QueryForm>, client: &State<reqwest::Client>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Template {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `upcoming_handler::query_game::queue` is reachable at visibility `pub(crate)`
+   |
+note: but type `upcoming_handler::query_game::QueryForm` is only usable at visibility `pub(self)`
+  --> src/upcoming_handler/query_game.rs:11:1
+   |
+11 | struct QueryForm {
+   | ^^^^^^^^^^^^^^^^
+
+warning: type `auth::create_user::CreateUserForm` is more private than the item `auth::create_user::create_user`
+  --> src/auth/create_user.rs:15:1
+   |
+15 | pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnection>) -> Template {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `auth::create_user::create_user` is reachable at visibility `pub(crate)`
+   |
+note: but type `auth::create_user::CreateUserForm` is only usable at visibility `pub(self)`
+  --> src/auth/create_user.rs:9:1
+   |
+ 9 | struct CreateUserForm {
+   | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: type `auth::login::LoginForm` is more private than the item `auth::login::login`
+  --> src/auth/login.rs:18:1
+   |
+18 | pub async fn login(data: Form<LoginForm>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Template {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `auth::login::login` is reachable at visibility `pub(crate)`
+   |
+note: but type `auth::login::LoginForm` is only usable at visibility `pub(self)`
+  --> src/auth/login.rs:11:1
+   |
+11 | struct LoginForm {
+   | ^^^^^^^^^^^^^^^^
+
+warning: field `score` is never read
+  --> src/upcoming_handler/blue.rs:25:9
+   |
+24 | pub struct Alliance {
+   |            -------- field in this struct
+25 |     pub score: Option<i32>,
+   |         ^^^^^
+   |
+   = note: `Alliance` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:16:24
+   |
+16 | pub const YEARSINSERT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32>> = phf_map! {
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+   = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:20:23
+   |
+20 | pub const YEARSGRAPH: phf::Map<i32, fn(event: Option<String>, team: i32, db: &DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_...
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:24:21
+   |
+24 | pub const YEARSAVG: phf::Map<i32, fn(event: Option<String>, db: & DatabaseConnection) -> BoxFuture<serde_json::Value>> = phf_map! {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:28:24
+   |
+28 | ...H: phf::Map<i32, fn(event: Option<String>, scouter: Option<String>, team: Option<i32>, db: & DatabaseConnection) -> BoxFuture<serde_json::Value>> = ...
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:32:23
+   |
+32 | pub const YEARDELETE: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<()>> = phf_map! {
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:36:21
+   |
+36 | pub const YEARSGET: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<serde_json::Value>> = phf_map! {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/user.rs:40:22
+   |
+40 | pub const YEARSEDIT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, ()>> = phf_map! {
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: this let-binding has unit value
+   --> src/user.rs:168:13
+    |
+168 |             let a = active_model.debug_set_from_json_full(&json);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: omit the `let` binding: `active_model.debug_set_from_json_full(&json);`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#let_unit_value
+    = note: `#[warn(clippy::let_unit_value)]` on by default
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/user.rs:168:59
+    |
+168 |             let a = active_model.debug_set_from_json_full(&json);
+    |                                                           ^^^^^ help: change this to: `json`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+    = note: `#[warn(clippy::needless_borrow)]` on by default
+
+warning: this let-binding has unit value
+   --> src/user.rs:193:13
+    |
+193 |             let a = active_model.debug_set_from_json(&json);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: omit the `let` binding: `active_model.debug_set_from_json(&json);`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#let_unit_value
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/user.rs:193:54
+    |
+193 |             let a = active_model.debug_set_from_json(&json);
+    |                                                      ^^^^^ help: change this to: `json`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+
+warning: returning the result of a `let` binding from a block
+  --> src/setting/setevent.rs:47:5
+   |
+38 | /     let t = match setting::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
+39 | |         Ok(_) => {
+40 | |             Template::render("suc", context!{message: "Done!"})
+41 | |         },
+...  |
+44 | |         },
+45 | |     };
+   | |______- unnecessary `let` binding
+46 |
+47 |       t
+   |       ^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#let_and_return
+   = note: `#[warn(clippy::let_and_return)]` on by default
+help: return the expression directly
+   |
+38 ~     
+39 |
+40 ~     match setting::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
+41 +         Ok(_) => {
+42 +             Template::render("suc", context!{message: "Done!"})
+43 +         },
+44 +         Err(a) => {
+45 +             Template::render("error", context!{message: format!("Database error!: {a}")})
+46 +         },
+47 +     }
+   |
+
+warning: writing `&String` instead of `&str` involves a new object where a slice will do
+  --> src/upcoming_handler/to_upcoming_game.rs:13:85
+   |
+13 | pub async fn insert_upcoming_game(db: &DatabaseConnection, value: &TbaMatch, event: &String) -> Result<(), UpcomingGameError> {
+   |                                                                                     ^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#ptr_arg
+   = note: `#[warn(clippy::ptr_arg)]` on by default
+help: change this to
+   |
+13 ~ pub async fn insert_upcoming_game(db: &DatabaseConnection, value: &TbaMatch, event: &str) -> Result<(), UpcomingGameError> {
+14 |
+...
+25 |         id: NotSet,
+26 ~         event_code: Set(event.to_owned()),
+   |
+
+warning: you should use the `ends_with` method
+  --> src/upcoming_handler/to_upcoming_game.rs:41:30
+   |
+41 |         let team_string = if name.chars().last() == Some('B') {
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: like this: `name.ends_with('B')`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#chars_last_cmp
+   = note: `#[warn(clippy::chars_last_cmp)]` on by default
+
+warning: this expression borrows a value the compiler would automatically borrow
+  --> src/upcoming_handler/to_upcoming_game.rs:44:13
+   |
+44 |             (&name[3..]).to_string()
+   |             ^^^^^^^^^^^^ help: change this to: `name[3..]`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+
+warning: you should use the `ends_with` method
+  --> src/upcoming_handler/to_upcoming_game.rs:65:30
+   |
+65 |         let team_string = if name.chars().last() == Some('B') {
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: like this: `name.ends_with('B')`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#chars_last_cmp
+
+warning: this expression borrows a value the compiler would automatically borrow
+  --> src/upcoming_handler/to_upcoming_game.rs:68:13
+   |
+68 |             (&name[3..]).to_string()
+   |             ^^^^^^^^^^^^ help: change this to: `name[3..]`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+
+warning: writing `&mut Vec` instead of `&mut [_]` involves a new object where a slice will do
+ --> src/upcoming_handler/sort_matches.rs:8:30
+  |
+8 | pub fn sort_matches(matches: &mut Vec<(upcoming_game::Model, Vec<upcoming_handler::upcoming_team::Model>)>) {
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: change this to: `&mut [(upcoming_game::Model, Vec<upcoming_handler::upcoming_team::Model>)]`
+  |
+  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#ptr_arg
+
+warning: unneeded `return` statement
+  --> src/auth/create_user.rs:31:13
+   |
+31 |             return Template::render("suc", context! {message: "User Created!"});
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+   = note: `#[warn(clippy::needless_return)]` on by default
+help: remove `return`
+   |
+31 -             return Template::render("suc", context! {message: "User Created!"});
+31 +             Template::render("suc", context! {message: "User Created!"})
+   |
+
+warning: unneeded `return` statement
+  --> src/auth/create_user.rs:34:13
+   |
+34 |             return Template::render("error", context! {error: format!("Could not insert into database: {a}")});
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+help: remove `return`
+   |
+34 -             return Template::render("error", context! {error: format!("Could not insert into database: {a}")});
+34 +             Template::render("error", context! {error: format!("Could not insert into database: {a}")})
+   |
+
+warning: unneeded `return` statement
+  --> src/auth/login.rs:42:9
+   |
+42 |         return Template::render("suc", context! {message: "Logined!"});
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+help: remove `return`
+   |
+42 -         return Template::render("suc", context! {message: "Logined!"});
+42 +         Template::render("suc", context! {message: "Logined!"})
+   |
+
+warning: unneeded `return` statement
+  --> src/auth/login.rs:44:9
+   |
+44 |         return Template::render("error", context! {error: format!("Wrong password!")});
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+help: remove `return`
+   |
+44 -         return Template::render("error", context! {error: format!("Wrong password!")});
+44 +         Template::render("error", context! {error: format!("Wrong password!")})
+   |
+
+warning: unneeded `return` statement
+  --> src/auth/check.rs:29:13
+   |
+29 |             return true;
+   |             ^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+help: remove `return`
+   |
+29 -             return true;
+29 +             true
+   |
+
+warning: unneeded `return` statement
+  --> src/auth/check.rs:32:13
+   |
+32 |             return false;
+   |             ^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_return
+help: remove `return`
+   |
+32 -             return false;
+32 +             false
+   |
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/pit/pit2025.rs:16:27
+   |
+16 | pub const PITYEARSINSERT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32>> = phf_...
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/pit/pit2025.rs:20:26
+   |
+20 | pub const PITYEARDELETE: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<()>> = phf_map! {
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/pit/pit2025.rs:24:24
+   |
+24 | pub const PITYEARSGET: phf::Map<i32, fn(db: & DatabaseConnection, id: i32) -> BoxFuture<serde_json::Value>> = phf_map! {
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/pit/pit2025.rs:28:25
+   |
+28 | pub const PITYEARSEDIT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, ()>> = phf_map! {
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src/pit/pit2025.rs:32:33
+   |
+32 | ...ENTTEAM: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, team: i32, event: &'a str) -> BoxFuture<'a, serde_json::Value>> = phf_map!(
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: this let-binding has unit value
+   --> src/pit/pit2025.rs:140:13
+    |
+140 |             let a = active_model.debug_set_from_json_full(&json);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: omit the `let` binding: `active_model.debug_set_from_json_full(&json);`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#let_unit_value
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/pit/pit2025.rs:140:59
+    |
+140 |             let a = active_model.debug_set_from_json_full(&json);
+    |                                                           ^^^^^ help: change this to: `json`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+
+warning: this let-binding has unit value
+   --> src/pit/pit2025.rs:163:13
+    |
+163 |             let a = active_model.debug_set_from_json(&json);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: omit the `let` binding: `active_model.debug_set_from_json(&json);`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#let_unit_value
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/pit/pit2025.rs:163:54
+    |
+163 |             let a = active_model.debug_set_from_json(&json);
+    |                                                      ^^^^^ help: change this to: `json`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#needless_borrow
+
+warning: `abyss-angel` (bin "abyss-angel") generated 120 warnings (run `cargo clippy --fix --bin "abyss-angel"` to apply 86 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.72s

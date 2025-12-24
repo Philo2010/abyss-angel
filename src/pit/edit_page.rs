@@ -1,7 +1,7 @@
-use rocket::{State, serde::json::Json};
+use rocket::State;
 use rocket_dyn_templates::{Template, context};
-use sea_orm::{DatabaseConnection, sqlx::Value};
-use crate::{SETTINGS, pit::pit2025::{self, PITYEARSGET}};
+use sea_orm::{DatabaseConnection};
+use crate::{SETTINGS, pit::pit2025::PITYEARSGET};
 
 
 #[get("/pit/edit_page/<id>")]

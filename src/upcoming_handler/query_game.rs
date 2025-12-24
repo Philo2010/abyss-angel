@@ -1,5 +1,4 @@
-use rocket::{State, form::Form, http::CookieJar, time::error::Parse};
-use reqwest::Client;
+use rocket::{State, form::Form, http::CookieJar};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
@@ -8,7 +7,7 @@ use crate::{auth, upcoming_handler::{blue::pull_from_blue, to_upcoming_game}};
 
 
 #[derive(FromForm)]
-struct QueryForm {
+pub struct QueryForm {
     game: String,
 }
 

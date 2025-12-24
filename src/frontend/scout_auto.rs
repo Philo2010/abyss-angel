@@ -1,10 +1,9 @@
-use std::cmp::Ordering;
 
 use rocket::State;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
-use crate::upcoming_handler::{self, pull_event_data, sort_matches, upcoming_game};
+use crate::upcoming_handler::{self, pull_event_data};
 
  
 

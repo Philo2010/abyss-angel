@@ -1,25 +1,23 @@
-use std::error::Error;
 
 use rocket::State;
 use rocket::form::Form;
-use rocket::{post, serde::json::Json};
+use rocket::post;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
-use serde_json::Value;
 
 use crate::{SETTINGS, sexymac};
-use crate::user::{YEARSAVG, YEARSINSERT, YEARSSEARCH};
+use crate::user::YEARSSEARCH;
 
 
 #[derive(FromForm)]
-struct SearchForm {
+pub struct SearchForm {
     event: Option<String>,
     scouter: Option<String>,
     team: Option<i32>
 }
 
 #[derive(FromForm)]
-struct SearchDefault {
+pub struct SearchDefault {
     scouter: Option<String>,
     team: Option<i32>
 }

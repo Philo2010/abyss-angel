@@ -1,6 +1,6 @@
 use rocket::{State, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
-use sea_orm::{DatabaseConnection, sqlx::Value};
+use sea_orm::{DatabaseConnection};
 
 use crate::{SETTINGS, pit::pit2025};
 

@@ -1,16 +1,14 @@
 use std::error::Error;
 use std::pin::Pin;
 
-use rocket::http::uri::Query;
 use rocket::tokio;
-use sea_orm::ActiveValue::{NotSet, Unchanged};
+use sea_orm::ActiveValue::NotSet;
 use sea_orm::sqlx::types::chrono::Utc;
-use sea_orm::{ActiveValue::Set, FromQueryResult, QuerySelect, Schema, entity, prelude::*};
+use sea_orm::{ActiveValue::Set, Schema, prelude::*};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use sea_orm::sea_query::{Alias, Expr, Func, Mode, SelectStatement};
-use sea_orm::{Database, DatabaseBackend, StatementBuilder, query::*};
 use phf::phf_map;
+use crate::pit::{pit2025};
+use crate::{SETTINGS, boxed_async, user};
 
 
 pub const PITYEARSINSERT: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnection, json: &'a serde_json::Value) -> BoxFuture<'a, i32>> = phf_map! {
@@ -34,9 +32,6 @@ pub const PITYEARSGETEVENTTEAM: phf::Map<i32, for<'a> fn(db: &'a DatabaseConnect
 );
 
 type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, Box<dyn Error>>> + Send + 'a>>;
-
-use crate::pit::pit2025;
-use crate::{SETTINGS, boxed_async, user};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
 #[sea_orm(table_name = "pit2025")]
@@ -137,7 +132,7 @@ impl PitScoutYear for Model {
         boxed_async!(async move {
 
             let mut active_model = pit2025::ActiveModel { ..Default::default() };
-            let a = active_model.debug_set_from_json_full(&json);
+            active_model.debug_set_from_json_full(json);
             
             println!("{:?}", active_model);
 
@@ -160,7 +155,7 @@ impl PitScoutYear for Model {
         boxed_async!(async move {
             println!("{json}");
             let mut active_model = pit2025::ActiveModel { ..Default::default() };
-            let a = active_model.debug_set_from_json(&json);
+            active_model.debug_set_from_json(json);
             println!("{:?}", active_model);
             active_model.created_at = Set(Utc::now().naive_utc());
             

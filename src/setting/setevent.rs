@@ -1,10 +1,9 @@
-use phf::Set;
 use rocket::{State, form::Form};
 use rocket_dyn_templates::Template;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use rocket_dyn_templates::context;
 
-use crate::{setting, sexymac::get_event_default};
+use crate::setting;
 
 
 
@@ -35,14 +34,14 @@ pub async fn set_event(body: Form<SetEvent>, db: &State<DatabaseConnection>) -> 
         },
     };
 
-    let t = match setting::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
+    
+
+    match setting::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
         Ok(_) => {
             Template::render("suc", context!{message: "Done!"})
         },
         Err(a) => {
             Template::render("error", context!{message: format!("Database error!: {a}")})
         },
-    };
-
-    t
+    }
 }

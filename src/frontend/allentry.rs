@@ -1,14 +1,11 @@
-use std::error::Error;
 
 use rocket::State;
-use rocket::{post, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
-use serde_json::Value;
 
 use crate::SETTINGS;
 use crate::sexymac::get_event_default;
-use crate::user::{YEARSAVG, YEARSINSERT, YEARSSEARCH};
+use crate::user::YEARSSEARCH;
 
 
 

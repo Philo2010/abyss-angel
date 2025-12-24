@@ -1,8 +1,6 @@
 #[macro_use] extern crate rocket;
-use rocket::{Config, build, data::{ByteUnit, Limits}, fs::{FileServer, relative}, tokio::sync::RwLock};
+use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}};
 use rocket_dyn_templates::Template;
-use sea_orm::{ConnectionTrait, Database, DatabaseConnection, EntityTrait, Schema, sea_query::PostgresQueryBuilder};
-use rocket::local::asynchronous::Client;
 
 use crate::setting::{Settings};
 

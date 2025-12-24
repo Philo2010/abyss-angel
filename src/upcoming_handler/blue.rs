@@ -2,7 +2,6 @@
 
 use reqwest::Client;
 use serde::Deserialize;
-use reqwest::header::HeaderMap;
 
 use crate::SETTINGS;
 
@@ -22,6 +21,7 @@ pub struct Alliances {
 
 #[derive(Debug, Deserialize)]
 pub struct Alliance {
+    #[allow(dead_code)] //Im like 80% sure im gonna need to use the score so \(:/
     pub score: Option<i32>,
     pub team_keys: Vec<String>,
 }

@@ -2,7 +2,7 @@ use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 use rocket::State;
 
-use crate::{SETTINGS, pit::pit2025::{PITYEARDELETE, PITYEARSGET, PITYEARSGETEVENTTEAM}};
+use crate::{SETTINGS, pit::pit2025::PITYEARSGETEVENTTEAM};
 
 
 #[get("/pit/view/<event_code>/<team>")]

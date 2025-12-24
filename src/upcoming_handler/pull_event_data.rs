@@ -1,8 +1,5 @@
-use rocket::http::CookieJar;
-use rocket_dyn_templates::{Template, context};
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, ModelTrait, QueryFilter};
 
-use crate::auth;
 use crate::upcoming_handler::{self, upcoming_team};
 use crate::upcoming_handler::upcoming_game;
 

@@ -25,11 +25,11 @@ pub async fn check(cookies: &CookieJar<'_>, db: &DatabaseConnection) -> bool {
     };
 
     match admin::Entity::find_by_id(uuid).one(db).await {
-        Ok(Some(a)) => {
-            return true;
+        Ok(Some(_)) => {
+            true
         },
         _ => {
-            return false;
+            false
         }
     }
 }

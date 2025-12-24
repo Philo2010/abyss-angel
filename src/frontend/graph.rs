@@ -1,18 +1,16 @@
-use std::error::Error;
 
 use rocket::State;
 use rocket::form::Form;
-use rocket::serde::json;
-use rocket::{post, serde::json::Json};
+use rocket::post;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 use serde_json::{Value, json};
 
 use crate::{SETTINGS, sexymac};
-use crate::user::{YEARSGRAPH, YEARSINSERT};
+use crate::user::YEARSGRAPH;
 
 #[derive(FromForm, Debug)]
-struct GraphForm {
+pub struct GraphForm {
     event: Option<String>,
     teams: Vec<i32>
 }

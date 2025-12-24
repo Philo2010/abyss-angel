@@ -1,9 +1,8 @@
-use std::{error::Error, num::ParseIntError};
+use std::num::ParseIntError;
 
-use rocket::figment::value;
 use sea_orm::{ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 
-use crate::{setting::dyn_settings::ActiveModel, upcoming_handler::{blue::TbaMatch, upcoming_game, upcoming_team}};
+use crate::upcoming_handler::{blue::TbaMatch, upcoming_game, upcoming_team};
 
 pub enum UpcomingGameError {
     Database(DbErr),
@@ -13,12 +12,12 @@ pub enum UpcomingGameError {
 pub async fn insert_upcoming_game(db: &DatabaseConnection, value: &TbaMatch, event: &String) -> Result<(), UpcomingGameError> {
 
     let formatted_level: String = match value.comp_level.as_str() {
-        "qm" => ("Qualification".to_string()),
-        "sf" => ("Playoff".to_string()),
-        "f" => ("Playoff/Finals".to_string()),
-        "ef" => ("Playoff/Eighth-Finals".to_string()),
-        "qf" => ("Playoff/Quarterfinals".to_string()), 
-        a=> (a.to_string()), // Fallback
+        "qm" => "Qualification".to_string(),
+        "sf" => "Playoff".to_string(),
+        "f" => "Playoff/Finals".to_string(),
+        "ef" => "Playoff/Eighth-Finals".to_string(),
+        "qf" => "Playoff/Quarterfinals".to_string(), 
+        a=> a.to_string(), // Fallback
     };
 
     let game = upcoming_game::ActiveModel {
@@ -38,10 +37,10 @@ pub async fn insert_upcoming_game(db: &DatabaseConnection, value: &TbaMatch, eve
 
     for (i, name) in value.alliances.blue.team_keys.iter().enumerate() {
 
-        let team_string = if name.chars().last() == Some('B') {
+        let team_string = if name.ends_with('B') {
             "99".to_owned() + &name[3..name.len()-1]
         } else {
-            (&name[3..]).to_string()
+            name[3..].to_string()
         };
         println!("{:?} {:?}", name , team_string.to_owned());
         let team_number = match team_string.parse() {
@@ -62,10 +61,10 @@ pub async fn insert_upcoming_game(db: &DatabaseConnection, value: &TbaMatch, eve
 
     for (i, name) in value.alliances.red.team_keys.iter().enumerate() {
 
-        let team_string = if name.chars().last() == Some('B') {
+        let team_string = if name.ends_with('B') {
             "99".to_owned() + &name[3..name.len()-1]
         } else {
-            (&name[3..]).to_string()
+            name[3..].to_string()
         };
         println!("{:?} {:?}", name , team_string.to_owned());
         let team_number = match team_string.parse() {
