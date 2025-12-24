@@ -9,16 +9,17 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Admin::Table)
+                    .table(Users::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Admin::Id)
+                        ColumnDef::new(Users::Id)
                             .uuid()
                             .not_null()
                             .primary_key()
                     )
-                    .col(string(Admin::Name).unique_key())
-                    .col(string(Admin::BcryptHash))
+                    .col(string(Users::Name).unique_key())
+                    .col(boolean(Users::IsAdmin))
+                    .col(string(Users::BcryptHash))
                     .to_owned(),
             )
             .await
@@ -26,15 +27,16 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Admin::Table).to_owned())
+            .drop_table(Table::drop().table(Users::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-enum Admin {
+enum Users {
     Table,
     Id,
     Name,
+    IsAdmin,
     BcryptHash,
 }

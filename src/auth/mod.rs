@@ -2,7 +2,7 @@
 
 const UUID_COOKIE_NAME: &str = "uuiduser";
 
-pub mod admin;
 pub mod create_user;
 pub mod login;
 pub mod check;
+pub mod users;

@@ -63,7 +63,7 @@ async fn rocket() -> _ {
     frontend::search::search,
     frontend::search::search_default,
     frontend::edit_page::edit_page,
-    frontend::edit_form::edit_form,
+    frontend::edit_submit::edit_submit,
     frontend::delete::delete_scout,
     upcoming_handler::query_game::queue,
     upcoming_handler::select_scouters_page::select_scouts,

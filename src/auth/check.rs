@@ -4,7 +4,7 @@ use rocket::http::CookieJar;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
 
-use crate::auth::{self, admin};
+use crate::auth::{self, users};
 
 
 
@@ -24,9 +24,13 @@ pub async fn check(cookies: &CookieJar<'_>, db: &DatabaseConnection) -> bool {
         },
     };
 
-    match admin::Entity::find_by_id(uuid).one(db).await {
-        Ok(Some(_)) => {
-            true
+    match users::Entity::find_by_id(uuid).one(db).await {
+        Ok(Some(a)) => {
+            if a.is_admin {
+                true
+            } else {
+                false
+            }
         },
         _ => {
             false

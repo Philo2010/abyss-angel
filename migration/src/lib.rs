@@ -2,7 +2,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20220101_000001_settings;
 mod m20251118_075143_upcoming_games;
-mod m20251130_100818_admins;
+mod m20251130_100818_users;
 
 pub struct Migrator;
 
@@ -12,7 +12,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20220101_000001_settings::Migration),
             Box::new(m20251118_075143_upcoming_games::Migration),
-            Box::new(m20251130_100818_admins::Migration),
+            Box::new(m20251130_100818_users::Migration),
         ]
     }
 }

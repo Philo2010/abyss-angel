@@ -48,7 +48,7 @@
         data["id"] = {{ entry.id }};
 
         try {
-          const res = await fetch("/edit_form", {
+          const res = await fetch("/edit_submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),

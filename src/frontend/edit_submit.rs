@@ -8,8 +8,8 @@ use crate::{SETTINGS, user::YEARSEDIT};
 
 
 
-#[post("/edit_form", data="<data>")]
-pub async fn edit_form(data: Json<Value>, db: &State<DatabaseConnection>) -> Template {
+#[post("/edit_submit", data="<data>")]
+pub async fn edit_submit(data: Json<Value>, db: &State<DatabaseConnection>) -> Template {
 
     let editfunc = YEARSEDIT[&SETTINGS.year];
 
