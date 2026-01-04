@@ -14,6 +14,10 @@ phf = { version = "0.12", features = ["macros"] }
 reqwest = {version = "0.12.24", features = ["json"] }
 uuid = {version = "1.18.1", features = ["v4"] }
 bcrypt = "0.17.1"
+enum_dispatch = "0.3.13"
+chrono = "0.4.42"
+async-trait = "0.1.89"
+itertools = "0.14.0"
 
 
 [dependencies.rocket_dyn_templates]

@@ -5,4 +5,5 @@ const UUID_COOKIE_NAME: &str = "uuiduser";
 pub mod create_user;
 pub mod login;
 pub mod check;
-pub mod users;
+pub mod get_by_user;
+pub mod get_by_cookie;

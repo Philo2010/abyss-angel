@@ -10,7 +10,7 @@ macro_rules! boxed_async {
 
 
 pub async fn get_event_default(db: &DatabaseConnection) -> Option<String> {
-    match crate::setting::dyn_settings::Entity::find().one(db).await {
+    match crate::entity::dyn_settings::Entity::find().one(db).await {
         Ok(a) => {
             a.map(|x| x.event)
         },

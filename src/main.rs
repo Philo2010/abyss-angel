@@ -4,14 +4,15 @@ use rocket_dyn_templates::Template;
 
 use crate::setting::{Settings};
 
-mod user;
 mod sexymac;
 mod setting;
 mod frontend;
-mod upcoming_handler;
 mod auth;
 mod pit;
-
+mod entity;
+mod backenddb;
+mod snowgrave;
+mod scoutwarn;
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
@@ -56,12 +57,8 @@ async fn rocket() -> _ {
     frontend::graph::graph,
     frontend::scout::scout_take,
     frontend::edit::edit,
-    frontend::averages::averages_empty,
-    frontend::averages::averages_event,
-    frontend::allentry::allentry,
-    frontend::allentry::entry,
+    frontend::averages::averages,
     frontend::search::search,
-    frontend::search::search_default,
     frontend::edit_page::edit_page,
     frontend::edit_submit::edit_submit,
     frontend::delete::delete_scout,

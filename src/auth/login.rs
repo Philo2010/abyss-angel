@@ -3,7 +3,8 @@ use rocket_dyn_templates::{Template, context};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use rocket::http::{Cookie, CookieJar};
 
-use crate::auth::{UUID_COOKIE_NAME, users};
+use crate::auth::UUID_COOKIE_NAME;
+use crate::entity::users;
 
 
 
@@ -18,7 +19,7 @@ pub struct LoginForm {
 pub async fn login(data: Form<LoginForm>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Template {
 
     let a = match users::Entity::find()
-        .filter(users::Column::Name.contains(&data.username)).one(db.inner()).await {
+        .filter(users::Column::Name.eq(&data.username)).one(db.inner()).await {
             Ok(Some(a)) => a,
             Ok(None) => {
                 return Template::render("error", context! {error: "No user found!"});

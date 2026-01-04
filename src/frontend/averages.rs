@@ -1,34 +1,30 @@
 
-use rocket::State;
+use rocket::{State, http::CookieJar, serde::json::Json};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
-use crate::{SETTINGS, sexymac};
-use crate::user::YEARSAVG;
+use crate::{SETTINGS, auth, backenddb::game::{GamesAvg, average_game}, sexymac};
 
-
-#[get("/averages_d")]
-pub async fn averages_empty(db: &State<DatabaseConnection>) -> Template {
-    let event = sexymac::get_event_default(db.inner()).await;
-
-    averages_impl(event, db).await
+#[derive(Responder)]
+pub enum AverageResponse {
+    #[response(status = 200)]
+    Success(Json<Vec<GamesAvg>>),
+    #[response(status = 400)]
+    Error(Json<String>),
 }
 
-#[get("/averages_d/<event>")]
-pub async fn averages_event(event: String, db: &State<DatabaseConnection>) -> Template {
-    averages_impl(Some(event), db).await
-}
-
-async fn averages_impl(event: Option<String>, db: &State<DatabaseConnection>) -> Template {
-    let avgfunc = YEARSAVG[&SETTINGS.year];
-    
-    let e = match avgfunc(event, db).await {
+#[get("/averages/<event>")]
+pub async fn averages(event: &str, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> AverageResponse {
+    if !auth::check::check(cookies, db).await {
+        return AverageResponse::Error(Json("Need to be admin!".to_string()));
+    }
+    let res = match average_game(&event.to_string(), db).await {
         Ok(a) => a,
         Err(a) => {
-            let error_code = format!("Error! Could not find average: {a}");
-            return Template::render("error", context! {error: error_code});
-        },
+            return AverageResponse::Error(Json(a.to_string()));
+        }
     };
-    println!("{e}");
-    Template::render("table", context! {entries: e})
+
+
+    AverageResponse::Success(Json(res))
 }

@@ -7,6 +7,7 @@ edition = "2024"
 quote = "1.0.41"
 syn = "2.0.108"
 sea-orm = { version = "2.0.0-rc", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros" ] }
+walkdir = "2.5.0"
 
 [lib]
 proc-macro = true

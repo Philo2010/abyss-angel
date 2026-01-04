@@ -3,6 +3,8 @@ pub use sea_orm_migration::prelude::*;
 mod m20220101_000001_settings;
 mod m20251118_075143_upcoming_games;
 mod m20251130_100818_users;
+mod m20251225_021549_game_entries;
+mod m20251226_220520_example_game;
 
 pub struct Migrator;
 
@@ -13,6 +15,8 @@ impl MigratorTrait for Migrator {
             Box::new(m20220101_000001_settings::Migration),
             Box::new(m20251118_075143_upcoming_games::Migration),
             Box::new(m20251130_100818_users::Migration),
+            Box::new(m20251225_021549_game_entries::Migration),
+            Box::new(m20251226_220520_example_game::Migration),
         ]
     }
 }

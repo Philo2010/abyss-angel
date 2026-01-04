@@ -1,57 +1,47 @@
 
 use rocket::State;
 use rocket::form::Form;
+use rocket::http::CookieJar;
 use rocket::post;
+use rocket::serde::json::Json;
 use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
+use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::{SETTINGS, sexymac};
-use crate::user::YEARSGRAPH;
+use crate::backenddb::game::{GamesGraph, graph_game};
+use crate::{SETTINGS, auth, sexymac};
 
-#[derive(FromForm, Debug)]
+#[derive(FromForm, Debug, Deserialize)]
 pub struct GraphForm {
     event: Option<String>,
     teams: Vec<i32>
 }
 
+#[derive(Responder)]
+pub enum GraphResponse {
+    #[response(status = 200)]
+    Success(Json<Vec<Vec<GamesGraph>>>),
+    #[response(status = 400)]
+    Error(Json<String>),
+}
+
 
 #[post("/graph_sub", data = "<body>")]
-pub async fn graph(body: Form<GraphForm>, db: &State<DatabaseConnection>) -> Template {
-    //Get the function
-    let insrfunc = YEARSGRAPH[&SETTINGS.year];
-
-
-
-    //Check values
-    if body.teams.is_empty() {
-        return Template::render("error", context! [error: "team is emity"])
+pub async fn graph(body: Json<GraphForm>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> GraphResponse {
+    if !auth::check::check(cookies, db).await {
+        return GraphResponse::Error(Json("Need to be admin!".to_string()));
     }
-
-    let mut team_data: Vec<Value> = Vec::new();
-
-    for team in body.teams.iter() {
-
-        let mut e;
-        if body.event.is_none() {
-            e = match insrfunc(sexymac::get_event_default(db.inner()).await, *team, db).await {
-                Ok(a) => a,
-                Err(_) => {continue;},
+    let mut result: Vec<Vec<GamesGraph>> = Vec::with_capacity(body.teams.len());
+    for team in &body.teams {
+        let data = match graph_game(team, &body.event, db).await {
+            Ok(a) => {a},
+            Err(a) => {
+                return GraphResponse::Error(Json(a.to_string()));
             }
-        } else {
-            e = match insrfunc(body.event.clone(), *team, db).await {
-                Ok(a) => a,
-                Err(_) => {continue;},
-            };
-        }
-
-        if let Value::Array(ref mut vec) = e {
-            vec.insert(0, json!(team));
-        }
-        team_data.push(e);
+        };
+        result.push(data);
     }
 
-    let json_array = Value::Array(team_data);
-
-    Template::render("graph", context! [data: json_array])
+    GraphResponse::Success(Json(result))
 }

@@ -3,14 +3,13 @@ use std::str::FromStr;
 use rocket::http::CookieJar;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use uuid::Uuid;
-
-use crate::auth::{self, users};
+use crate::entity::users;
 
 
 
 //true -> is admin / false -> not admin
 pub async fn check(cookies: &CookieJar<'_>, db: &DatabaseConnection) -> bool { 
-    let val = match cookies.get(auth::UUID_COOKIE_NAME).map(|c| c.value()) {
+    let val = match cookies.get(crate::auth::UUID_COOKIE_NAME).map(|c| c.value()) {
         Some(a) => a,
         None => {
             return false;

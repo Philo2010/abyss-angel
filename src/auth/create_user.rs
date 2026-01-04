@@ -2,8 +2,8 @@ use rocket::{State, form::Form};
 use rocket_dyn_templates::{Template, context};
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use uuid::Uuid;
-
-use crate::{SETTINGS, auth:: users};
+use crate::SETTINGS;
+use crate::entity::users;
 
 #[derive(FromForm)]
 pub struct CreateUserForm {
@@ -35,6 +35,7 @@ pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnecti
         id: sea_orm::Set(Uuid::new_v4()),
         name: sea_orm::Set(data.username.clone()),
         is_admin: sea_orm::Set(is_admin),
+        amount_of_warning: sea_orm::Set(0), //for now, you have no sins.... ;>
         bcrypt_hash: sea_orm::Set(hash),
     };
 
