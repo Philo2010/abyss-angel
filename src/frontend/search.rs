@@ -5,16 +5,18 @@ use rocket::http::CookieJar;
 use rocket::post;
 use rocket::serde::json::Json;
 use rocket_dyn_templates::{Template, context};
+use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde_json::Value;
 
 use crate::backenddb::game::{SearchParam, search_game};
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
+use crate::frontend::ApiResult;
 use crate::{SETTINGS, auth, sexymac};
 
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 pub struct SearchParamData {
     //Id should be done via get
     pub user: Option<String>,
@@ -47,29 +49,21 @@ impl Into<SearchParam> for SearchParamData {
     }
 }
 
-#[derive(Responder)]
-pub enum SearchResponse {
-    #[response(status = 200)]
-    Success(Json<Vec<crate::backenddb::game::GamesFull>>),
-    #[response(status = 400)]
-    Error(Json<String>),
-}
 
-#[post("/search", data="<body>")]
-pub async fn search(body: Json<SearchParamData>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> SearchResponse {
+#[rocket_okapi::openapi]
+#[post("/api/search", data="<body>")]
+pub async fn search(body: Json<SearchParamData>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<Vec<crate::backenddb::game::GamesFull>>> {
     if !auth::check::check(cookies, db).await {
-        return SearchResponse::Error(Json("Need to be admin!".to_string()));
+        return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
     let data: SearchParam = body.into_inner().into();
 
     let a: Vec<crate::backenddb::game::GamesFull> = match search_game(&data, db).await {
         Ok(a) => {
-            let v = Json(a);
-            return SearchResponse::Success(v);
+            return Json(ApiResult::Success(a));
         },
         Err(a) => {
-            let v = Json(a.to_string());
-            return SearchResponse::Error(v);
+            return Json(ApiResult::Error(a.to_string()));
         },
     };
 }

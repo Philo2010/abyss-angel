@@ -6,8 +6,8 @@ use crate::entity::{unsent_warning, warning};
 
 #[derive(Serialize, Deserialize)]
 pub struct ReturnWarning {
-    unsent_id: i32,
-    message: warning::Model,
+    pub unsent_id: i32,
+    pub message: warning::Model,
 }
 
 

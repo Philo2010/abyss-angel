@@ -1,8 +1,10 @@
 #[macro_use] extern crate rocket;
 use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}};
 use rocket_dyn_templates::Template;
+use rocket_okapi::{r#gen::OpenApiGenerator, okapi::openapi3::OpenApi, openapi_get_routes_spec, openapi_get_spec, settings::OpenApiSettings};
+use serde_json::to_string_pretty;
 
-use crate::setting::{Settings};
+use crate::{frontend::delete::delete_scout, setting::Settings};
 
 mod sexymac;
 mod setting;
@@ -21,12 +23,42 @@ const SETTINGS: crate::setting::Settings = Settings {
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "{{ INSERT_API_KEY }}"
 };
-#[get("/")]
-async fn placeholder() -> &'static str {
-    "Hello!"
+
+fn main() {
+    let settings = OpenApiSettings::default();
+    use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
+    use crate::frontend::pit::get::okapi_add_operation_for_get_;
+    use crate::frontend::pit::insert::okapi_add_operation_for_insert_;
+    use crate::frontend::scoutwarn::forgive_warning::okapi_add_operation_for_forgive_scoutwarn_;
+    use crate::frontend::scoutwarn::get_warning::okapi_add_operation_for_get_scoutwarn_;
+    use crate::frontend::scoutwarn::send_warning::okapi_add_operation_for_send_scoutwarn_;
+    use crate::frontend::snowgrave::find_games::okapi_add_operation_for_get_years_;
+    use crate::frontend::snowgrave::queue::okapi_add_operation_for_queue_;
+    use crate::frontend::averages::okapi_add_operation_for_averages_;
+    use crate::frontend::delete::okapi_add_operation_for_delete_scout_;
+    use crate::frontend::graph::okapi_add_operation_for_graph_;
+    use crate::frontend::search::okapi_add_operation_for_search_;
+
+    let spec = openapi_get_spec![
+        settings:
+        edit_pit,
+        get,
+        insert,
+        forgive_scoutwarn,
+        get_scoutwarn,
+        send_scoutwarn,
+        get_years,
+        queue,
+        averages,
+        delete_scout,
+        graph,
+        search
+    ];
+
+    println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }
 
-
+/* 
 #[launch]
 async fn rocket() -> _ {
 
@@ -52,27 +84,19 @@ async fn rocket() -> _ {
     .manage(db_conn)
     .manage(client)
     .attach(Template::fairing())
-    .mount("/", routes![placeholder,
-    setting::setevent::set_event,
-    frontend::graph::graph,
-    frontend::scout::scout_take,
-    frontend::edit::edit,
+    .mount("/", routes![
+    frontend::pit::edit::edit_pit,
+    frontend::pit::get::get,
+    frontend::pit::insert::insert,
+    frontend::scoutwarn::forgive_warning::forgive_scoutwarn,
+    frontend::scoutwarn::get_warning::get_scoutwarn,
+    frontend::scoutwarn::send_warning::send_scoutwarn,
+    frontend::snowgrave::find_games::get_years,
+    frontend::snowgrave::queue::queue,
     frontend::averages::averages,
-    frontend::search::search,
-    frontend::edit_page::edit_page,
-    frontend::edit_submit::edit_submit,
     frontend::delete::delete_scout,
-    upcoming_handler::query_game::queue,
-    upcoming_handler::select_scouters_page::select_scouts,
-    upcoming_handler::submit_scout::assign_scout,
-    frontend::scout_auto::scout_auto,
-    auth::create_user::create_user,
-    auth::login::login,
-    pit::insert::insert_pit,
-    pit::view::pit_view,
-    pit::edit_page::edit_page,
-    pit::edit_submit::edit_submit,
-    pit::delete::pit_delete,
+    frontend::graph::graph,
+    frontend::search::search,
     ])
     .mount("/", FileServer::from(relative!("static")))
-}
+}*/

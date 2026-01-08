@@ -18,7 +18,8 @@ enum_dispatch = "0.3.13"
 chrono = "0.4.42"
 async-trait = "0.1.89"
 itertools = "0.14.0"
-
+rocket_okapi = "0.9.0"
+schemars = {version = "=0.8.16", features = ["chrono"]}
 
 [dependencies.rocket_dyn_templates]
 version = "0.2.0"

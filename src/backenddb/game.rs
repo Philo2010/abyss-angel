@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::dynamic::Column;
 use sea_orm::sea_query::SelectStatement;
@@ -327,26 +328,26 @@ pub struct GamesInserts {
     pub game: GamesInsertsSpecific
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct HeaderGraph  {
     pub time: DateTime<Local>,
     pub total_score: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct GamesGraph {
     pub header: HeaderGraph,
     pub game: GamesGraphSpecific
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct GamesAvg {
     pub team: i32,
     pub total_score: f32,
     pub game: GamesAvgSpecific
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct GamesFull {
     pub header: HeaderFull,
     pub game: GamesFullSpecific
@@ -372,7 +373,7 @@ pub struct SearchParam {
     pub year: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct HeaderFull {
     pub id: i32,
     pub user: String,

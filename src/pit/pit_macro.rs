@@ -4,21 +4,22 @@
 macro_rules! define_pits {
     ($($name:ident => $($module:ident)::+),* $(,)?) => {
         use rocket::serde::{Serialize, Deserialize};
-        #[derive(Serialize, Deserialize, Clone)]
+        use schemars::JsonSchema;
+        #[derive(Serialize, Deserialize, Clone, JsonSchema)]
         pub enum PitSpecific {
             $(
                 $name($($module)::+::Model),
             )*
         }
 
-        #[derive(Serialize, Deserialize, Clone)]
+        #[derive(Serialize, Deserialize, Clone, JsonSchema)]
         pub enum PitInsertsSpecific {
             $(
                 $name($($module)::+::Insert),
             )*
         }
         
-        #[derive(Serialize, Deserialize, Clone)]
+        #[derive(Serialize, Deserialize, Clone, JsonSchema)]
         pub enum PitEditSpecific {
             $(
                 $name($($module)::+::Edit),

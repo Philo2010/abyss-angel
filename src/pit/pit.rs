@@ -24,7 +24,7 @@ pub trait PitScoutStandard: Send {
 pub struct PitHeaderInsert {
     pub user: Uuid,
     pub team: i32,
-    pub is_am_team: bool,
+    pub is_ab_team: bool,
     pub event_code: String,
 }
 
@@ -58,7 +58,7 @@ async fn prim_pit_insert(data: PitInsert, db: &DatabaseConnection, model: Box<dy
         id: NotSet,
         user: Set(data.header.user),
         team: Set(data.header.team),
-        is_ab_team: Set(data.header.is_am_team),
+        is_ab_team: Set(data.header.is_ab_team),
         event_code: Set(data.header.event_code),
         created_at: Set(created_at),
         pit_data: Set(spec_id),

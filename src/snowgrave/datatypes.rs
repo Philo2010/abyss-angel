@@ -3,6 +3,7 @@
 // =========================
 
 use std::collections::HashMap;
+use schemars::JsonSchema;
 use serde::Serialize;
 use uuid::Uuid;
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
@@ -27,7 +28,7 @@ impl<T> TryFrom<Vec<T>> for Six<T> {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct TeamData {
     pub is_ab_team: bool,
     pub team: i32,
@@ -37,6 +38,13 @@ pub struct TeamData {
 pub struct Scouter {
     pub id: i32,
     pub scouter_id: Uuid,
+    pub station: Stations,
+    pub done: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
+pub struct ScouterWithoutId {
+    pub id: i32,
     pub station: Stations,
     pub done: bool,
 }
@@ -61,7 +69,17 @@ impl From<&game_scouts::Model> for Scouter {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+impl From<&game_scouts::Model> for ScouterWithoutId {
+    fn from(m: &game_scouts::Model) -> Self {
+        Self {
+            id: m.id,
+            station: m.station,
+            done: m.done,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct ScoutingTeam<S> {
     pub id: i32,
     pub station: Stations,
@@ -70,6 +88,7 @@ pub struct ScoutingTeam<S> {
 }
 
 pub type ScoutingTeamThin = ScoutingTeam<Scouter>;
+pub type ScoutingTeamThinWithoutId = ScoutingTeam<ScouterWithoutId>;
 pub type ScoutingTeamFull = ScoutingTeam<ScouterWithScore>;
 
 #[derive(Debug, Clone, Serialize)]
@@ -118,7 +137,7 @@ impl From<(mvp_scouters::Model, mvp_data::Model)> for Mvp {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct Game<Teams, MvpState> {
     pub id: i32,
     pub event_code: String,
@@ -132,6 +151,10 @@ pub struct Game<Teams, MvpState> {
 
 pub type GamePartial =
     Game<Vec<ScoutingTeamThin>, Option<MvpScouter>>;
+
+
+pub type GamePartialWithoutId = //   MVP ID ->
+    Game<Vec<ScoutingTeamThinWithoutId>, Option<i32>>;
 
 
 impl GamePartial {

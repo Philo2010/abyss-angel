@@ -56,6 +56,7 @@ pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -
                 scouter_id: Set(*scouter_id),
                 done: Set(false), //always
                 station: sea_orm::Set(scouter.station),
+                is_redo: Set(false)
             };
             scouters.push(scouter);
         }

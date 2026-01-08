@@ -17,6 +17,8 @@ pub async fn cast_snowgrave(
                 .all(txn)
                 .await?;
 
+            //for reason in fails.reasons
+
             genertic_header::Entity::update_many()
                 .filter(genertic_header::Column::SnowgraveScoutId.is_in(team_ids))
                 .col_expr(genertic_header::Column::IsPending, Expr::value(false))
@@ -46,7 +48,7 @@ pub async fn cast_snowgrave(
     .map_err(|e| match e {
         TransactionError::Connection(err) => err,
         TransactionError::Transaction(err) => err,
-    });
+    })?;
 
     Ok(())
 }

@@ -13,15 +13,11 @@ use crate::{
         upcoming_team,
     },
     snowgrave::datatypes::{
-        GamePartial,
-        MvpScouter,
-        Scouter,
-        ScoutingTeamThin,
-        TeamData,
+        GamePartial, GamePartialWithoutId, MvpScouter, Scouter, ScouterWithoutId, ScoutingTeamThin, ScoutingTeamThinWithoutId, TeamData
     },
 };
 
-pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> Result<Vec<GamePartial>, DbErr> {
+pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> Result<Vec<GamePartialWithoutId>, DbErr> {
     let scout_entries: Vec<game_scouts::Model> =
         game_scouts::Entity::find()
             .filter(game_scouts::Column::ScouterId.eq(scouter))
@@ -66,20 +62,20 @@ pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> R
             .map(|m| (m.id, m))
             .collect();
 
-    let mut scouts_by_game_team: HashMap<(i32, i32), Vec<Scouter>> =
+    let mut scouts_by_game_team: HashMap<(i32, i32), Vec<ScouterWithoutId>> =
         HashMap::new();
 
     for scout in scout_entries {
         scouts_by_game_team
             .entry((scout.game_id, scout.team_id))
             .or_default()
-            .push(Scouter::from(&scout));
+            .push(ScouterWithoutId::from(&scout));
     }
 
     let mut result = Vec::new();
 
     for game in games.values() {
-        let teams_for_game: Vec<ScoutingTeamThin> =
+        let teams_for_game: Vec<ScoutingTeamThinWithoutId> =
             scouts_by_game_team
                 .iter()
                 .filter(|((game_id, _), _)| *game_id == game.id)
@@ -88,7 +84,7 @@ pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> R
                         .get(team_id)
                         .expect("team cached earlier");
 
-                    ScoutingTeamThin {
+                    ScoutingTeamThinWithoutId {
                         id: team.id,
                         station: team.station,
                         team: TeamData {
@@ -103,12 +99,9 @@ pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> R
         let mvp = game
             .mvp_id
             .and_then(|id| mvps.get(&id))
-            .map(|m| MvpScouter {
-                id: m.id,
-                scouter_id: m.scouter,
-            });
+            .map(|m| m.id);
 
-        result.push(GamePartial {
+        result.push(GamePartialWithoutId {
             id: game.id,
             event_code: game.event_code.clone(),
             match_id: game.match_id,

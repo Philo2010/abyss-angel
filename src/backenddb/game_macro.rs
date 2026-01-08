@@ -1,21 +1,21 @@
 #[macro_export]
 macro_rules! define_games {
     ($($name:ident => $($module:ident)::+),* $(,)?) => {
-        #[derive(Serialize)]
+        #[derive(Serialize, JsonSchema)]
         pub enum GamesFullSpecific {
             $(
                 $name($($module)::+::Model),
             )*
         }
         
-        #[derive(Serialize)]
+        #[derive(Serialize, JsonSchema)]
         pub enum GamesAvgSpecific {
             $(
                 $name($($module)::+::Avg),
             )*
         }
         
-        #[derive(Serialize)]
+        #[derive(Serialize, JsonSchema)]
         pub enum GamesGraphSpecific {
             $(
                 $name($($module)::+::Graph),

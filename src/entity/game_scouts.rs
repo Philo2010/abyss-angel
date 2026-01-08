@@ -15,6 +15,7 @@ pub struct Model {
     pub station: Stations, //Not needed but very useful
 
     pub done: bool,
+    pub is_redo: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

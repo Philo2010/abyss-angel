@@ -3,6 +3,7 @@ use uuid::Uuid;
 use crate::entity::users;
 
 
+#[derive(Debug)]
 pub enum AuthGetUuidError {
     UserIsNotHere,
     DatabaseError(DbErr)

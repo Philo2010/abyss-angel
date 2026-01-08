@@ -1,30 +1,26 @@
 use rocket::{State, http::CookieJar, serde::json::Json};
+use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::frontend::ApiResult;
 
-#[derive(Responder)]
-pub enum ForgiveResponder {
-    #[response(status = 200)]
-    Success(Json<String>),
-    #[response(status = 400)]
-    Error(Json<String>),
-}
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 pub struct Forgive {
     id: i32
 }
 
+#[rocket_okapi::openapi]
 #[post("/api/scoutwarn/forgive", data="<data>")]
-pub async fn get_scoutwarn(db: &State<DatabaseConnection>, data: Json<Forgive>) -> ForgiveResponder {
+pub async fn forgive_scoutwarn(db: &State<DatabaseConnection>, data: Json<Forgive>) -> Json<ApiResult<String>> {
     match crate::scoutwarn::forgive_warning::forgive_warning(data.id, db).await {
         Ok(a) => {
-            return ForgiveResponder::Success(Json("Forgiven".to_string()));
+            return Json(ApiResult::Success("Forgiven".to_string()));
         },
         Err(a) => {
-            return ForgiveResponder::Error(Json(format!("Database Error: {a}")));
+            return Json(ApiResult::Error(format!("Database Error: {a}")));
         },
     };
 }

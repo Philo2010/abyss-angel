@@ -1,27 +1,20 @@
 use rocket::{State, form::Form, serde::json::Json};
 use rocket_dyn_templates::Template;
+use schemars::JsonSchema;
 use sea_orm::{DatabaseConnection, EntityTrait, entity};
 use rocket_dyn_templates::context;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::setting;
+use crate::{frontend::ApiResult, setting};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 pub struct SetEvent {
     event: String
 }
 
-#[derive(Responder)]
-pub enum EventRespone {
-    #[response(status = 200)]
-    Success(Json<String>),
-    #[response(status = 400)]
-    Error(Json<String>),
-}
-
-#[post("/set_event", data = "<body>")]
-pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> EventRespone {
+#[post("/api/set_event", data = "<body>")]
+pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> Json<ApiResult<String>> {
 
     let setting: crate::entity::dyn_settings::ActiveModel = match crate::entity::dyn_settings::Entity::find().one(db.inner()).await {
         Ok(Some(a)) => {
@@ -38,7 +31,7 @@ pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> 
             }
         },
         Err(a) => {
-            return EventRespone::Error(Json(format!("Could not find settings mod: {a}")));
+            return Json(ApiResult::Error(format!("Could not find settings mod: {a}")));
         },
     };
 
@@ -46,27 +39,27 @@ pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> 
 
     match crate::entity::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
         Ok(_) => {
-            EventRespone::Success(Json("Done!".to_string()))
+            Json(ApiResult::Success("Done!".to_string()))
         },
         Err(a) => {
-            EventRespone::Error(Json(format!("Failed to insert event: {a}")))
+            Json(ApiResult::Error(format!("Failed to insert event: {a}")))
         },
     }
 }
 
-#[get("/get_event")]
-pub async fn get_event(db: &State<DatabaseConnection>) -> EventRespone {
+#[get("/api/get_event")]
+pub async fn get_event(db: &State<DatabaseConnection>) -> Json<ApiResult<String>> {
 
     let setting = match crate::entity::dyn_settings::Entity::find().one(db.inner()).await {
         Ok(Some(a)) => {a},
         Ok(None) => {
-            return EventRespone::Error(Json(format!("Could not find settings mod")));
+            return Json(ApiResult::Error(format!("Could not find settings mod")));
         },
         Err(a) => {
-            return EventRespone::Error(Json(format!("Could not find settings mod: {a}")));
+            return Json(ApiResult::Error(format!("Could not find settings mod: {a}")));
         },
     };
 
 
-    EventRespone::Success(Json(setting.event))
+    Json(ApiResult::Success(setting.event))
 }

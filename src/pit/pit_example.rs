@@ -1,10 +1,11 @@
 pub const YEAR: i32 = 9999;
 
+use schemars::JsonSchema;
 use sea_orm::{ActiveValue::{NotSet, Set}, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use crate::pit::pit::{PitEditSpecific, PitInsertsSpecific, PitScoutStandard, PitSpecific};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, JsonSchema)]
 #[sea_orm(table_name = "genertic_header")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -14,13 +15,13 @@ pub struct Model {
 }
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Insert {
     pub width: i32,
     pub height: i32
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct Edit {
     pub width: Option<i32>,
     pub height: Option<i32>
