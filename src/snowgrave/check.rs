@@ -6,13 +6,6 @@ use crate::snowgrave::datatypes::{ScouterWithScore, MvpScouter};
 
 
 const AGREE_AMOUNT: f32 = 0.8;
-pub enum CheckFailerReason {
-    NoOne,
-    Mvp(MvpScouter),
-    Scouter(ScouterWithScore)
-}
-
-
 //just something i found off the net (lol)
 fn most_common<T: Eq + std::hash::Hash + Copy>(items: &[T]) -> Option<(T, usize)> {
     let mut counts = HashMap::new();
@@ -27,13 +20,14 @@ fn most_common<T: Eq + std::hash::Hash + Copy>(items: &[T]) -> Option<(T, usize)
 pub struct CheckFailerReturn {
     pub teams_to_redo: Vec<i32>,
     pub redo_mvp: bool,
-    pub reasons: Vec<CheckFailerReason>
+    pub reasons: Vec<ScouterWithScore>,
+    pub winner_teams: Vec<i32>
 }
 
 
 pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
 
-    let mut fails: Vec<CheckFailerReason> = Vec::new();
+    let mut fails: Vec<ScouterWithScore> = Vec::new();
     let mut teams_to_redo: Vec<i32> = Vec::new();
     let mut red_score: i32 = 0;
     let mut red_teams: Vec<i32> = Vec::new();
@@ -41,18 +35,24 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
     let mut blue_teams: Vec<i32> = Vec::new();
     let mut extra_check = true;
     let mut redo_mvp = false;
+    let mut scouts_id_to_non_dup: Vec<i32> = Vec::new(); //is the SNOWGRAVE id, must be converted into and duped by cast
 
     for team in &game.teams.0 {
 
         let scores: Vec<i32> = team.scouters.iter().map(|x| x.total_score).collect();
-
         let cooldata: (i32, usize) = most_common(&scores).ok_or(CheckMatchErr::NotAllScoutersAreDone)?;
 
 
+        let winner_id = team
+            .scouters
+            .iter()
+            .find(|s| s.total_score == cooldata.0)
+            .unwrap()
+            .id;
 
         for idx in &team.scouters {
             if idx.total_score != cooldata.0 {
-                fails.push(CheckFailerReason::Scouter(*idx));
+                fails.push(*idx);
             }
         }
 
@@ -60,8 +60,15 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
         let ratio: f32 = cooldata.1 as f32 / scores.len() as f32;
         if ratio < AGREE_AMOUNT {
             teams_to_redo.push(team.id);
+            //entire team gets slimed
+            fails.clear();
+            for idx in &team.scouters {
+                fails.push(*idx);
+            }
             extra_check = false;
         } else {
+            //we dont care what person will be credited so ya...
+            scouts_id_to_non_dup.push(winner_id);
             //its ok
             if team.station == Stations::Red1 || team.station == Stations::Red2 || team.station == Stations::Red3 {
                 red_score = cooldata.0 + red_score;
@@ -83,6 +90,7 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
             teams_to_redo,
             redo_mvp: false, //we just assume its ok for now
             reasons: fails,
+            winner_teams: scouts_id_to_non_dup
         };
         return Ok(res);
     }
@@ -90,17 +98,36 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
     if red_score != red_mvp_score {
         //red allence has failed
         teams_to_redo.append(&mut red_teams);
+        for team in &game.teams.0 {
+            for scouter in &team.scouters {
+                if (scouter.station == Stations::Red1 || scouter.station == Stations::Red2 || scouter.station == Stations::Red3) {
+                    if !fails.contains(scouter) {
+                        fails.push(*scouter);
+                    }
+                }
+            }
+        }
         redo_mvp = true;
     }
     if blue_score != blue_mvp_score {
         teams_to_redo.append(&mut blue_teams);
+        for team in &game.teams.0 {
+            for scouter in &team.scouters {
+                if (scouter.station == Stations::Blue1 || scouter.station == Stations::Blue2 || scouter.station == Stations::Blue3) {
+                    if !fails.contains(scouter) {
+                        fails.push(*scouter);
+                    }
+                }
+            }
+        }
         redo_mvp = true;
     }
 
     let res = CheckFailerReturn {
             teams_to_redo,
-            redo_mvp: redo_mvp, //we just assume its ok for now
+            redo_mvp: redo_mvp,
             reasons: fails,
+            winner_teams: scouts_id_to_non_dup
     };
 
     Ok(res)

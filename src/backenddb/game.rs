@@ -132,6 +132,7 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         game_id: Set(game_id),
         is_marked: Set(false),
         is_pending: Set(true),
+        is_dup: Set(true),
         snowgrave_scout_id: Set(data.header.snowgrave_scout_id)
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
@@ -143,7 +144,8 @@ async fn prim_graph_game(model: Box<dyn YearOp>, team: &i32, event_code: &Option
         .filter(genertic_header::Column::Team.eq(*team))
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false));
+        .filter(genertic_header::Column::IsPending.eq(false))
+        .filter(genertic_header::Column::IsDup.eq(false));
     if let Some(e) = event_code {
         command = command.filter(genertic_header::Column::EventCode.eq(e));
     }
@@ -215,10 +217,14 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
     if let Some(station) = &param.station {
         game_headers = game_headers.filter(genertic_header::Column::EventCode.eq(station.clone()));
     }
+    if let Some(mvp) = &param.is_mvp {
+        game_headers = game_headers.filter(genertic_header::Column::IsMvp.eq(*mvp));
+    }
 
     let res = game_headers
         .filter(genertic_header::Column::IsMarked.eq(false))
         .filter(genertic_header::Column::IsPending.eq(false))
+        .filter(genertic_header::Column::IsDup.eq(false))
         .all(db).await?;
     let ids: Vec<i32> = res.iter().map(|a| a.game_id).collect();
 
@@ -255,6 +261,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .filter(genertic_header::Column::EventCode.eq(event_code))
         .filter(genertic_header::Column::IsMarked.eq(false))
         .filter(genertic_header::Column::IsPending.eq(false))
+        .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
         .column_as(genertic_header::Column::TotalScore.avg(), "total_score")
         .column_as(genertic_header::Column::Team, "team")
@@ -268,6 +275,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .filter(genertic_header::Column::EventCode.eq(event_code))
         .filter(genertic_header::Column::IsMarked.eq(false))
         .filter(genertic_header::Column::IsPending.eq(false))
+        .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
         .column(genertic_header::Column::GameId)
         .column(genertic_header::Column::Team)
@@ -460,6 +468,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         created_at: created_at.map(Set).unwrap_or(NotSet),
         is_marked: header.is_marked.map(Set).unwrap_or(NotSet),
         is_pending: header.is_pending.map(Set).unwrap_or(NotSet),
+        is_dup: NotSet, //We never change this, that is snowgrave's job
         snowgrave_scout_id: header.snowgrave_id.map(Set).unwrap_or(NotSet),
         is_mvp: header.is_mvp.map(Set).unwrap_or(NotSet),
         game_type_id: Set(game_model.game_type_id),

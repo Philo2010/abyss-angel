@@ -7,6 +7,7 @@ use sea_orm::{Database, DatabaseConnection, DbErr, EntityTrait};
 use crate::backenddb::game;
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 use crate::entity::upcoming_game::ActiveModel;
+use crate::pit::create_pit_upcoming;
 use crate::snowgrave::blue::{self, TbaMatch, pull_from_blue};
 use crate::entity::{upcoming_game, upcoming_team};
 
@@ -141,6 +142,8 @@ pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, client:
             },
         };
     }
+    //for pit
+    create_pit_upcoming::create_pit_upcoming(db,event_code).await.map_err(|x| Blue2DBErr::DbErr(x))?;
 
 
     Ok(())

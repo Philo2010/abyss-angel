@@ -13,7 +13,7 @@ struct ScouterInsertForm {
 }
 struct GameTeamDataScouter {
     id: usize,
-    station: Stations, //For mvp, this will be ignored just fill in junk
+    station: Stations, 
 }
 
 

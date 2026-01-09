@@ -22,6 +22,7 @@ pub struct Model {
     pub created_at: DateTime,
     pub is_pending: bool,
     pub is_marked: bool,
+    pub is_dup: bool,
     pub snowgrave_scout_id: i32,
     pub game_type_id: i32,
     pub game_id: i32,

@@ -49,7 +49,7 @@ pub struct ScouterWithoutId {
     pub done: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ScouterWithScore {
     pub id: i32,
     pub scouter_id: Uuid,
