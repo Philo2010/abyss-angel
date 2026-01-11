@@ -1,6 +1,6 @@
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ModelTrait};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, upcoming_game, upcoming_team}};
+use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}};
 
 pub struct InsertSnow {
     //Id is given by server
@@ -33,15 +33,29 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
         },
     };
     let mut is_mvp = false;
-    if let Some(mvp_id) = snowgrave_game.mvp_id {
-        let mvp_scouters = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp!".to_string()))?;
-        if let Some(mvp_data_id) = mvp_scouters.data {
-            let mvp_data = mvp_data::Entity::find_by_id(mvp_data_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp data!".to_string()))?;
-            if snowgrave_team.team == mvp_data.mvp_team && snowgrave_team.is_ab_team == mvp_data.mvp_is_ab_team {
-                is_mvp = true;
+
+    if (snowgrave_team.station == Stations::Red1 || snowgrave_team.station == Stations::Red2 || snowgrave_team.station == Stations::Red3) {
+        if let Some(mvp_id) = snowgrave_game.mvp_id_red {
+            let mvp_scouters = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp!".to_string()))?;
+            if let Some(mvp_data_id) = mvp_scouters.data {
+                let mvp_data = mvp_data::Entity::find_by_id(mvp_data_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp data!".to_string()))?;
+                if snowgrave_team.team == mvp_data.mvp_team && snowgrave_team.is_ab_team == mvp_data.mvp_is_ab_team {
+                    is_mvp = true;
+                }
+            }
+        }
+    } else {
+        if let Some(mvp_id) = snowgrave_game.mvp_id_blue {
+            let mvp_scouters = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp!".to_string()))?;
+            if let Some(mvp_data_id) = mvp_scouters.data {
+                let mvp_data = mvp_data::Entity::find_by_id(mvp_data_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp data!".to_string()))?;
+                if snowgrave_team.team == mvp_data.mvp_team && snowgrave_team.is_ab_team == mvp_data.mvp_is_ab_team {
+                    is_mvp = true;
+                }
             }
         }
     }
+    
 
     let header = HeaderInsert {
         user: username,

@@ -1,6 +1,6 @@
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait, prelude::Expr};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait, prelude::Expr};
 
-use crate::{entity::{game_scouts, genertic_header, upcoming_team}, snowgrave::check::CheckFailerReturn};
+use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, genertic_header, upcoming_team, warning}, scoutwarn::{self, send_warning::SendWarning}, snowgrave::check::CheckFailerReturn};
 
 pub async fn cast_snowgrave(
     game_id: i32,
@@ -16,6 +16,22 @@ pub async fn cast_snowgrave(
                 .into_tuple()
                 .all(txn)
                 .await?;
+
+                for scouter in fails.reasons {
+                    //send the warning to them
+                    let warn = SendWarning {
+                        sender: None, //We are snowgrave
+                        receiver: scouter.scouter_id,
+                        message: format!("AUTOMATED SNOWGRAVE WARNING:\nWE HAVE FOUND AN ERROR IN YOUR SCOUT PACKAGE OF GAME {}.\n PLEASE IMPROVE FOR LATER, SYSTEMS DO NOT LIKE TO SLOW DUE TO HUMAN ERROR. -SG", fails.game_number),
+                    };
+                    scoutwarn::send_warning::send_warning(warn, txn).await?;
+
+                    //now to mark them as not done and redo
+                    let mut res: game_scouts::ActiveModel = game_scouts::Entity::find_by_id(scouter.id).one(txn).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?.into();
+                    res.is_redo = Set(true);
+                    res.done = Set(false);
+                    res.update(txn).await?;
+                }
 
             //for reason in fails.reasons
 

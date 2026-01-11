@@ -14,7 +14,8 @@ pub struct Model {
     pub event_code: String,
     pub match_id: i32,
     pub set: i32,
-    pub mvp_id: Option<i32>,
+    pub mvp_id_blue: Option<i32>,
+    pub mvp_id_red: Option<i32>,
     pub tournament_level: TournamentLevels,
 }
 
@@ -22,8 +23,6 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::upcoming_team::Entity")]
     UpcomingTeam,
-    #[sea_orm(has_one = "super::mvp_scouters::Entity")]
-    MvpScouter
 }
 
 

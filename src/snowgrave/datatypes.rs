@@ -3,6 +3,7 @@
 // =========================
 
 use std::collections::HashMap;
+use rocket::data::N;
 use schemars::JsonSchema;
 use serde::Serialize;
 use uuid::Uuid;
@@ -94,6 +95,7 @@ pub type ScoutingTeamFull = ScoutingTeam<ScouterWithScore>;
 #[derive(Debug, Clone, Serialize)]
 pub struct MvpScouter {
     pub id: i32,
+    pub is_blue: bool,
     pub scouter_id: Uuid,
 }
 
@@ -101,11 +103,10 @@ pub struct MvpScouter {
 pub struct MvpData {
     pub id: i32,
     pub mvp_team: TeamData,
+    pub is_blue: bool,
     pub comment: String,
-    pub total_score_for_red: i32,
-    pub total_score_for_blue: i32,
-    pub penalty_score_for_red: i32,
-    pub penalty_score_for_blue: i32,
+    pub total_score: i32,
+    pub penalty_score: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -120,6 +121,7 @@ impl From<(mvp_scouters::Model, mvp_data::Model)> for Mvp {
             scouter: MvpScouter {
                 id: mvp.id,
                 scouter_id: mvp.scouter,
+                is_blue: mvp.is_blue
             },
             data: MvpData {
                 id: data.id,
@@ -128,10 +130,9 @@ impl From<(mvp_scouters::Model, mvp_data::Model)> for Mvp {
                     team: data.mvp_team,
                 },
                 comment: data.comment,
-                total_score_for_red: data.total_score_for_red,
-                total_score_for_blue: data.total_score_for_blue,
-                penalty_score_for_red: data.penalty_score_for_red,
-                penalty_score_for_blue: data.penalty_score_for_blue,
+                is_blue: data.is_blue,
+                total_score: data.total_score,
+                penalty_score: data.penalty_score,
             },
         }
     }
@@ -148,13 +149,23 @@ pub struct Game<Teams, MvpState> {
     pub mvp: MvpState,
 }
 
+pub struct MvpPartial {
+    pub red: Option<MvpScouter>,
+    pub blue: Option<MvpScouter>,
+}
 
 pub type GamePartial =
-    Game<Vec<ScoutingTeamThin>, Option<MvpScouter>>;
+    Game<Vec<ScoutingTeamThin>, MvpPartial>;
 
+
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
+pub struct MvpIds {
+    pub blue: Option<i32>,
+    pub red: Option<i32>,
+}
 
 pub type GamePartialWithoutId = //   MVP ID ->
-    Game<Vec<ScoutingTeamThinWithoutId>, Option<i32>>;
+    Game<Vec<ScoutingTeamThinWithoutId>, MvpIds>;
 
 
 impl GamePartial {
@@ -195,14 +206,18 @@ impl GamePartial {
             set: game.set,
             tournament_level: game.tournament_level,
             teams,         // matches Game<Vec<ScoutingTeamThin>, Option<MvpScouter>>
-            mvp: None,     // fill later in hydrate_game
+            mvp: MvpPartial { red: None, blue: None },     // fill later in hydrate_game
         })
     }
 }
 
+pub struct FullMvp {
+    pub blue: Mvp,
+    pub red: Mvp
+}
 
 pub type GameFull =
-    Game<Six<ScoutingTeamFull>, Mvp>;
+    Game<Six<ScoutingTeamFull>, FullMvp>;
 
 pub fn build_teams_thin(
     teams: Vec<upcoming_team::Model>,

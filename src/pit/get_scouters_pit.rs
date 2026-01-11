@@ -1,8 +1,12 @@
+use schemars::JsonSchema;
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use serde::Serialize;
 use uuid::Uuid;
 
 use crate::{entity::pit_upcoming};
 
+
+#[derive(Serialize, JsonSchema)]
 pub struct PitScouterInstance {
     id: i32,
     event: String,

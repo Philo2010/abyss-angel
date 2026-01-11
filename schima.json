@@ -1,0 +1,1199 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "abyss-angel",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/pit/edit/{id}": {
+      "post": {
+        "operationId": "edit_pit",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PitEditSpecific"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pit/get": {
+      "post": {
+        "operationId": "get",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PitHeaderGetFront"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_PitGetSend"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pit/insert": {
+      "post": {
+        "operationId": "insert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PitInsertForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scoutwarn/forgive": {
+      "post": {
+        "operationId": "forgive_scoutwarn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Forgive"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scoutwarn/getall": {
+      "get": {
+        "operationId": "get_scoutwarn",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_ReturnWarningSend"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scoutwarn/send": {
+      "post": {
+        "operationId": "send_scoutwarn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/averages/{event}": {
+      "get": {
+        "operationId": "averages",
+        "parameters": [
+          {
+            "name": "event",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_GamesAvg"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/delete/{id}": {
+      "get": {
+        "operationId": "delete_scout",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graph_sub": {
+      "post": {
+        "operationId": "graph",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Array_of_GamesGraph"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "post": {
+        "operationId": "search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchParamData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_GamesFull"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginRes"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiResult_for_String": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "PitEditSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExamplePit"
+            ],
+            "properties": {
+              "ExamplePit": {
+                "$ref": "#/components/schemas/Edit"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Edit": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "ApiResult_for_PitGetSend": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "$ref": "#/components/schemas/PitGetSend"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "PitGetSend": {
+        "type": "object",
+        "required": [
+          "header",
+          "pit"
+        ],
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/FullHeaderSend"
+          },
+          "pit": {
+            "$ref": "#/components/schemas/PitSpecific"
+          }
+        }
+      },
+      "FullHeaderSend": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "event_code",
+          "id",
+          "is_ab_team",
+          "team",
+          "user"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user": {
+            "type": "string"
+          },
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PitSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExamplePit"
+            ],
+            "properties": {
+              "ExamplePit": {
+                "$ref": "#/components/schemas/Model"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Model": {
+        "type": "object",
+        "required": [
+          "height",
+          "id",
+          "width"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PitHeaderGetFront": {
+        "type": "object",
+        "required": [
+          "event_code",
+          "is_ab_team",
+          "team"
+        ],
+        "properties": {
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "event_code": {
+            "type": "string"
+          }
+        }
+      },
+      "PitInsertForm": {
+        "type": "object",
+        "required": [
+          "pit",
+          "pit_insert_id"
+        ],
+        "properties": {
+          "pit_insert_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pit": {
+            "$ref": "#/components/schemas/PitInsertsSpecific"
+          }
+        }
+      },
+      "PitInsertsSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExamplePit"
+            ],
+            "properties": {
+              "ExamplePit": {
+                "$ref": "#/components/schemas/Insert"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Insert": {
+        "type": "object",
+        "required": [
+          "height",
+          "width"
+        ],
+        "properties": {
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Forgive": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_ReturnWarningSend": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReturnWarningSend"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "ReturnWarningSend": {
+        "type": "object",
+        "required": [
+          "id",
+          "message",
+          "receiver",
+          "sender",
+          "unsent_id"
+        ],
+        "properties": {
+          "unsent_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "receiver": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": [
+          "message",
+          "resv"
+        ],
+        "properties": {
+          "resv": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_GamesAvg": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesAvg"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "GamesAvg": {
+        "type": "object",
+        "required": [
+          "game",
+          "team",
+          "total_score"
+        ],
+        "properties": {
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_score": {
+            "type": "number",
+            "format": "float"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesAvgSpecific"
+          }
+        }
+      },
+      "GamesAvgSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExampleGame"
+            ],
+            "properties": {
+              "ExampleGame": {
+                "$ref": "#/components/schemas/Avg"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Avg": {
+        "type": "object",
+        "required": [
+          "beep_avg",
+          "hehe_avg"
+        ],
+        "properties": {
+          "hehe_avg": {
+            "type": "number",
+            "format": "float"
+          },
+          "beep_avg": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_Array_of_GamesGraph": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GamesGraph"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "GamesGraph": {
+        "type": "object",
+        "required": [
+          "game",
+          "header"
+        ],
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/HeaderGraph"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesGraphSpecific"
+          }
+        }
+      },
+      "HeaderGraph": {
+        "type": "object",
+        "required": [
+          "time",
+          "total_score"
+        ],
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GamesGraphSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExampleGame"
+            ],
+            "properties": {
+              "ExampleGame": {
+                "$ref": "#/components/schemas/Graph"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Graph": {
+        "type": "object",
+        "required": [
+          "beep",
+          "hehe"
+        ],
+        "properties": {
+          "hehe": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "beep": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GraphForm": {
+        "type": "object",
+        "required": [
+          "teams"
+        ],
+        "properties": {
+          "event": {
+            "type": "string",
+            "nullable": true
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "ApiResult_for_Array_of_GamesFull": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamesFull"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "GamesFull": {
+        "type": "object",
+        "required": [
+          "game",
+          "header"
+        ],
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/HeaderFull"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesFullSpecific"
+          }
+        }
+      },
+      "HeaderFull": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "event_code",
+          "id",
+          "is_ab_team",
+          "is_marked",
+          "is_mvp",
+          "is_pending",
+          "match_id",
+          "set",
+          "snowgrave_scout_id",
+          "station",
+          "team",
+          "total_score",
+          "tournament_level",
+          "user"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "user": {
+            "type": "string"
+          },
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "match_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "set": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "tournament_level": {
+            "$ref": "#/components/schemas/TournamentLevels"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Stations"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_pending": {
+            "type": "boolean"
+          },
+          "is_marked": {
+            "type": "boolean"
+          },
+          "is_mvp": {
+            "type": "boolean"
+          },
+          "snowgrave_scout_id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TournamentLevels": {
+        "type": "string",
+        "enum": [
+          "QualificationMatch",
+          "Quarterfinal",
+          "Semifinal",
+          "Final"
+        ]
+      },
+      "Stations": {
+        "type": "string",
+        "enum": [
+          "Red1",
+          "Red2",
+          "Red3",
+          "Blue1",
+          "Blue2",
+          "Blue3"
+        ]
+      },
+      "GamesFullSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExampleGame"
+            ],
+            "properties": {
+              "ExampleGame": {
+                "$ref": "#/components/schemas/Model2"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Model2": {
+        "type": "object",
+        "required": [
+          "beep",
+          "hehe",
+          "hoohoo",
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hehe": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "beep": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hoohoo": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchParamData": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "string",
+            "nullable": true
+          },
+          "team": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "is_ab_team": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "match_id": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "set": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "event_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "tournament_level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TournamentLevels"
+              }
+            ],
+            "nullable": true
+          },
+          "station": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Stations"
+              }
+            ],
+            "nullable": true
+          },
+          "is_mvp": {
+            "type": "boolean",
+            "nullable": true
+          }
+        }
+      },
+      "LoginRes": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Success"
+            ],
+            "properties": {
+              "Success": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Error"
+            ],
+            "properties": {
+              "Error": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "LoginForm": {
+        "type": "object",
+        "required": [
+          "password",
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

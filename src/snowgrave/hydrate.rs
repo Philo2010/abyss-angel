@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
-use crate::{entity::{game_scouts, mvp_data, mvp_scouters}, snowgrave::{check_complete::CheckMatchErr, datatypes::{GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six}}};
+use crate::{entity::{game_scouts, mvp_data, mvp_scouters}, snowgrave::{check_complete::CheckMatchErr, datatypes::{FullMvp, GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six}}};
 
 async fn fetch_scouts_for_game(
     game_id: i32,
@@ -54,6 +54,7 @@ async fn fetch_mvp_full(
         scouter: MvpScouter {
             id: mvp_model.id,
             scouter_id: mvp_model.scouter,
+            is_blue: mvp_model.is_blue
         },
         data: crate::snowgrave::datatypes::MvpData {
             id: data_model.id,
@@ -62,10 +63,9 @@ async fn fetch_mvp_full(
                 team: data_model.mvp_team,
             },
             comment: data_model.comment,
-            total_score_for_red: data_model.total_score_for_red,
-            total_score_for_blue: data_model.total_score_for_blue,
-            penalty_score_for_red: data_model.penalty_score_for_red,
-            penalty_score_for_blue: data_model.penalty_score_for_blue,
+            total_score: data_model.total_score,
+            penalty_score: data_model.penalty_score,
+            is_blue: data_model.is_blue,
         },
     })
 }
@@ -89,9 +89,23 @@ pub async fn hydrate_game(
         return Ok(None); // not ready
     }
 
+
+    
+
     // fetch MVP
-    let mvp_full = match &partial.mvp {
-        Some(m) => fetch_mvp_full(m.id, db).await?,
+    let mvp_full_red = match &partial.mvp.red {
+        Some(m) => {
+            let res = fetch_mvp_full(m.id, db).await?;
+            res
+        },
+        None => return Ok(None),
+    };
+
+    let mvp_full_blue = match &partial.mvp.blue {
+        Some(m) => {
+            let res = fetch_mvp_full(m.id, db).await?;
+            res
+        },
         None => return Ok(None),
     };
 
@@ -113,6 +127,9 @@ pub async fn hydrate_game(
         set: partial.set,
         tournament_level: partial.tournament_level,
         teams: teams_full,
-        mvp: mvp_full,
+        mvp: FullMvp {
+            blue: mvp_full_blue,
+            red: mvp_full_red,
+        },
     }))
 }

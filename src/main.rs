@@ -13,8 +13,8 @@ mod auth;
 mod pit;
 mod entity;
 mod backenddb;
-mod snowgrave;
 mod scoutwarn;
+mod snowgrave;
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
@@ -23,7 +23,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "{{ INSERT_API_KEY }}"
 };
-
+/* 
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -32,12 +32,11 @@ fn main() {
     use crate::frontend::scoutwarn::forgive_warning::okapi_add_operation_for_forgive_scoutwarn_;
     use crate::frontend::scoutwarn::get_warning::okapi_add_operation_for_get_scoutwarn_;
     use crate::frontend::scoutwarn::send_warning::okapi_add_operation_for_send_scoutwarn_;
-    use crate::frontend::snowgrave::find_games::okapi_add_operation_for_get_years_;
-    use crate::frontend::snowgrave::queue::okapi_add_operation_for_queue_;
     use crate::frontend::averages::okapi_add_operation_for_averages_;
     use crate::frontend::delete::okapi_add_operation_for_delete_scout_;
     use crate::frontend::graph::okapi_add_operation_for_graph_;
     use crate::frontend::search::okapi_add_operation_for_search_;
+    use crate::auth::login::okapi_add_operation_for_login_;
 
     let spec = openapi_get_spec![
         settings:
@@ -47,18 +46,17 @@ fn main() {
         forgive_scoutwarn,
         get_scoutwarn,
         send_scoutwarn,
-        get_years,
-        queue,
         averages,
         delete_scout,
         graph,
-        search
+        search,
+        login
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-}
+}*/
 
-/* 
+
 #[launch]
 async fn rocket() -> _ {
 
@@ -68,6 +66,17 @@ async fn rocket() -> _ {
             println!("Major issue! We were not able to connect to database, this is very funny as we were able to connect to the database before (or else you would not be seeing this)");
             println!("Err from Seaorm: {a}");
             panic!();
+        },
+    };
+
+    let res = match db_conn.get_schema_registry("abyss-angel::entity").sync(&db_conn).await {
+        Ok(_) => {
+            ()
+        },
+        Err(a) => {
+            let strhe = a.to_string();
+            println!("{strhe}");
+            panic!()
         },
     };
 
@@ -91,12 +100,12 @@ async fn rocket() -> _ {
     frontend::scoutwarn::forgive_warning::forgive_scoutwarn,
     frontend::scoutwarn::get_warning::get_scoutwarn,
     frontend::scoutwarn::send_warning::send_scoutwarn,
-    frontend::snowgrave::find_games::get_years,
-    frontend::snowgrave::queue::queue,
     frontend::averages::averages,
     frontend::delete::delete_scout,
     frontend::graph::graph,
     frontend::search::search,
+    auth::login::login,
+    auth::create_user::create_user
     ])
     .mount("/", FileServer::from(relative!("static")))
-}*/
+}

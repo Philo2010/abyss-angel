@@ -18,8 +18,8 @@ fn most_common<T: Eq + std::hash::Hash + Copy>(items: &[T]) -> Option<(T, usize)
 }
 
 pub struct CheckFailerReturn {
+    pub game_number: i32,
     pub teams_to_redo: Vec<i32>,
-    pub redo_mvp: bool,
     pub reasons: Vec<ScouterWithScore>,
     pub winner_teams: Vec<i32>
 }
@@ -34,7 +34,6 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
     let mut blue_score: i32 = 0;
     let mut blue_teams: Vec<i32> = Vec::new();
     let mut extra_check = true;
-    let mut redo_mvp = false;
     let mut scouts_id_to_non_dup: Vec<i32> = Vec::new(); //is the SNOWGRAVE id, must be converted into and duped by cast
 
     for team in &game.teams.0 {
@@ -69,6 +68,12 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
         } else {
             //we dont care what person will be credited so ya...
             scouts_id_to_non_dup.push(winner_id);
+            //only scouter that fails gets slimed
+            for idx in &team.scouters {
+                if idx.total_score != cooldata.0 {
+                    fails.push(*idx);
+                }
+            }
             //its ok
             if team.station == Stations::Red1 || team.station == Stations::Red2 || team.station == Stations::Red3 {
                 red_score = cooldata.0 + red_score;
@@ -81,14 +86,14 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
     }
 
     //check MVP along with scores
-    let red_mvp_score = game.mvp.data.total_score_for_red - game.mvp.data.penalty_score_for_red;
-    let blue_mvp_score = game.mvp.data.total_score_for_blue - game.mvp.data.penalty_score_for_blue;
+    let red_mvp_score = game.mvp.red.data.total_score - game.mvp.red.data.penalty_score;
+    let blue_mvp_score = game.mvp.blue.data.total_score- game.mvp.blue.data.penalty_score;
 
     if !extra_check {
         //we are done there is nothing else we can check
         let res = CheckFailerReturn {
+            game_number: game.match_id,
             teams_to_redo,
-            redo_mvp: false, //we just assume its ok for now
             reasons: fails,
             winner_teams: scouts_id_to_non_dup
         };
@@ -107,7 +112,6 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
                 }
             }
         }
-        redo_mvp = true;
     }
     if blue_score != blue_mvp_score {
         teams_to_redo.append(&mut blue_teams);
@@ -120,12 +124,11 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
                 }
             }
         }
-        redo_mvp = true;
     }
 
     let res = CheckFailerReturn {
+            game_number: game.match_id,
             teams_to_redo,
-            redo_mvp: redo_mvp,
             reasons: fails,
             winner_teams: scouts_id_to_non_dup
     };

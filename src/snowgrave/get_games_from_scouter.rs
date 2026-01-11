@@ -13,7 +13,7 @@ use crate::{
         upcoming_team,
     },
     snowgrave::datatypes::{
-        GamePartial, GamePartialWithoutId, MvpScouter, Scouter, ScouterWithoutId, ScoutingTeamThin, ScoutingTeamThinWithoutId, TeamData
+        GamePartial, GamePartialWithoutId, MvpIds, MvpScouter, Scouter, ScouterWithoutId, ScoutingTeamThin, ScoutingTeamThinWithoutId, TeamData
     },
 };
 
@@ -96,10 +96,24 @@ pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> R
                 })
                 .collect();
 
-        let mvp = game
-            .mvp_id
-            .and_then(|id| mvps.get(&id))
-            .map(|m| m.id);
+        let mut mvp_blue: Option<i32> = None;
+        let mut mvp_red: Option<i32> = None;
+
+        if let Some(game_mvp_blue) = game.mvp_id_blue {
+            if mvps.contains_key(&game_mvp_blue) {
+                mvp_blue = Some(game_mvp_blue);
+            }
+        }
+        if let Some(game_mvp_red) = game.mvp_id_red {
+            if mvps.contains_key(&game_mvp_red) {
+                mvp_red = Some(game_mvp_red);
+            }
+        }
+        let mvp: super::datatypes::MvpIds = MvpIds {
+            blue: mvp_blue,
+            red: mvp_red,
+        };
+
 
         result.push(GamePartialWithoutId {
             id: game.id,

@@ -39,7 +39,9 @@ pub fn into_snow(data: &TbaMatch, event_code: &String) -> Result<(upcoming_game:
         match_id: Set(data.match_number),
         set: Set(data.set_number),
         tournament_level: Set(level),
-        mvp_id: Set(None)
+        mvp_id_blue: Set(None),
+        mvp_id_red: Set(None),
+        
     })
 }
 

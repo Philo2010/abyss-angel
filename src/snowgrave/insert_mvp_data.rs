@@ -7,10 +7,8 @@ use crate::{entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game}, sn
 struct MvpInsert {
     pub mvp_team: TeamData,
     pub comment: String,
-    pub total_score_for_red: i32,
-    pub total_score_for_blue: i32,
-    pub penalty_score_for_red: i32,  //Given by blue
-    pub penalty_score_for_blue: i32, //Given by red
+    pub total_score: i32,
+    pub penalty_score: i32,
 }
 
 
@@ -18,7 +16,8 @@ struct MvpInsert {
 
 pub async fn insert_mvp_data(mvp_id: i32, data: MvpInsert, db: &DatabaseConnection) -> Result<(), CheckMatchErr> {
     //Check if mvp scouter is even real
-    let mut mvp: mvp_scouters::ActiveModel = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?.into();
+    let mvp_mod = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?;
+    let mut mvp: mvp_scouters::ActiveModel = mvp_mod.clone().into();
 
     //Insert data into db
     let mvp_insert = mvp_data::ActiveModel {
@@ -26,22 +25,31 @@ pub async fn insert_mvp_data(mvp_id: i32, data: MvpInsert, db: &DatabaseConnecti
         mvp_team: Set(data.mvp_team.team),
         mvp_is_ab_team: Set(data.mvp_team.is_ab_team),
         comment: Set(data.comment),
-        total_score_for_red: Set(data.total_score_for_red),
-        total_score_for_blue: Set(data.total_score_for_blue),
-        penalty_score_for_red: Set(data.penalty_score_for_red),
-        penalty_score_for_blue: Set(data.penalty_score_for_blue),
+        total_score: Set(data.total_score),
+        penalty_score: Set(data.penalty_score),
+        is_blue: NotSet,
     };
-    let data_id = mvp_data::Entity::insert(mvp_insert).exec(db).await?.last_insert_id;
+    let data_id = mvp_insert.update(db).await?;
 
-    mvp.data = Set(Some(data_id));
+    mvp.data = Set(Some(data_id.id));
 
+    let is_blue = mvp_mod.is_blue;
 
     let _res = mvp.update(db).await?;
 
-    let game_id = upcoming_game::Entity::find() 
-        .filter(upcoming_game::Column::MvpId.eq(mvp_id))  // Return as a tuple (i32,)
+    let game_id;
+    if is_blue {
+        game_id = upcoming_game::Entity::find() 
+        .filter(upcoming_game::Column::MvpIdBlue.eq(mvp_id))  // Return as a tuple (i32,)
         .one(db)
         .await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
+    } else {
+        game_id = upcoming_game::Entity::find() 
+        .filter(upcoming_game::Column::MvpIdRed.eq(mvp_id))  // Return as a tuple (i32,)
+        .one(db)
+        .await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
+    }
+    
 
     //great now to insert this into the right game
 

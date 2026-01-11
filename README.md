@@ -15,3 +15,18 @@ be able to find it avg
 be able to find it by graph
 assign pit scout
 sumsititudte page
+add todo
+
+Edit:
+    Edit the data
+    //Cur pending is false marked is true along with redo
+    set done in upcoming to true mark redo false
+    preform check if not done then ret
+    //now we know that check is ok check now gives us a list of scouters that are wrong
+    for scouter in scouter wrong:
+        mark done false and mark redo true
+        //we dont need to mark dup, marked, and pending as they are already in a faled state
+    for scouters in scouters_now_right:
+        //mark done true and redo false no need this state is ok
+        mark  marked false, dup (only once per type) false, and pending false
+    ret 

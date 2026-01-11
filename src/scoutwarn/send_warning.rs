@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait};
 use uuid::Uuid;
 
 use crate::entity::{unsent_warning, users, warning};
@@ -11,7 +11,7 @@ pub struct SendWarning {
     pub message: String,
 }
 
-pub async fn send_warning(message: SendWarning, db: &DatabaseConnection) -> Result<(), DbErr> {
+pub async fn send_warning<C>(message: SendWarning, db: &C) -> Result<(), DbErr> where C: ConnectionTrait {
     let active_message = warning::ActiveModel {
         id: NotSet,
         sender: Set(message.sender),

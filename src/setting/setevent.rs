@@ -1,7 +1,7 @@
 use rocket::{State, form::Form, serde::json::Json};
 use rocket_dyn_templates::Template;
 use schemars::JsonSchema;
-use sea_orm::{DatabaseConnection, EntityTrait, entity};
+use sea_orm::{DatabaseConnection, DbErr, EntityTrait, entity};
 use rocket_dyn_templates::context;
 use serde::Deserialize;
 use serde_json::Value;
@@ -11,6 +11,22 @@ use crate::{frontend::ApiResult, setting};
 #[derive(Deserialize, JsonSchema)]
 pub struct SetEvent {
     event: String
+}
+
+
+pub async fn get_event_inner(db: &DatabaseConnection) -> Result<String, DbErr> {
+    let setting = match crate::entity::dyn_settings::Entity::find().one(db).await {
+        Ok(Some(a)) => {a},
+        Ok(None) => {
+            return Err(DbErr::RecordNotFound("Could not find event! (have you forgotten to set it?)".to_string()));
+        },
+        Err(a) => {
+            return Err(a);
+        },
+    };
+
+
+    Ok(setting.event) 
 }
 
 #[post("/api/set_event", data = "<body>")]

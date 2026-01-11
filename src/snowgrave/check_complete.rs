@@ -36,7 +36,6 @@ pub async fn check_match(
         Some(full) => full,             // all data is present
         None => return Err(CheckMatchErr::NotAllScoutersAreDone), // or another "not ready" error
     };
-    
     let res = check::check(&game_full)?;
 
     let true_res = cast_snowgrave::cast_snowgrave(game_id, res, db).await?;

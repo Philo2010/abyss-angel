@@ -9,11 +9,15 @@ use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, mvp_scou
 struct ScouterInsertForm {
     player_indexs: Vec<Uuid>,
     //id is a ref to a team, Uuid is the MVP scouter
-    matches: Vec<(i32, Vec<GameTeamDataScouter>, Uuid)>,
+    matches: Vec<(i32, Vec<GameTeamDataScouter>, GameTeamDataMvp)>,
 }
 struct GameTeamDataScouter {
     id: usize,
     station: Stations, 
+}
+struct GameTeamDataMvp {
+    red: Uuid,
+    blue: Uuid
 }
 
 
@@ -35,15 +39,27 @@ pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -
             teams.get(&matche.0).unwrap()
         };
 
-        //create mvp scouter
-        let mvp: mvp_scouters::ActiveModel = mvp_scouters::ActiveModel { 
+        //create mvp scouters
+        let mvp_red: mvp_scouters::ActiveModel = mvp_scouters::ActiveModel { 
             id: NotSet, 
-            scouter: Set(matche.2), 
-            data: Set(None) };
-        let mvp_id = mvp.insert(db).await?.id;
+            scouter: Set(matche.2.red), 
+            is_blue: Set(false),
+            data: Set(None)
+        };
+        let mvp_id_red = mvp_red.insert(db).await?.id;
+
+        let mvp_blue: mvp_scouters::ActiveModel = mvp_scouters::ActiveModel { 
+            id: NotSet, 
+            scouter: Set(matche.2.blue), 
+            is_blue: Set(true),
+            data: Set(None)
+        };
+        let mvp_id_blue = mvp_blue.insert(db).await?.id;
+
         let game_data = upcoming_game::Entity::find_by_id(team.game_id).one(db).await?.ok_or(DbErr::Custom("could not find game".to_string()))?;
         let mut game_active: upcoming_game::ActiveModel = game_data.into();
-        game_active.mvp_id = Set(Some(mvp_id));
+        game_active.mvp_id_red = Set(Some(mvp_id_red));
+        game_active.mvp_id_blue = Set(Some(mvp_id_blue));
         game_active.update(db).await?;
 
         for scouter in matche.1 {
