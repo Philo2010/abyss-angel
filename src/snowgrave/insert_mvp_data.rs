@@ -1,10 +1,15 @@
+use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect};
+use serde::{Deserialize, Serialize};
 
 use crate::{entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::{MvpData, TeamData}}};
 
 
 
-struct MvpInsert {
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct MvpInsert {
+    pub mvp_id: i32,
     pub mvp_team: TeamData,
     pub comment: String,
     pub total_score: i32,
@@ -14,9 +19,9 @@ struct MvpInsert {
 
 
 
-pub async fn insert_mvp_data(mvp_id: i32, data: MvpInsert, db: &DatabaseConnection) -> Result<(), CheckMatchErr> {
+pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result<(), DbErr> {
     //Check if mvp scouter is even real
-    let mvp_mod = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?;
+    let mvp_mod = mvp_scouters::Entity::find_by_id(data.mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?;
     let mut mvp: mvp_scouters::ActiveModel = mvp_mod.clone().into();
 
     //Insert data into db
@@ -40,12 +45,12 @@ pub async fn insert_mvp_data(mvp_id: i32, data: MvpInsert, db: &DatabaseConnecti
     let game_id;
     if is_blue {
         game_id = upcoming_game::Entity::find() 
-        .filter(upcoming_game::Column::MvpIdBlue.eq(mvp_id))  // Return as a tuple (i32,)
+        .filter(upcoming_game::Column::MvpIdBlue.eq(data.mvp_id))  // Return as a tuple (i32,)
         .one(db)
         .await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
     } else {
         game_id = upcoming_game::Entity::find() 
-        .filter(upcoming_game::Column::MvpIdRed.eq(mvp_id))  // Return as a tuple (i32,)
+        .filter(upcoming_game::Column::MvpIdRed.eq(data.mvp_id))  // Return as a tuple (i32,)
         .one(db)
         .await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
     }
@@ -72,7 +77,14 @@ pub async fn insert_mvp_data(mvp_id: i32, data: MvpInsert, db: &DatabaseConnecti
         };
 
     
-    let res = check_complete::check_match(game_id.id, db).await?;
+    let res = match check_complete::check_match(game_id.id, db).await {
+        Err(CheckMatchErr::DbErr(a)) => {
+            return Err(a);
+        }
+        _ => {
+            ()
+        }
+    };
 
     Ok(res)
 }

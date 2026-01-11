@@ -143,12 +143,14 @@ impl ActiveModelBehavior for ActiveModel {}
 
 //Structures for sending between
 
+#[derive(Serialize, JsonSchema, Deserialize)]
 pub struct Insert {
     pub hehe: i32,
     pub beep: i32,
     pub hoohoo: String
 }
 
+#[derive(Serialize, JsonSchema, Deserialize)]
 pub struct Edit {
     pub hehe: Option<i32>,
     pub beep: Option<i32>,

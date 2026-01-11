@@ -1,7 +1,11 @@
+use schemars::JsonSchema;
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ModelTrait};
+use serde::{Deserialize, Serialize};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}};
+use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_complete::{self, CheckMatchErr}};
 
+
+#[derive(JsonSchema, Serialize, Deserialize)]
 pub struct InsertSnow {
     //Id is given by server
     //pub user: String, //We will get uuid
@@ -23,6 +27,9 @@ pub struct InsertSnow {
 
 pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(), DbErr> {
     let snowgrave_scout = game_scouts::Entity::find_by_id(data.snowgrave_scout_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find user!".to_string()))?;
+    if snowgrave_scout.done {
+        return Err(DbErr::Custom("Already done!".to_string()));
+    }
     let snowgrave_team = upcoming_team::Entity::find_by_id(snowgrave_scout.team_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find team!".to_string()))?;
     let snowgrave_game = upcoming_game::Entity::find_by_id(snowgrave_scout.game_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
     let username = match get_by_uuid(&snowgrave_scout.scouter_id, db).await {
@@ -74,6 +81,15 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
         game: data.game,
     };
     let _res = backenddb::game::insert_game(&insert_stuff, db).await?; // dont need id 
+
+    let res = match check_complete::check_match(snowgrave_game.id, db).await {
+        Err(CheckMatchErr::DbErr(a)) => {
+            return Err(a);
+        }
+        _ => {
+            ()
+        }
+    };
 
     Ok(())
 }

@@ -23,6 +23,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "{{ INSERT_API_KEY }}"
 };
+
 /* 
 fn main() {
     let settings = OpenApiSettings::default();
@@ -37,6 +38,12 @@ fn main() {
     use crate::frontend::graph::okapi_add_operation_for_graph_;
     use crate::frontend::search::okapi_add_operation_for_search_;
     use crate::auth::login::okapi_add_operation_for_login_;
+    use crate::frontend::snowgrave::find_games::okapi_add_operation_for_get_years_;
+    use crate::frontend::snowgrave::mvp_insert::okapi_add_operation_for_mvp_insert_;
+    use crate::frontend::snowgrave::queue::okapi_add_operation_for_queue_;
+    use crate::frontend::snowgrave::queue::okapi_add_operation_for_queue_playoff_;
+    use crate::frontend::snowgrave::scouter_edit::okapi_add_operation_for_scout_edit_;
+    use crate::frontend::snowgrave::scouter_insert::okapi_add_operation_for_scout_insert_;
 
     let spec = openapi_get_spec![
         settings:
@@ -50,12 +57,17 @@ fn main() {
         delete_scout,
         graph,
         search,
-        login
+        login,
+        get_years,
+        mvp_insert,
+        queue,
+        queue_playoff,
+        scout_edit,
+        scout_insert
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }*/
-
 
 #[launch]
 async fn rocket() -> _ {
@@ -105,7 +117,12 @@ async fn rocket() -> _ {
     frontend::graph::graph,
     frontend::search::search,
     auth::login::login,
-    auth::create_user::create_user
+    auth::create_user::create_user,
+    frontend::snowgrave::find_games::get_years,
+    frontend::snowgrave::mvp_insert::mvp_insert,
+    frontend::snowgrave::queue::queue,
+    frontend::snowgrave::scouter_edit::scout_edit,
+    frontend::snowgrave::scouter_insert::scout_insert,
     ])
     .mount("/", FileServer::from(relative!("static")))
 }

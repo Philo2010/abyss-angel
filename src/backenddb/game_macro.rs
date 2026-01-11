@@ -1,6 +1,7 @@
 #[macro_export]
 macro_rules! define_games {
     ($($name:ident => $($module:ident)::+),* $(,)?) => {
+        use serde::Deserialize;
         #[derive(Serialize, JsonSchema)]
         pub enum GamesFullSpecific {
             $(
@@ -22,12 +23,14 @@ macro_rules! define_games {
             )*
         }
         
+        #[derive(Serialize, Deserialize, JsonSchema)]
         pub enum GamesInsertsSpecific {
             $(
                 $name($($module)::+::Insert),
             )*
         }
 
+        #[derive(Serialize, Deserialize, JsonSchema)]
         pub enum GamesEditSpecific {
             $(
                 $name($($module)::+::Edit),

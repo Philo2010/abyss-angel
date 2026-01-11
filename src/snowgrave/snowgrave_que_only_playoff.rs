@@ -13,7 +13,7 @@ use crate::snowgrave::snowgrave_que::{into_snow, into_snow_team};
 use crate::snowgrave::snowgrave_que::Blue2DBErr;
 
 
-pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, client: &reqwest::Client, db: &DatabaseConnection) -> Result<(), Blue2DBErr> {
+pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, db: &DatabaseConnection) -> Result<(), Blue2DBErr> {
     let mut games_ids: Vec<i32> = Vec::new();
     for game in &games {
         let res = into_snow(&game, event_code)?;

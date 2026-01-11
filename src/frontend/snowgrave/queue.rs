@@ -74,7 +74,7 @@ pub async fn queue_playoff(data: Json<QueueInput>, client: &State<Client>, db: &
         },
     };
 
-    let res = match snowgrave::snowgrave_que_only_playoff::queue_snow(tba_games, &data.event, client, db).await {
+    let res = match snowgrave::snowgrave_que_only_playoff::queue_snow(tba_games, &data.event, db).await {
         Ok(a) => a,
         Err(a) => {
             return handle_blue_err(a);

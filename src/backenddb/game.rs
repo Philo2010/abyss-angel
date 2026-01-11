@@ -362,8 +362,8 @@ pub struct GamesFull {
 }
 
 pub struct GamesEdit {
-    header: HeaderFullEdit,
-    game: GamesEditSpecific
+    pub header: HeaderFullEdit,
+    pub game: GamesEditSpecific
 }
 
 pub struct SearchParam {

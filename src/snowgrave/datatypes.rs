@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use rocket::data::N;
 use schemars::JsonSchema;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 
@@ -29,7 +29,7 @@ impl<T> TryFrom<Vec<T>> for Six<T> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TeamData {
     pub is_ab_team: bool,
     pub team: i32,

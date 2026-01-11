@@ -16,3 +16,4 @@ pub mod cast_snowgrave;
 pub mod insert_scout_data;
 pub mod blue;
 pub mod snowgrave_que_only_playoff;
+pub mod snowgrave_edit_scouter;

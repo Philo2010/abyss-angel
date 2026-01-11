@@ -48,7 +48,7 @@ pub async fn send_scoutwarn(data: Json<Message>, db: &State<DatabaseConnection>,
         message: data.message.clone()
     };
 
-    match crate::scoutwarn::send_warning::send_warning(warning, db).await {
+    match crate::scoutwarn::send_warning::send_warning(warning, db.inner()).await {
         Ok(_) => {
             return Json(ApiResult::Success("Able to send message, they shall pay for there sins".to_string()));
         },
