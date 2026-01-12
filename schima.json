@@ -570,6 +570,23 @@
           }
         }
       }
+    },
+    "/api/snowgrave/leaderboard": {
+      "get": {
+        "operationId": "get_leaderboard",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_SnowScouterDataLeaderBoard"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1849,6 +1866,65 @@
           },
           "replacement": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_SnowScouterDataLeaderBoard": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SnowScouterDataLeaderBoard"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "SnowScouterDataLeaderBoard": {
+        "type": "object",
+        "required": [
+          "amount_of_warning",
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "amount_of_warning": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       }

@@ -32,6 +32,7 @@ pub async fn send_warning<C>(message: SendWarning, db: &C) -> Result<(), DbErr> 
     let user = users::Entity::find_by_id(message.receiver).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find the user!".to_string()))?;
     let mut user_active: users::ActiveModel = user.into();
     user_active.amount_of_warning = Set(user_active.amount_of_warning.unwrap() + 1);
+    user_active.update(db).await?;
 
 
     Ok(())

@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection,) -> Result<Vec<GamePartialWithoutId>, DbErr> {
+pub async fn get_games_for_scouter(scouter: Uuid, db: &DatabaseConnection) -> Result<Vec<GamePartialWithoutId>, DbErr> {
     let scout_entries: Vec<game_scouts::Model> =
         game_scouts::Entity::find()
             .filter(game_scouts::Column::ScouterId.eq(scouter))

@@ -23,7 +23,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
-
+/*
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -48,6 +48,7 @@ fn main() {
     use crate::setting::setevent::okapi_add_operation_for_get_event_;
     use crate::setting::setevent::okapi_add_operation_for_set_event_;
     use crate::frontend::snowgrave::sub_scout::okapi_add_operation_for_sub_scout_;
+    use crate::frontend::snowgrave::get_leaderboard::okapi_add_operation_for_get_leaderboard_;
 
     let spec = openapi_get_spec![
         settings:
@@ -72,12 +73,13 @@ fn main() {
         reset_password,
         set_event,
         get_event,
-        sub_scout
+        sub_scout,
+        get_leaderboard
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-}
-/* 
+} */
+
 #[launch]
 async fn rocket() -> _ {
 
@@ -135,8 +137,9 @@ async fn rocket() -> _ {
     frontend::get_all_users::get_all_users,
     frontend::reset_password::reset_password,
     frontend::snowgrave::sub_scout::sub_scout,
+    frontend::snowgrave::get_leaderboard::get_leaderboard,
     setting::setevent::set_event,
     setting::setevent::get_event
     ])
     .mount("/", FileServer::from(relative!("static")))
-}*/
+}
