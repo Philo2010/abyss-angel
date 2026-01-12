@@ -21,10 +21,9 @@ const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
     bcrypt: 12,
     db_path: "postgres://philipbedrosian@localhost/testdb",
-    blue_api_key: "{{ INSERT_API_KEY }}"
+    blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-/* 
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -44,6 +43,11 @@ fn main() {
     use crate::frontend::snowgrave::queue::okapi_add_operation_for_queue_playoff_;
     use crate::frontend::snowgrave::scouter_edit::okapi_add_operation_for_scout_edit_;
     use crate::frontend::snowgrave::scouter_insert::okapi_add_operation_for_scout_insert_;
+    use crate::frontend::get_all_users::okapi_add_operation_for_get_all_users_;
+    use crate::frontend::reset_password::okapi_add_operation_for_reset_password_;
+    use crate::setting::setevent::okapi_add_operation_for_get_event_;
+    use crate::setting::setevent::okapi_add_operation_for_set_event_;
+    use crate::frontend::snowgrave::sub_scout::okapi_add_operation_for_sub_scout_;
 
     let spec = openapi_get_spec![
         settings:
@@ -63,12 +67,17 @@ fn main() {
         queue,
         queue_playoff,
         scout_edit,
-        scout_insert
+        scout_insert,
+        get_all_users,
+        reset_password,
+        set_event,
+        get_event,
+        sub_scout
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-}*/
-
+}
+/* 
 #[launch]
 async fn rocket() -> _ {
 
@@ -123,6 +132,11 @@ async fn rocket() -> _ {
     frontend::snowgrave::queue::queue,
     frontend::snowgrave::scouter_edit::scout_edit,
     frontend::snowgrave::scouter_insert::scout_insert,
+    frontend::get_all_users::get_all_users,
+    frontend::reset_password::reset_password,
+    frontend::snowgrave::sub_scout::sub_scout,
+    setting::setevent::set_event,
+    setting::setevent::get_event
     ])
     .mount("/", FileServer::from(relative!("static")))
-}
+}*/

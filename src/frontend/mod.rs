@@ -8,6 +8,8 @@ pub mod delete;
 pub mod pit;
 pub mod snowgrave;
 pub mod scoutwarn;
+pub mod get_all_users;
+pub mod reset_password;
 
 #[derive(Serialize, JsonSchema)]
 #[serde(tag = "status", content = "message")]

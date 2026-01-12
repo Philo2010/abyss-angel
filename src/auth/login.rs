@@ -51,6 +51,7 @@ pub async fn login(data: Json<LoginForm>, db: &State<DatabaseConnection>, cookie
     if res {
         //Good
         cookies.add(Cookie::new(UUID_COOKIE_NAME, a.id.to_string()));
+        cookies.add(Cookie::new("is_admin", a.is_admin.to_string()));
         Json(LoginRes::Success("Your logined in!".to_string()))
         
     } else {

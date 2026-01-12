@@ -1,7 +1,7 @@
 use rocket::{State, form::Form, serde::json::Json};
 use rocket_dyn_templates::Template;
 use schemars::JsonSchema;
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, entity};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, entity};
 use rocket_dyn_templates::context;
 use serde::Deserialize;
 use serde_json::Value;
@@ -29,6 +29,7 @@ pub async fn get_event_inner(db: &DatabaseConnection) -> Result<String, DbErr> {
     Ok(setting.event) 
 }
 
+#[rocket_okapi::openapi]
 #[post("/api/set_event", data = "<body>")]
 pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> Json<ApiResult<String>> {
 
@@ -53,7 +54,7 @@ pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> 
 
     
 
-    match crate::entity::dyn_settings::Entity::insert(setting).exec(db.inner()).await {
+    match setting.save(db.inner()).await {
         Ok(_) => {
             Json(ApiResult::Success("Done!".to_string()))
         },
@@ -63,6 +64,7 @@ pub async fn set_event(body: Json<SetEvent>, db: &State<DatabaseConnection>) -> 
     }
 }
 
+#[rocket_okapi::openapi]
 #[get("/api/get_event")]
 pub async fn get_event(db: &State<DatabaseConnection>) -> Json<ApiResult<String>> {
 

@@ -7,3 +7,4 @@ pub mod login;
 pub mod check;
 pub mod get_by_user;
 pub mod get_by_cookie;
+pub mod  reset_password;

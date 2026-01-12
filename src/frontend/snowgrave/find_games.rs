@@ -8,7 +8,7 @@ use crate::{auth, frontend::{ApiResult, snowgrave}, snowgrave::datatypes::{GameP
 
 #[rocket_okapi::openapi]
 #[get("/api/snowgrave/get_years")]
-pub async fn get_years(cookies: &CookieJar<'_>, db: &State<&DatabaseConnection>) -> Json<ApiResult<Vec<GamePartialWithoutId>>>  {
+pub async fn get_years(cookies: &CookieJar<'_>, db: &State<DatabaseConnection>) -> Json<ApiResult<Vec<GamePartialWithoutId>>>  {
 
     let uuid = match auth::get_by_cookie::get(cookies) {
         Some(a) => a,

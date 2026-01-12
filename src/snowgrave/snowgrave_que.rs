@@ -65,9 +65,9 @@ pub fn into_snow_team(data: &TbaMatch, id: i32) -> Result<Vec<upcoming_team::Act
             }
         };
         let station = match i {
-            1 => Stations::Red1,
-            2 => Stations::Red2,
-            3 => Stations::Red3,
+            0 => Stations::Red1,
+            1 => Stations::Red2,
+            2 => Stations::Red3,
             _ => {
                 return Err(Blue2DBErr::InvaildStation(i));
             }
@@ -102,9 +102,9 @@ pub fn into_snow_team(data: &TbaMatch, id: i32) -> Result<Vec<upcoming_team::Act
             }
         };
         let station = match i {
-            1 => Stations::Blue1,
-            2 => Stations::Blue2,
-            3 => Stations::Blue3,
+            0 => Stations::Blue1,
+            1 => Stations::Blue2,
+            2 => Stations::Blue3,
             _ => {
                 return Err(Blue2DBErr::InvaildStation(i));
             }

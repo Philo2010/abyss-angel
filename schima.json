@@ -303,6 +303,273 @@
           }
         }
       }
+    },
+    "/api/snowgrave/get_years": {
+      "get": {
+        "operationId": "get_years",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mvp/insert": {
+      "post": {
+        "operationId": "mvp_insert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MvpInsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/snowgrave/queue_match": {
+      "post": {
+        "operationId": "queue",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/snowgrave/queue_match_playoff": {
+      "post": {
+        "operationId": "queue_playoff",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scout/edit": {
+      "post": {
+        "operationId": "scout_edit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditSnow"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scout/insert": {
+      "post": {
+        "operationId": "scout_insert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsertSnow"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/misc/get_all_users": {
+      "get": {
+        "operationId": "get_all_users",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/misc/reset_password": {
+      "post": {
+        "operationId": "reset_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/set_event": {
+      "post": {
+        "operationId": "set_event",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/get_event": {
+      "get": {
+        "operationId": "get_event",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sub_scout": {
+      "post": {
+        "operationId": "sub_scout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubScoutForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1190,6 +1457,397 @@
             "type": "string"
           },
           "password": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds": {
+        "type": "object",
+        "required": [
+          "event_code",
+          "id",
+          "match_id",
+          "mvp",
+          "set",
+          "teams",
+          "tournament_level"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "match_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "set": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tournament_level": {
+            "$ref": "#/components/schemas/TournamentLevels"
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutingTeam_for_ScouterWithoutId"
+            }
+          },
+          "mvp": {
+            "$ref": "#/components/schemas/MvpIds"
+          }
+        }
+      },
+      "ScoutingTeam_for_ScouterWithoutId": {
+        "type": "object",
+        "required": [
+          "id",
+          "scouters",
+          "station",
+          "team"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Stations"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamData"
+          },
+          "scouters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScouterWithoutId"
+            }
+          }
+        }
+      },
+      "TeamData": {
+        "type": "object",
+        "required": [
+          "is_ab_team",
+          "team"
+        ],
+        "properties": {
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ScouterWithoutId": {
+        "type": "object",
+        "required": [
+          "done",
+          "id",
+          "station"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Stations"
+          },
+          "done": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MvpIds": {
+        "type": "object",
+        "properties": {
+          "blue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "red": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "MvpInsert": {
+        "type": "object",
+        "required": [
+          "comment",
+          "mvp_id",
+          "mvp_team",
+          "penalty_score",
+          "total_score"
+        ],
+        "properties": {
+          "mvp_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "mvp_team": {
+            "$ref": "#/components/schemas/TeamData"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "penalty_score": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "QueueInput": {
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "type": "string"
+          }
+        }
+      },
+      "EditSnow": {
+        "type": "object",
+        "required": [
+          "game",
+          "snowgrave_scout_id"
+        ],
+        "properties": {
+          "snowgrave_scout_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesEditSpecific"
+          }
+        }
+      },
+      "GamesEditSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExampleGame"
+            ],
+            "properties": {
+              "ExampleGame": {
+                "$ref": "#/components/schemas/Edit2"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Edit2": {
+        "type": "object",
+        "properties": {
+          "hehe": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "beep": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "hoohoo": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "InsertSnow": {
+        "type": "object",
+        "required": [
+          "game",
+          "snowgrave_scout_id"
+        ],
+        "properties": {
+          "snowgrave_scout_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesInsertsSpecific"
+          }
+        }
+      },
+      "GamesInsertsSpecific": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "ExampleGame"
+            ],
+            "properties": {
+              "ExampleGame": {
+                "$ref": "#/components/schemas/Insert2"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "Insert2": {
+        "type": "object",
+        "required": [
+          "beep",
+          "hehe",
+          "hoohoo"
+        ],
+        "properties": {
+          "hehe": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "beep": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hoohoo": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResult_for_Array_of_String": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "ResetPasswordForm": {
+        "type": "object",
+        "required": [
+          "new_password",
+          "user"
+        ],
+        "properties": {
+          "user": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
+      "SetEvent": {
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "type": "string"
+          }
+        }
+      },
+      "SubScoutForm": {
+        "type": "object",
+        "required": [
+          "og",
+          "replacement"
+        ],
+        "properties": {
+          "og": {
+            "type": "string"
+          },
+          "replacement": {
             "type": "string"
           }
         }
