@@ -20,7 +20,7 @@ mod snowgrave;
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2025,
     bcrypt: 12,
-    db_path: "postgres://philipbedrosian@localhost/testdb",
+    db_path: "postgres://postgres:newpassword@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 /*
@@ -132,6 +132,7 @@ async fn rocket() -> _ {
     frontend::snowgrave::find_games::get_years,
     frontend::snowgrave::mvp_insert::mvp_insert,
     frontend::snowgrave::queue::queue,
+    frontend::snowgrave::queue::queue_playoff,
     frontend::snowgrave::scouter_edit::scout_edit,
     frontend::snowgrave::scouter_insert::scout_insert,
     frontend::get_all_users::get_all_users,
