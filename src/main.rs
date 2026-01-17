@@ -23,7 +23,8 @@ const SETTINGS: crate::setting::Settings = Settings {
     db_path: "postgres://postgres:newpassword@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
-/*
+
+/* 
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -49,6 +50,7 @@ fn main() {
     use crate::setting::setevent::okapi_add_operation_for_set_event_;
     use crate::frontend::snowgrave::sub_scout::okapi_add_operation_for_sub_scout_;
     use crate::frontend::snowgrave::get_leaderboard::okapi_add_operation_for_get_leaderboard_;
+    use crate::frontend::pit::get_for_pit_scouter::okapi_add_operation_for_get_for_scout_;
 
     let spec = openapi_get_spec![
         settings:
@@ -56,6 +58,7 @@ fn main() {
         get,
         insert,
         forgive_scoutwarn,
+        get_for_scout,
         get_scoutwarn,
         send_scoutwarn,
         averages,
@@ -120,6 +123,7 @@ async fn rocket() -> _ {
     frontend::pit::edit::edit_pit,
     frontend::pit::get::get,
     frontend::pit::insert::insert,
+    frontend::pit::get_for_pit_scouter::get_for_scout,
     frontend::scoutwarn::forgive_warning::forgive_scoutwarn,
     frontend::scoutwarn::get_warning::get_scoutwarn,
     frontend::scoutwarn::send_warning::send_scoutwarn,
