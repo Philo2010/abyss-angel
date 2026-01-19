@@ -1,23 +1,27 @@
 use std::collections::HashMap;
 
+use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, Database, DatabaseConnection, DbErr, EntityTrait};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}};
 
 
-struct ScouterInsertForm {
-    player_indexs: Vec<Uuid>,
+pub struct ScouterInsertForm {
+    pub player_indexs: Vec<Uuid>,
     //id is a ref to a team, Uuid is the MVP scouter
-    matches: Vec<(i32, Vec<GameTeamDataScouter>, GameTeamDataMvp)>,
+    pub matches: Vec<(i32, Vec<GameTeamDataScouter>, GameTeamDataMvp)>,
 }
-struct GameTeamDataScouter {
+#[derive(Deserialize, Serialize, JsonSchema)]
+pub struct GameTeamDataScouter {
     id: usize,
     station: Stations, 
 }
-struct GameTeamDataMvp {
-    red: Uuid,
-    blue: Uuid
+
+pub struct GameTeamDataMvp {
+    pub red: Uuid,
+    pub blue: Uuid
 }
 
 

@@ -22,7 +22,7 @@ pub async fn assign_pit_scouts(db: &DatabaseConnection, data: AssignScoutForm) -
         let pit_upcoming = match pit_upcoming::Entity::find_by_id(assment.1).one(db).await? {
             Some(a) => a,
             None => {
-                return Err(DbErr::Custom("Pit Upcoming Id is invaild!".to_string()));
+                return Err(DbErr::Custom(format!("Pit Upcoming Id is invaild!: {}", assment.1)));
             },
         };
         let mut pit_active: pit_upcoming::ActiveModel = pit_upcoming.into();

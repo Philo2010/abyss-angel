@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::pit::pit::{PitEditSpecific, PitInsertsSpecific, PitScoutStandard, PitSpecific};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, JsonSchema)]
-#[sea_orm(table_name = "genertic_header")]
+#[sea_orm(table_name = "pit_example")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
@@ -35,12 +35,14 @@ impl PitScoutStandard for Functions {
     async fn insert_game_specific(&self, data: PitInsertsSpecific, db: &DatabaseConnection) -> Result<i32, DbErr> {
         match data {
             PitInsertsSpecific::ExamplePit(a) => {
+                println!("in ex");
                let active = ActiveModel { 
                     id: NotSet,
                     width: Set(a.width),
                     height: Set(a.height), 
                 };
-                let res = Entity::insert(active).exec(db).await?.last_insert_id;
+                let res = crate::pit::entrys::pit_example::Entity::insert(active).exec(db).await?.last_insert_id;
+                println!("in ok");
                 return Ok(res);
             },
             _ => {
@@ -63,11 +65,14 @@ impl PitScoutStandard for Functions {
             } 
         };
         
+        println!("{:?}", data_u.height);
+        println!("{:?}", data_u.height);
         let active = ActiveModel {
             id: Set(id),
             width: data_u.width.map(Set).unwrap_or(NotSet),
             height: data_u.height.map(Set).unwrap_or(NotSet) 
         };
+        println!("{:?}", active);
         let res = Entity::update(active).exec(db).await?;
 
         Ok(())

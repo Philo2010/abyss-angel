@@ -1,6 +1,6 @@
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait};
 
-use crate::{entity::pit_upcoming, pit::pit::{self, PitEditSpecific}};
+use crate::{entity::{pit_header, pit_upcoming}, pit::pit::{self, PitEditSpecific}};
 
 pub struct PitEditForm {
     pub pit_insert_id: i32,
@@ -23,8 +23,14 @@ pub async fn pit_edit(db: &DatabaseConnection, data: PitEditForm) -> Result<(), 
             return Err(DbErr::Custom("Pit has not even been submited yet!".to_string()));
         },
     };
+    let header = match pit_header::Entity::find_by_id(header_id).one(db).await? {
+        Some(a) => a,
+        None => {
+            return Err(DbErr::Custom("Could not find pit header".to_string()));
+        },
+    };;
 
-    let _res = pit::pit_edit(data.pit, db, header_id).await?;
+    let _res = pit::pit_edit(data.pit, db, header.pit_data).await?;
 
-    todo!()
+    Ok(())
 }

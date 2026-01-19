@@ -18,13 +18,13 @@ mod snowgrave;
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
-    year: 2025,
+    year: 9999,
     bcrypt: 12,
-    db_path: "postgres://postgres:newpassword@localhost/testdb",
+    db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-/* 
+
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -51,6 +51,9 @@ fn main() {
     use crate::frontend::snowgrave::sub_scout::okapi_add_operation_for_sub_scout_;
     use crate::frontend::snowgrave::get_leaderboard::okapi_add_operation_for_get_leaderboard_;
     use crate::frontend::pit::get_for_pit_scouter::okapi_add_operation_for_get_for_scout_;
+    use crate::frontend::pit::get_all_pits::okapi_add_operation_for_pit_get_all_;
+    use crate::frontend::pit::assign_pit::okapi_add_operation_for_assign_pit_;
+    use crate::frontend::snowgrave::insert_scout::okapi_add_operation_for_insert_scout_;
 
     let spec = openapi_get_spec![
         settings:
@@ -77,12 +80,16 @@ fn main() {
         set_event,
         get_event,
         sub_scout,
-        get_leaderboard
+        get_leaderboard,
+        pit_get_all,
+        assign_pit,
+        insert_scout
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-} */
+}
 
+/* 
 #[launch]
 async fn rocket() -> _ {
 
@@ -96,6 +103,17 @@ async fn rocket() -> _ {
     };
 
     let res = match db_conn.get_schema_registry("abyss-angel::entity").sync(&db_conn).await {
+        Ok(_) => {
+            ()
+        },
+        Err(a) => {
+            let strhe = a.to_string();
+            println!("{strhe}");
+            panic!()
+        },
+    };
+
+    let res2 = match db_conn.get_schema_registry("abyss-angel::pit::entrys").sync(&db_conn).await {
         Ok(_) => {
             ()
         },
@@ -123,6 +141,7 @@ async fn rocket() -> _ {
     frontend::pit::edit::edit_pit,
     frontend::pit::get::get,
     frontend::pit::insert::insert,
+    frontend::pit::get_all_pits::pit_get_all,
     frontend::pit::get_for_pit_scouter::get_for_scout,
     frontend::scoutwarn::forgive_warning::forgive_scoutwarn,
     frontend::scoutwarn::get_warning::get_scoutwarn,
@@ -143,8 +162,10 @@ async fn rocket() -> _ {
     frontend::reset_password::reset_password,
     frontend::snowgrave::sub_scout::sub_scout,
     frontend::snowgrave::get_leaderboard::get_leaderboard,
+    frontend::snowgrave::insert_scout::insert_scout,
     setting::setevent::set_event,
-    setting::setevent::get_event
+    setting::setevent::get_event,
+    frontend::pit::assign_pit::assign_pit
     ])
     .mount("/", FileServer::from(relative!("static")))
-}
+}*/

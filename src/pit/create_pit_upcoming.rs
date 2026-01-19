@@ -31,6 +31,7 @@ pub async fn create_pit_upcoming(db: &DatabaseConnection, event_code: &String) -
             id: NotSet,
             user: Set(None),
             team: Set(team_data.0),
+            is_done: Set(false),
             is_ab_team: Set(team_data.1),
             event_code: Set(event_code.clone()),
             pit_header_id: Set(None),

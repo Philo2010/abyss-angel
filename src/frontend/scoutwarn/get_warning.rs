@@ -32,7 +32,7 @@ pub async fn get_scoutwarn(db: &State<DatabaseConnection>, cookies: &CookieJar<'
             for warn in a {
                 let sender;
                 if warn.message.sender.is_none() {
-                    sender = "Snowgrave".to_string();
+                    sender = "Unkwown".to_string();
                 } else {
                     sender = get_by_uuid(&warn.message.sender.unwrap(), db).await.unwrap();
                 }

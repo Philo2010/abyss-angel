@@ -13,6 +13,7 @@ use crate::{auth::{self, get_by_cookie, get_by_user::{AuthGetUuidError, get_by_u
 pub struct Message {
     //sender will be gotten by cookies
     resv: String,
+    is_anon: bool,
     message: String,
 }
 
@@ -24,8 +25,8 @@ pub async fn send_scoutwarn(data: Json<Message>, db: &State<DatabaseConnection>,
         Err(a) => {
             match a {
                 AuthGetUuidError::UserIsNotHere => {
-                            return Json(ApiResult::Error("Could not find user!".to_string()));
-                        },
+                        return Json(ApiResult::Error("Could not find user!".to_string()));
+                },
                 AuthGetUuidError::DatabaseError(db_err) => {
                     return Json(ApiResult::Error(format!("Failed to get username: {db_err}")));
                 },
@@ -42,8 +43,15 @@ pub async fn send_scoutwarn(data: Json<Message>, db: &State<DatabaseConnection>,
         },
     };
 
+    let sender;
+    if data.is_anon {
+        sender = None;
+    } else {
+        sender = Some(uuid);
+    }
+
     let warning = crate::scoutwarn::send_warning::SendWarning {
-        sender: Some(uuid),
+        sender: sender,
         receiver: resv,
         message: data.message.clone()
     };

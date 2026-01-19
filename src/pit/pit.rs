@@ -10,7 +10,7 @@ use rocket::Data;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
-use crate::{SETTINGS, define_pits, entity::pit_header, pit::pit_example};
+use crate::{SETTINGS, define_pits, entity::pit_header, pit::entrys::pit_example};
 
 
 #[async_trait]
@@ -50,6 +50,7 @@ pub struct PitGet {
 }
 
 async fn prim_pit_insert(data: PitInsert, db: &DatabaseConnection, model: Box<dyn PitScoutStandard>) -> Result<i32, DbErr> {
+    println!("In backend func!");
     let spec_id = model.insert_game_specific(data.pit, db).await?;
 
     let created_at: NaiveDateTime = Local::now().naive_local();
@@ -116,5 +117,5 @@ pub async fn pit_edit(data: PitEditSpecific, db: &DatabaseConnection, id: i32) -
 
 
 define_pits!(
-    ExamplePit => crate::pit::pit_example,
+    ExamplePit => crate::pit::entrys::pit_example,
 );

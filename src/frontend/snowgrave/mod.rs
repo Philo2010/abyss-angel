@@ -5,3 +5,5 @@ pub mod mvp_insert;
 pub mod scouter_edit;
 pub mod sub_scout;
 pub mod get_leaderboard;
+pub mod insert_scout;
+pub mod get_all_scouts;

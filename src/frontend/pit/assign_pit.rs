@@ -19,7 +19,13 @@ use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
 pub struct AssignScoutFormButCool {
     scouts: Vec<String>,
     //first you is the index, next is the id to pit_upcoming
-    asignment: Vec<(usize, i32)>
+    asignment: Vec<PitAssigment>
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct PitAssigment {
+    index: usize,
+    upcomingid: i32
 }
 
 #[rocket_okapi::openapi]
@@ -50,7 +56,9 @@ pub async fn assign_pit(data: Json<AssignScoutFormButCool>,  db: &State<Database
 
     let form = AssignScoutForm { 
         scouts: scouts_uuid,
-        asignment: data.asignment.clone()
+        asignment: data.asignment.iter().map(|x| {
+            (x.index, x.upcomingid)
+        }).collect()
     };
     let res = match assign_pit_scouts::assign_pit_scouts(db, form).await {
         Ok(a) => a,

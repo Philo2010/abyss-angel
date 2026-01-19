@@ -1,4 +1,4 @@
-pub mod pit_example;
+pub mod entrys;
 pub mod pit_macro;
 pub mod pit;
 pub mod create_pit_upcoming;

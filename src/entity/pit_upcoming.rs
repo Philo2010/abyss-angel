@@ -8,6 +8,7 @@ pub struct Model {
     pub user: Option<Uuid>,
     pub team: i32,
     pub is_ab_team: bool,
+    pub is_done: bool,
 
     pub event_code: String,
     pub pit_header_id: Option<i32>

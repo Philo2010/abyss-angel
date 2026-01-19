@@ -35,6 +35,7 @@ pub async fn pit_insert(db: &DatabaseConnection, data: PitInsertForm) -> Result<
     let res = pit::pit_insert(insert_pit, db).await?;
     let mut pit_active: pit_upcoming::ActiveModel = pit_data.into();
     pit_active.pit_header_id = Set(Some(res));
+    pit_active.is_done = Set(true);
     let _res2 = pit_active.update(db).await?;
 
 

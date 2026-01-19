@@ -6,10 +6,11 @@ use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use rocket_okapi::JsonSchema;
 use serde_json::Value;
-use crate::auth;
+use crate::pit::pit::PitEditSpecific;
+use crate::pit::pit_edit::PitEditForm;
+use crate::{auth, pit};
 
 use crate::frontend::ApiResult;
-use crate::pit::pit::{PitEditSpecific, PitGet, PitHeaderInsert, PitInsert, PitInsertsSpecific, pit_edit, pit_get};
 use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
 
 #[derive(Deserialize, JsonSchema)]
@@ -24,7 +25,7 @@ pub struct PitHeaderGetFront {
 #[post("/api/pit/edit/<id>", data ="<data>")]
 pub async fn edit_pit(id: i32, data: Json<PitEditSpecific>,  db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<String>> {
 
-    match pit_edit(data.into_inner(), db, id).await {
+    match pit::pit_edit::pit_edit(db, PitEditForm { pit_insert_id: id, pit: data.into_inner() }).await {
         Ok(_a) => {
             return Json(ApiResult::Success("Edit is done!".to_string()));
         },
