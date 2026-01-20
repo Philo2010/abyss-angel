@@ -15,8 +15,7 @@ pub struct ScouterInsertForm {
 }
 #[derive(Deserialize, Serialize, JsonSchema)]
 pub struct GameTeamDataScouter {
-    id: usize,
-    station: Stations, 
+    index: usize,
 }
 
 pub struct GameTeamDataMvp {
@@ -67,7 +66,7 @@ pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -
         game_active.update(db).await?;
 
         for scouter in matche.1 {
-            let scouter_id = form.player_indexs.get(scouter.id).ok_or(DbErr::Custom("Invaild Index for players!".to_string()))?;
+            let scouter_id = form.player_indexs.get(scouter.index).ok_or(DbErr::Custom("Invaild Index for players!".to_string()))?;
             
             let scouter = game_scouts::ActiveModel {
                 id: NotSet,
@@ -75,7 +74,7 @@ pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -
                 team_id: Set(team.id),
                 scouter_id: Set(*scouter_id),
                 done: Set(false), //always
-                station: sea_orm::Set(scouter.station),
+                station: sea_orm::Set(team.station),
                 is_redo: Set(false)
             };
             scouters.push(scouter);

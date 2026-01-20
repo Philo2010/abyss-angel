@@ -48,6 +48,7 @@ pub struct ScouterWithoutId {
     pub id: i32,
     pub station: Stations,
     pub done: bool,
+    pub is_redo: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -57,6 +58,7 @@ pub struct ScouterWithScore {
     pub station: Stations,
     pub total_score: i32,
     pub done: bool,
+    pub is_redo: bool,
 }
 
 impl From<&game_scouts::Model> for Scouter {
@@ -76,6 +78,7 @@ impl From<&game_scouts::Model> for ScouterWithoutId {
             id: m.id,
             station: m.station,
             done: m.done,
+            is_redo: m.is_redo,
         }
     }
 }

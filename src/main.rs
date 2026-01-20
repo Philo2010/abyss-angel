@@ -24,7 +24,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-
+/* 
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -54,6 +54,8 @@ fn main() {
     use crate::frontend::pit::get_all_pits::okapi_add_operation_for_pit_get_all_;
     use crate::frontend::pit::assign_pit::okapi_add_operation_for_assign_pit_;
     use crate::frontend::snowgrave::insert_scout::okapi_add_operation_for_insert_scout_;
+    use crate::frontend::snowgrave::get_all_scouts::okapi_add_operation_for_get_all_snowgrave_;
+    use crate::auth::create_user::okapi_add_operation_for_create_user_front_;
 
     let spec = openapi_get_spec![
         settings:
@@ -77,19 +79,22 @@ fn main() {
         scout_insert,
         get_all_users,
         reset_password,
+        get_all_snowgrave,
         set_event,
         get_event,
         sub_scout,
         get_leaderboard,
         pit_get_all,
         assign_pit,
-        insert_scout
+        insert_scout,
+        create_user_front
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }
+*/
 
-/* 
+
 #[launch]
 async fn rocket() -> _ {
 
@@ -152,6 +157,7 @@ async fn rocket() -> _ {
     frontend::search::search,
     auth::login::login,
     auth::create_user::create_user,
+    auth::create_user::create_user_front,
     frontend::snowgrave::find_games::get_years,
     frontend::snowgrave::mvp_insert::mvp_insert,
     frontend::snowgrave::queue::queue,
@@ -163,9 +169,10 @@ async fn rocket() -> _ {
     frontend::snowgrave::sub_scout::sub_scout,
     frontend::snowgrave::get_leaderboard::get_leaderboard,
     frontend::snowgrave::insert_scout::insert_scout,
+    frontend::snowgrave::get_all_scouts::get_all_snowgrave,
     setting::setevent::set_event,
     setting::setevent::get_event,
     frontend::pit::assign_pit::assign_pit
     ])
     .mount("/", FileServer::from(relative!("static")))
-}*/
+}

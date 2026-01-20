@@ -17,6 +17,7 @@ pub struct Game {
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct Team {
+    pub id: i32,
     pub station: Stations,
     pub team: i32,
     pub is_ab_team: bool,
@@ -41,7 +42,7 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
                 Err(a) => {
                     return Json(ApiResult::Error(format!("Db Error: {a}")));
                 },
-            }.into_iter().map(|x| Team { station: x.station, team: x.team, is_ab_team: x.is_ab_team }).collect();
+            }.into_iter().map(|x| Team { id: x.id, station: x.station, team: x.team, is_ab_team: x.is_ab_team }).collect();
         games_to_send.push(Game { id: game.id, event_code: game.event_code, match_id: game.match_id, set: game.set, tournament_level: game.tournament_level, team });
     }
 

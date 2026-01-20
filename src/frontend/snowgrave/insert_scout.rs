@@ -24,7 +24,7 @@ struct GameTeamDataMvp {
 
 #[derive(Deserialize, Serialize, JsonSchema)]
 pub struct MatchData {
-    upcoming_match_id: i32,
+    upcoming_team_id: i32,
     game_scouters: Vec<GameTeamDataScouter>,
     mvp: GameTeamDataMvpFront
 }
@@ -44,7 +44,6 @@ pub struct ScouterInsertFront {
 #[rocket_okapi::openapi]
 #[post("/api/snowgrave/insert_scout", data="<data>")]
 pub async fn insert_scout(db: &State<DatabaseConnection>, data: Json<ScouterInsertFront>) -> Json<ApiResult<String>> {
-    let data_db: ScouterInsertForm;
     let mut player_index_uuid: Vec<Uuid> = Vec::with_capacity(data.0.player_indexs.len());
     for player in data.0.player_indexs {
         let player_uuid = match get_by_username(&player, db).await {
@@ -93,7 +92,7 @@ pub async fn insert_scout(db: &State<DatabaseConnection>, data: Json<ScouterInse
             },
         };
 
-        matches_db.push((match_send.upcoming_match_id, match_send.game_scouters, GameTeamDataMvp { red, blue }));
+        matches_db.push((match_send.upcoming_team_id, match_send.game_scouters, GameTeamDataMvp { red, blue }));
     }
 
     //mvp uuid
