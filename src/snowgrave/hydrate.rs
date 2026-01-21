@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 
 use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters}, snowgrave::{check_complete::CheckMatchErr, datatypes::{FullMvp, GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six}}};
 
@@ -19,9 +19,11 @@ async fn fetch_scouts_for_game(
 
     //TODO: Update to find total score
     //get the total score
-    let scout_data_header = genertic_header::Entity::fin
+        
 
     for scout in scouts {
+        let scout_data_header = genertic_header::Entity::find()
+        .filter(genertic_header::Column::SnowgraveScoutId.eq(scout.id)).one(db).await?.ok_or(DbErr::RecordNotFound("total score".to_string()))?;
         scouts_by_team
             .entry(scout.team_id)
             .or_default()
@@ -31,7 +33,7 @@ async fn fetch_scouts_for_game(
                 station: scout.station,
                 done: scout.done,
                 is_redo: scout.is_redo,
-                total_score: 0, // fill later if needed
+                total_score: scout_data_header.total_score, // fill later if needed
             });
     }
 

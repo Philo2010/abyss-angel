@@ -20,7 +20,7 @@ mod snowgrave;
 const SETTINGS: crate::setting::Settings = Settings {
     year: 9999,
     bcrypt: 12,
-    db_path: "postgres://philipbedrosian@localhost/testdb",
+    db_path: "postgres://postgres:newpassword@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
@@ -91,8 +91,7 @@ fn main() {
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-}
-*/
+}*/
 
 
 #[launch]
