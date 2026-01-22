@@ -1,11 +1,13 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
-use schemars::JsonSchema;
+use schemars::{JsonSchema};
+use sea_orm::TransactionTrait;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, Database, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}};
+use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, frontend::ApiResult};
 
 
 pub struct ScouterInsertForm {
@@ -24,17 +26,23 @@ pub struct GameTeamDataMvp {
 }
 
 
-pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -> Result<(), DbErr> {
-    
-    let mut scouters: Vec<game_scouts::ActiveModel> = Vec::with_capacity(form.matches.len()); //a bit smaller but eh
+pub async fn insert_scouters(
+    form: ScouterInsertForm,
+    db: &DatabaseConnection,
+) -> Result<(), DbErr> {
+
+    let txn = db.begin().await?;
+
+    let mut scouters: Vec<game_scouts::ActiveModel> = Vec::new();
+    let mut mvps: Vec<(i32, mvp_scouters::ActiveModel, mvp_scouters::ActiveModel)> = Vec::new();
     let mut teams: HashMap<i32, upcoming_team::Model> = HashMap::new();
-    
-    for matche in form.matches {
+
+    for matche in &form.matches {
         let team = if let Some(team) = teams.get(&matche.0) {
             team
         } else {
             let model = upcoming_team::Entity::find_by_id(matche.0)
-                .one(db)
+                .one(&txn)
                 .await?
                 .ok_or(DbErr::RecordNotFound("No team found".to_string()))?;
 
@@ -42,47 +50,70 @@ pub async fn insert_scouters(form: ScouterInsertForm, db: &DatabaseConnection) -
             teams.get(&matche.0).unwrap()
         };
 
-        //create mvp scouters
-        let mvp_red: mvp_scouters::ActiveModel = mvp_scouters::ActiveModel { 
-            id: NotSet, 
-            scouter: Set(matche.2.red), 
-            is_blue: Set(false),
-            data: Set(None)
-        };
-        let mvp_id_red = mvp_red.insert(db).await?.id;
+        let mut scouter_check = HashSet::new();
 
-        let mvp_blue: mvp_scouters::ActiveModel = mvp_scouters::ActiveModel { 
-            id: NotSet, 
-            scouter: Set(matche.2.blue), 
-            is_blue: Set(true),
-            data: Set(None)
-        };
-        let mvp_id_blue = mvp_blue.insert(db).await?.id;
+        for scouter in &matche.1 {
+            let scouter_id = form
+                .player_indexs
+                .get(scouter.index)
+                .ok_or(DbErr::Custom("Invalid index for players".to_string()))?;
 
-        let game_data = upcoming_game::Entity::find_by_id(team.game_id).one(db).await?.ok_or(DbErr::Custom("could not find game".to_string()))?;
-        let mut game_active: upcoming_game::ActiveModel = game_data.into();
-        game_active.mvp_id_red = Set(Some(mvp_id_red));
-        game_active.mvp_id_blue = Set(Some(mvp_id_blue));
-        game_active.update(db).await?;
+            if !scouter_check.insert(*scouter_id) {
+                return Err(DbErr::Custom(
+                    "Cannot have more than one of the same scouter on a team".to_string(),
+                ));
+            }
 
-        for scouter in matche.1 {
-            let scouter_id = form.player_indexs.get(scouter.index).ok_or(DbErr::Custom("Invaild Index for players!".to_string()))?;
-            
-            let scouter = game_scouts::ActiveModel {
+            scouters.push(game_scouts::ActiveModel {
                 id: NotSet,
                 game_id: Set(team.game_id),
                 team_id: Set(team.id),
                 scouter_id: Set(*scouter_id),
-                done: Set(false), //always
-                station: sea_orm::Set(team.station),
-                is_redo: Set(false)
-            };
-            scouters.push(scouter);
+                done: Set(false),
+                station: Set(team.station),
+                is_redo: Set(false),
+            });
         }
 
+        // Prepare MVPs but DO NOT insert yet
+        let mvp_red = mvp_scouters::ActiveModel {
+            id: NotSet,
+            scouter: Set(matche.2.red),
+            is_blue: Set(false),
+            data: Set(None),
+        };
+
+        let mvp_blue = mvp_scouters::ActiveModel {
+            id: NotSet,
+            scouter: Set(matche.2.blue),
+            is_blue: Set(true),
+            data: Set(None),
+        };
+
+        mvps.push((team.game_id, mvp_red, mvp_blue));
     }
 
-    game_scouts::Entity::insert_many(scouters).exec(db).await?;
+    // Insert scouts
+    game_scouts::Entity::insert_many(scouters)
+        .exec(&txn)
+        .await?;
 
+    // Insert MVPs + update games
+    for (game_id, red, blue) in mvps {
+        let red = red.insert(&txn).await?;
+        let blue = blue.insert(&txn).await?;
+
+        let game = upcoming_game::Entity::find_by_id(game_id)
+            .one(&txn)
+            .await?
+            .ok_or(DbErr::Custom("Could not find game".to_string()))?;
+
+        let mut game_active: upcoming_game::ActiveModel = game.into();
+        game_active.mvp_id_red = Set(Some(red.id));
+        game_active.mvp_id_blue = Set(Some(blue.id));
+        game_active.update(&txn).await?;
+    }
+
+    txn.commit().await?;
     Ok(())
 }

@@ -35,6 +35,7 @@ pub struct TeamData {
     pub team: i32,
 }
 
+
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct Scouter {
     pub id: i32,
