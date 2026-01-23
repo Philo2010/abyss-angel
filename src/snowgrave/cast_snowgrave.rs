@@ -1,6 +1,6 @@
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait, prelude::Expr};
 
-use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, genertic_header, upcoming_team, warning}, scoutwarn::{self, send_warning::SendWarning}, snowgrave::check::CheckFailerReturn};
+use crate::{ entity::{game_scouts, genertic_header, upcoming_team, warning}, scoutwarn::{self, send_warning::SendWarning}, snowgrave::check::CheckFailerReturn};
 
 pub async fn cast_snowgrave(
     game_id: i32,

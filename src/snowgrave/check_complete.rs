@@ -8,6 +8,7 @@ use crate::{
     }, hydrate::hydrate_game},
 };
 
+#[derive(Debug)]
 pub enum CheckMatchErr {
     NotAllScoutersAreDone,
     MvpIsNotDone,
@@ -30,12 +31,25 @@ pub async fn check_match(
     game_id: i32,
     db: &DatabaseConnection,
 ) -> Result<(), CheckMatchErr> {
-    let partial_game = GamePartial::from_game_id(game_id, db).await?;
+    let partial_game = match GamePartial::from_game_id(game_id, db).await {
+        Ok(a) => a,
+        Err(_) => {
+            panic!("from game id failed");
+        },
+    };
 
-    let game_full = match hydrate_game(partial_game, db).await? {
+    let game_data = match hydrate_game(partial_game, db).await {
+        Ok(a) => a,
+        Err(a) => {
+            return Err(CheckMatchErr::DbErr(DbErr::Custom(format!("Hydrate Game failed {:?}", a))));
+        },
+    };
+
+    let game_full = match game_data {
         Some(full) => full,             // all data is present
         None => return Err(CheckMatchErr::NotAllScoutersAreDone), // or another "not ready" error
     };
+
     let res = check::check(&game_full)?;
 
     let true_res = cast_snowgrave::cast_snowgrave(game_id, res, db).await?;

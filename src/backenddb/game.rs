@@ -9,7 +9,7 @@ use serde::Serialize;
 use serde_json::Value;
 use uuid::Uuid;
 use crate::auth::get_by_user::{AuthGetUuidError, get_by_uuid};
-use crate::backenddb::example_game::Avg;
+use crate::backenddb::entrys::example_game::Avg;
 use crate::entity::genertic_header;
 use crate::entity::prelude::GenerticHeader;
 use crate::{SETTINGS, auth, backenddb::*};
@@ -523,5 +523,5 @@ pub async fn edit_game(edit: GamesEdit, db: &DatabaseConnection) -> Result<(), D
 
 define_games!(
     //Insert each year here
-    ExampleGame => crate::backenddb::example_game,
+    ExampleGame => crate::backenddb::entrys::example_game,
 );  

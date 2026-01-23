@@ -1,5 +1,6 @@
+use rocket::response::status::Custom;
 use schemars::JsonSchema;
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ModelTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, DbErr, EntityTrait, ModelTrait};
 use serde::{Deserialize, Serialize};
 
 use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_complete::{self, CheckMatchErr}};
@@ -84,12 +85,15 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
 
     let res = match check_complete::check_match(snowgrave_game.id, db).await {
         Err(CheckMatchErr::DbErr(a)) => {
-            return Err(a);
+            return Err(DbErr::Custom(format!("Check failed: {:?}", a)));
         }
         _ => {
             ()
         }
     };
+    let mut scouter_active: game_scouts::ActiveModel = snowgrave_scout.into();
+    scouter_active.done = Set(true);
+    let res2 = scouter_active.update(db).await?;
 
     Ok(())
 }

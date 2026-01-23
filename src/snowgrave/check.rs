@@ -17,6 +17,7 @@ fn most_common<T: Eq + std::hash::Hash + Copy>(items: &[T]) -> Option<(T, usize)
     counts.into_iter().max_by_key(|&(_, count)| count)
 }
 
+#[derive(Debug)]
 pub struct CheckFailerReturn {
     pub game_number: i32,
     pub teams_to_redo: Vec<i32>,

@@ -20,7 +20,7 @@ mod snowgrave;
 const SETTINGS: crate::setting::Settings = Settings {
     year: 9999,
     bcrypt: 12,
-    db_path: "postgres://postgres:newpassword@localhost/testdb",
+    db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
@@ -118,6 +118,17 @@ async fn rocket() -> _ {
     };
 
     let res2 = match db_conn.get_schema_registry("abyss-angel::pit::entrys").sync(&db_conn).await {
+        Ok(_) => {
+            ()
+        },
+        Err(a) => {
+            let strhe = a.to_string();
+            println!("{strhe}");
+            panic!()
+        },
+    };
+
+    let res3 =  match db_conn.get_schema_registry("abyss-angel::backenddb::entrys").sync(&db_conn).await {
         Ok(_) => {
             ()
         },

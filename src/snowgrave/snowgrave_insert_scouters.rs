@@ -7,7 +7,7 @@ use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, Database, DatabaseCo
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{backenddb::example_game::ActiveModel, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, frontend::ApiResult};
+use crate::{entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, frontend::ApiResult};
 
 
 pub struct ScouterInsertForm {

@@ -16,14 +16,18 @@ async fn fetch_scouts_for_game(
 
     let mut scouts_by_team: HashMap<i32, Vec<ScouterWithScore>> = HashMap::new();
 
-
-    //TODO: Update to find total score
-    //get the total score
-        
-
     for scout in scouts {
-        let scout_data_header = genertic_header::Entity::find()
-        .filter(genertic_header::Column::SnowgraveScoutId.eq(scout.id)).one(db).await?.ok_or(DbErr::RecordNotFound("total score".to_string()))?;
+        let header = genertic_header::Entity::find()
+            .filter(genertic_header::Column::SnowgraveScoutId.eq(scout.id))
+            .one(db)
+            .await
+            .map_err(CheckMatchErr::DbErr)?;
+
+        let Some(header) = header else {
+            // Scout exists but has not submitted yet → game not ready
+            return Ok(HashMap::new()); // or signal NotReady
+        };
+
         scouts_by_team
             .entry(scout.team_id)
             .or_default()
@@ -33,9 +37,10 @@ async fn fetch_scouts_for_game(
                 station: scout.station,
                 done: scout.done,
                 is_redo: scout.is_redo,
-                total_score: scout_data_header.total_score, // fill later if needed
+                total_score: header.total_score,
             });
     }
+
 
     Ok(scouts_by_team)
 }
@@ -85,7 +90,10 @@ pub async fn hydrate_game(
     db: &DatabaseConnection,
 ) -> Result<Option<GameFull>, CheckMatchErr> {
     // fetch all scouts for each team
-    let scouts_by_team: HashMap<i32, Vec<ScouterWithScore>> = fetch_scouts_for_game(partial.id, db).await?;
+    let scouts_by_team: HashMap<i32, Vec<ScouterWithScore>> = match fetch_scouts_for_game(partial.id, db).await {
+        Ok(a) => a,
+        Err(a) => {panic!("Fetch failed!")},
+    };
 
     // check if any team is missing scouts
     if partial.teams.len() != 6 || scouts_by_team.len() != 6 {
