@@ -16,6 +16,8 @@ pub async fn get_years(cookies: &CookieJar<'_>, db: &State<DatabaseConnection>) 
             return Json(ApiResult::Error("Not login in".to_string()));
         },
     };
+    println!("Hello!");
+
     let games: Vec<GamePartialWithoutId> = match crate::snowgrave::get_games_from_scouter::get_games_for_scouter(uuid, db.inner()).await {
         Ok(a) => a,
         Err(a) => {
