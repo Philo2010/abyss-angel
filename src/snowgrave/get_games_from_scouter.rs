@@ -39,6 +39,7 @@ pub async fn get_games_for_scouter(
     let mvps: HashMap<i32, mvp_scouters::Model> =
         mvp_scouters::Entity::find()
             .filter(mvp_scouters::Column::Scouter.eq(scouter))
+            .filter(mvp_scouters::Column::Data.is_null())
             .all(db)
             .await?
             .into_iter()

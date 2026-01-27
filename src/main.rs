@@ -24,7 +24,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-/* 
+/*
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -56,6 +56,7 @@ fn main() {
     use crate::frontend::snowgrave::insert_scout::okapi_add_operation_for_insert_scout_;
     use crate::frontend::snowgrave::get_all_scouts::okapi_add_operation_for_get_all_snowgrave_;
     use crate::auth::create_user::okapi_add_operation_for_create_user_front_;
+    use crate::frontend::snowgrave::get_teams_from_game::okapi_add_operation_for_get_teams_from_game_;
 
     let spec = openapi_get_spec![
         settings:
@@ -87,12 +88,13 @@ fn main() {
         pit_get_all,
         assign_pit,
         insert_scout,
-        create_user_front
+        create_user_front,
+        get_teams_from_game
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
-}*/
-
+}
+ */
 
 #[launch]
 async fn rocket() -> _ {
@@ -173,6 +175,7 @@ async fn rocket() -> _ {
     frontend::snowgrave::queue::queue,
     frontend::snowgrave::queue::queue_playoff,
     frontend::snowgrave::scouter_edit::scout_edit,
+    frontend::snowgrave::get_teams_from_game::get_teams_from_game,
     frontend::snowgrave::scouter_insert::scout_insert,
     frontend::get_all_users::get_all_users,
     frontend::reset_password::reset_password,

@@ -7,3 +7,4 @@ pub mod sub_scout;
 pub mod get_leaderboard;
 pub mod insert_scout;
 pub mod get_all_scouts;
+pub mod get_teams_from_game;

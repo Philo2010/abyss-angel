@@ -1,4 +1,4 @@
-use schemars::JsonSchema;
+use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect};
 use serde::{Deserialize, Serialize};
 
@@ -32,9 +32,9 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
         comment: Set(data.comment),
         total_score: Set(data.total_score),
         penalty_score: Set(data.penalty_score),
-        is_blue: NotSet,
+        is_blue: mvp.is_blue.clone(),
     };
-    let data_id = mvp_insert.update(db).await?;
+    let data_id = mvp_insert.insert(db).await?;
 
     mvp.data = Set(Some(data_id.id));
 
