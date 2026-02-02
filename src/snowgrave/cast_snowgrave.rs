@@ -7,45 +7,61 @@ pub async fn cast_snowgrave(
     fails: CheckFailerReturn,
     db: &DatabaseConnection,
 ) -> Result<(), DbErr> {
+    use std::collections::HashSet;
+
     db.transaction::<_, _, DbErr>(|txn| {
         Box::pin(async move {
-            let team_ids: Vec<i32> = upcoming_team::Entity::find()
-                .select_only()
-                .column(upcoming_team::Column::Id)
-                .filter(upcoming_team::Column::GameId.eq(game_id))
-                .into_tuple()
-                .all(txn)
-                .await?;
 
-                for scouter in fails.reasons {
-                    //send the warning to them
-                    let warn = SendWarning {
-                        sender: None, //We are snowgrave
-                        receiver: scouter.scouter_id,
-                        message: format!("AUTOMATED SNOWGRAVE WARNING:\nWE HAVE FOUND AN ERROR IN YOUR SCOUT PACKAGE OF GAME {}.\n PLEASE IMPROVE FOR LATER, SYSTEMS DO NOT LIKE TO SLOW DUE TO HUMAN ERROR. -SG", fails.game_number),
-                    };
-                    scoutwarn::send_warning::send_warning(warn, txn).await?;
+            let CheckFailerReturn {
+                game_number,
+                teams_to_redo,
+                scouts_to_forgive,
+                reasons,
+                winner_teams,
+            } = fails;
 
-                    //now to mark them as not done and redo
-                    let mut res: game_scouts::ActiveModel = game_scouts::Entity::find_by_id(scouter.id).one(txn).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?.into();
-                    res.is_redo = Set(true);
-                    res.done = Set(false);
-                    res.update(txn).await?;
-                }
+            let fail_ids: HashSet<i32> = reasons.iter().map(|s| s.id).collect();
+            let forgive_ids: HashSet<i32> = scouts_to_forgive.iter().map(|s| s.id).collect();
+            let winner_ids: HashSet<i32> = winner_teams.into_iter().collect();
 
-            //for reason in fails.reasons
+            // ---------- INVARIANTS ----------
+            debug_assert!(
+                fail_ids.is_disjoint(&forgive_ids),
+                "Scout cannot be both failed and forgiven"
+            );
 
-            genertic_header::Entity::update_many()
-                .filter(genertic_header::Column::SnowgraveScoutId.is_in(team_ids))
-                .col_expr(genertic_header::Column::IsPending, Expr::value(false))
-                .exec(txn)
-                .await?;
+            // ---------- WARN + REDO FAILED SCOUTS ----------
+            for scouter in &reasons {
+                let warn = SendWarning {
+                    sender: None,
+                    receiver: scouter.scouter_id,
+                    message: format!(
+                        "AUTOMATED SNOWGRAVE WARNING:\n\
+                         ERROR FOUND IN GAME {}.\n\
+                         PLEASE IMPROVE FOR LATER. -SG",
+                        game_number
+                    ),
+                };
+                scoutwarn::send_warning::send_warning(warn, txn).await?;
 
+                let mut scout: game_scouts::ActiveModel =
+                    game_scouts::Entity::find_by_id(scouter.id)
+                        .one(txn)
+                        .await?
+                        .ok_or(DbErr::RecordNotFound("Missing scout".into()))?
+                        .into();
+
+                scout.is_redo = Set(true);
+                scout.done = Set(false);
+                scout.update(txn).await?;
+            }
+
+            // ---------- MARK REDO HEADERS ----------
             let redo_scout_ids: Vec<i32> = game_scouts::Entity::find()
                 .select_only()
                 .column(game_scouts::Column::Id)
                 .filter(game_scouts::Column::GameId.eq(game_id))
-                .filter(game_scouts::Column::TeamId.is_in(fails.teams_to_redo))
+                .filter(game_scouts::Column::TeamId.is_in(teams_to_redo))
                 .into_tuple()
                 .all(txn)
                 .await?;
@@ -53,14 +69,54 @@ pub async fn cast_snowgrave(
             if !redo_scout_ids.is_empty() {
                 genertic_header::Entity::update_many()
                     .filter(genertic_header::Column::SnowgraveScoutId.is_in(redo_scout_ids))
+                    .col_expr(genertic_header::Column::IsPending, Expr::value(false))
                     .col_expr(genertic_header::Column::IsMarked, Expr::value(true))
+                    // ❌ Leave IsDup alone!
                     .exec(txn)
                     .await?;
             }
 
+            // ---------- FORGIVEN SCOUTS ----------
+            if !forgive_ids.is_empty() {
+                genertic_header::Entity::update_many()
+                    .filter(genertic_header::Column::SnowgraveScoutId.is_in(forgive_ids.iter().copied()))
+                    .col_expr(genertic_header::Column::IsPending, Expr::value(false))
+                    .col_expr(genertic_header::Column::IsMarked, Expr::value(false))
+                    // ❌ Leave IsDup alone!
+                    .exec(txn)
+                    .await?;
+            }
+
+            // ---------- WINNERS (clear duplicate flag) ----------
+            if !winner_ids.is_empty() {
+                genertic_header::Entity::update_many()
+                    .filter(genertic_header::Column::SnowgraveScoutId.is_in(winner_ids.iter().copied()))
+                    .col_expr(genertic_header::Column::IsDup, Expr::value(false))
+                    .exec(txn)
+                    .await?;
+            }
+
+            // ---------- FINAL SAFETY ASSERT ----------
+            #[cfg(debug_assertions)]
+            {
+                let bad_headers = genertic_header::Entity::find()
+                    .filter(genertic_header::Column::GameId.eq(game_id))
+                    .filter(genertic_header::Column::IsPending.eq(false))
+                    .filter(genertic_header::Column::IsMarked.eq(false))
+                    .filter(genertic_header::Column::SnowgraveScoutId.is_not_in(forgive_ids.iter().copied()))
+                    .all(txn)
+                    .await?;
+
+                debug_assert!(
+                    bad_headers.is_empty(),
+                    "Header left resolved but neither marked nor forgiven (dup is allowed)"
+                );
+            }
+
             Ok(())
         })
-    }).await
+    })
+    .await
     .map_err(|e| match e {
         TransactionError::Connection(err) => err,
         TransactionError::Transaction(err) => err,

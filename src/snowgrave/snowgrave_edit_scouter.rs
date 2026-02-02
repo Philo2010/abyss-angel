@@ -68,8 +68,11 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
         game: data.game
     }, db).await?;
 
+
+    println!("header ran");
+
     //now time to do the check itself
     let res = check_complete::check_match(snowgrave_game.id, db).await;
 
-    todo!()
+    Ok(())
 }

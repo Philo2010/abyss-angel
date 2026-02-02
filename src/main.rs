@@ -1,10 +1,11 @@
 #[macro_use] extern crate rocket;
-use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}};
+use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}, tokio};
 use rocket_dyn_templates::Template;
 use rocket_okapi::{r#gen::OpenApiGenerator, okapi::openapi3::OpenApi, openapi_get_routes_spec, openapi_get_spec, settings::OpenApiSettings};
+use sea_orm::DbErr;
 use serde_json::to_string_pretty;
 
-use crate::{frontend::delete::delete_scout, setting::Settings};
+use crate::{ frontend::delete::delete_scout, setting::Settings, snowgrave::{check::CheckFailerReturn, check_complete::{self, CheckMatchErr}, datatypes::GamePartial, hydrate::hydrate_game}};
 
 mod sexymac;
 mod setting;
@@ -95,6 +96,76 @@ fn main() {
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }
  */
+
+/* 
+#[tokio::main]
+async fn main() -> Result<(), DbErr> {
+    /* */
+    let db_conn = match sea_orm::Database::connect(SETTINGS.db_path).await {
+        Ok(a) => a,
+        Err(a) => {
+            println!("Major issue! We were not able to connect to database, this is very funny as we were able to connect to the database before (or else you would not be seeing this)");
+            println!("Err from Seaorm: {a}");
+            panic!();
+        },
+    };
+
+
+    let partial_game = match GamePartial::from_game_id(36, &db_conn).await {
+        Ok(a) => a,
+        Err(_) => {
+            panic!("from game id failed");
+        },
+    };
+
+    let game_data = match hydrate_game(partial_game, &db_conn).await {
+        Ok(a) => a,
+        Err(a) => {
+            return Err(DbErr::Custom(format!("Hydrate Game failed {:?}", a)));
+        },
+    };
+
+    let game_full = match game_data {
+        Some(full) => full,             // all data is present
+        None => {return Err(DbErr::Custom("Not all scouter done".to_string()));}
+    };
+
+    let res = match snowgrave::check::check(&game_full) {
+        Ok(a) => a,
+        Err(a) => {
+            match a {
+                CheckMatchErr::NotAllScoutersAreDone => {
+                    return Err(DbErr::Custom("NotAllScoutersAreDone".to_string()));
+                },
+                CheckMatchErr::MvpIsNotDone => {
+                    return Err(DbErr::Custom("MvpIsNotDone".to_string()));
+                },
+                CheckMatchErr::ThereIsNotOneScouterPerTeam => {
+                    return Err(DbErr::Custom("ThereIsNotOneScouterPerTeam".to_string()));
+                },
+                CheckMatchErr::ThereIsNoMVP => {
+                    return Err(DbErr::Custom("There is no MVP".to_string()));
+                },
+                CheckMatchErr::NoMatch => {
+                    return Err(DbErr::Custom("No match".to_string()));
+                },
+                CheckMatchErr::Not6Teams => {
+                    return Err(DbErr::Custom("Not6Teams".to_string()));
+                },
+                CheckMatchErr::DbErr(db_err) => {
+                    return Err(db_err);
+                },
+            }
+        },
+    };
+
+    println!("{:?}", res);
+    check_complete::check_match(36, &db_conn).await;
+
+    Ok(())
+}
+*/
+
 
 #[launch]
 async fn rocket() -> _ {

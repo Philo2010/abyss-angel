@@ -203,6 +203,38 @@ impl GamePartial {
             })
             .collect();
 
+        let mvp_red = match game.mvp_id_red {
+            Some(a) => {
+                match mvp_scouters::Entity::find_by_id(a).one(db).await {
+                    Ok(a) => {
+                        a.map(|x| MvpScouter { id: x.id, is_blue: x.is_blue, scouter_id: x.scouter })
+                    },
+                    Err(a) => {
+                        return Err(a);
+                    },
+                }
+            },
+            None => {
+                None
+            },
+        };
+
+        let mvp_blue = match game.mvp_id_blue {
+            Some(a) => {
+                match mvp_scouters::Entity::find_by_id(a).one(db).await {
+                    Ok(a) => {
+                        a.map(|x| MvpScouter { id: x.id, is_blue: x.is_blue, scouter_id: x.scouter })
+                    },
+                    Err(a) => {
+                        return Err(a);
+                    },
+                }
+            },
+            None => {
+                None
+            },
+        };
+
         Ok(GamePartial {
             id: game.id,
             event_code: game.event_code,
@@ -210,7 +242,7 @@ impl GamePartial {
             set: game.set,
             tournament_level: game.tournament_level,
             teams,         // matches Game<Vec<ScoutingTeamThin>, Option<MvpScouter>>
-            mvp: MvpPartial { red: None, blue: None },     // fill later in hydrate_game
+            mvp: MvpPartial { red: mvp_red, blue: mvp_blue },     // fill later in hydrate_game
         })
     }
 }

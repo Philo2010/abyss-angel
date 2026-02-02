@@ -116,7 +116,7 @@ impl YearOp for Functions {
                 let beep = a.beep.unwrap_or(total_score.beep);
                 let score = get_total_score(hehe, beep);
                 header.total_score = Set(score);
-                let header_data = header.insert(db).await?;
+                let header_data = header.update(db).await?;
 
                 ActiveModel {
                     id: Set(header_data.game_id), 

@@ -21,118 +21,138 @@ fn most_common<T: Eq + std::hash::Hash + Copy>(items: &[T]) -> Option<(T, usize)
 pub struct CheckFailerReturn {
     pub game_number: i32,
     pub teams_to_redo: Vec<i32>,
+    pub scouts_to_forgive: Vec<ScouterWithScore>,
     pub reasons: Vec<ScouterWithScore>,
     pub winner_teams: Vec<i32>
 }
 
 
 pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
+    use std::collections::HashSet;
 
-    let mut fails: Vec<ScouterWithScore> = Vec::new();
-    let mut teams_to_redo: Vec<i32> = Vec::new();
-    let mut red_score: i32 = 0;
-    let mut red_teams: Vec<i32> = Vec::new();
-    let mut blue_score: i32 = 0;
-    let mut blue_teams: Vec<i32> = Vec::new();
-    let mut extra_check = true;
-    let mut scouts_id_to_non_dup: Vec<i32> = Vec::new(); //is the SNOWGRAVE id, must be converted into and duped by cast
+    let mut fails = Vec::new();
+    let mut forgive = Vec::new();
+    let mut teams_to_redo = Vec::new();
+    let mut winner_teams = Vec::new();
+    let mut failed_ids = HashSet::new();
 
+    let mut red_sum = 0;
+    let mut blue_sum = 0;
+    let mut trusted_red = Vec::new();
+    let mut trusted_blue = Vec::new();
+
+    // ---------- TEAM CONSENSUS ----------
     for team in &game.teams.0 {
+        let scores: Vec<_> = team.scouters.iter().map(|s| s.total_score).collect();
+        let (score, count) =
+            most_common(&scores).ok_or(CheckMatchErr::NotAllScoutersAreDone)?;
 
-        let scores: Vec<i32> = team.scouters.iter().map(|x| x.total_score).collect();
-        let cooldata: (i32, usize) = most_common(&scores).ok_or(CheckMatchErr::NotAllScoutersAreDone)?;
+        let ratio = count as f32 / scores.len() as f32;
 
+        let (mut ok, mut bad): (Vec<_>, Vec<_>) =
+            team.scouters.iter().copied()
+                .partition(|s| s.total_score == score);
 
-        let winner_id = team
-            .scouters
-            .iter()
-            .find(|s| s.total_score == cooldata.0)
-            .unwrap()
-            .id;
-
-        for idx in &team.scouters {
-            if idx.total_score != cooldata.0 {
-                fails.push(*idx);
-            }
-        }
-
-
-        let ratio: f32 = cooldata.1 as f32 / scores.len() as f32;
         if ratio < AGREE_AMOUNT {
             teams_to_redo.push(team.id);
-            //entire team gets slimed
-            fails.clear();
-            for idx in &team.scouters {
-                fails.push(*idx);
-            }
-            extra_check = false;
-        } else {
-            //we dont care what person will be credited so ya...
-            scouts_id_to_non_dup.push(winner_id);
-            //only scouter that fails gets slimed
-            for idx in &team.scouters {
-                if idx.total_score != cooldata.0 {
-                    fails.push(*idx);
+            for s in team.scouters.iter().copied() {
+                if failed_ids.insert(s.id) {
+                    fails.push(s);
                 }
             }
-            //its ok
-            if team.station == Stations::Red1 || team.station == Stations::Red2 || team.station == Stations::Red3 {
-                red_score = cooldata.0 + red_score;
-                red_teams.push(team.id);
-            } else {
-                blue_score = cooldata.0 + blue_score;
-                blue_teams.push(team.id);
+            continue;
+        }
+
+        // invariant: trusted team must have at least one agreeing scouter
+        debug_assert!(!ok.is_empty());
+
+        winner_teams.push(ok.iter().map(|s| s.id).min().unwrap());
+        forgive.append(&mut ok);
+
+        for s in bad {
+            if failed_ids.insert(s.id) {
+                fails.push(s);
+            }
+        }
+
+        match team.station {
+            Stations::Red1 | Stations::Red2 | Stations::Red3 => {
+                red_sum += score;
+                trusted_red.push(team.id);
+            }
+            _ => {
+                blue_sum += score;
+                trusted_blue.push(team.id);
             }
         }
     }
 
-    //check MVP along with scores
-    let red_mvp_score = game.mvp.red.data.total_score - game.mvp.red.data.penalty_score;
-    let blue_mvp_score = game.mvp.blue.data.total_score- game.mvp.blue.data.penalty_score;
+    // ---------- MVP CHECK (CERTAINTY ONLY) ----------
+    let red_mvp = game.mvp.red.data.total_score - game.mvp.red.data.penalty_score;
+    let blue_mvp = game.mvp.blue.data.total_score - game.mvp.blue.data.penalty_score;
 
-    if !extra_check {
-        //we are done there is nothing else we can check
-        let res = CheckFailerReturn {
-            game_number: game.match_id,
-            teams_to_redo,
-            reasons: fails,
-            winner_teams: scouts_id_to_non_dup
-        };
-        return Ok(res);
-    }
+    let total_red = game.teams.0.iter()
+        .filter(|t| matches!(t.station, Stations::Red1 | Stations::Red2 | Stations::Red3))
+        .count();
 
-    if red_score != red_mvp_score {
-        //red allence has failed
-        teams_to_redo.append(&mut red_teams);
-        for team in &game.teams.0 {
-            for scouter in &team.scouters {
-                if (scouter.station == Stations::Red1 || scouter.station == Stations::Red2 || scouter.station == Stations::Red3) {
-                    if !fails.contains(scouter) {
-                        fails.push(*scouter);
-                    }
-                }
-            }
-        }
-    }
-    if blue_score != blue_mvp_score {
-        teams_to_redo.append(&mut blue_teams);
-        for team in &game.teams.0 {
-            for scouter in &team.scouters {
-                if (scouter.station == Stations::Blue1 || scouter.station == Stations::Blue2 || scouter.station == Stations::Blue3) {
-                    if !fails.contains(scouter) {
-                        fails.push(*scouter);
-                    }
-                }
-            }
-        }
-    }
+    let total_blue = game.teams.0.iter()
+        .filter(|t| matches!(t.station, Stations::Blue1 | Stations::Blue2 | Stations::Blue3))
+        .count();
 
-    let res = CheckFailerReturn {
-            game_number: game.match_id,
-            teams_to_redo,
-            reasons: fails,
-            winner_teams: scouts_id_to_non_dup
+    let check_alliance = |trusted: &Vec<i32>, total: usize, sum: i32, mvp: i32| {
+        let unknowns = total - trusted.len();
+        (unknowns == 0 && sum != mvp) || (unknowns == 1 && sum > mvp)
     };
 
-    Ok(res)
+    if check_alliance(&trusted_red, total_red, red_sum, red_mvp) {
+        teams_to_redo.extend(&trusted_red);
+        for team in &game.teams.0 {
+            if trusted_red.contains(&team.id) {
+                for s in team.scouters.iter().copied() {
+                    if failed_ids.insert(s.id) {
+                        fails.push(s);
+                    }
+                }
+            }
+        }
+    }
+
+    if check_alliance(&trusted_blue, total_blue, blue_sum, blue_mvp) {
+        teams_to_redo.extend(&trusted_blue);
+        for team in &game.teams.0 {
+            if trusted_blue.contains(&team.id) {
+                for s in team.scouters.iter().copied() {
+                    if failed_ids.insert(s.id) {
+                        fails.push(s);
+                    }
+                }
+            }
+        }
+    }
+
+    teams_to_redo.sort_unstable();
+    teams_to_redo.dedup();
+
+    forgive.retain(|s| !failed_ids.contains(&s.id));
+
+    // ---------- GLOBAL INVARIANTS ----------
+    debug_assert!(
+        forgive.iter().all(|s| !failed_ids.contains(&s.id)),
+        "A scouter cannot be both forgiven and failed"
+    );
+
+    debug_assert!(
+        teams_to_redo.iter().all(|id| {
+            game.teams.0.iter().any(|t| t.id == *id)
+        }),
+        "Redo list contains unknown team IDs"
+    );
+
+    Ok(CheckFailerReturn {
+        game_number: game.match_id,
+        teams_to_redo,
+        scouts_to_forgive: forgive,
+        reasons: fails,
+        winner_teams,
+    })
 }

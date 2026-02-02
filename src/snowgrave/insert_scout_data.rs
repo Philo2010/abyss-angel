@@ -31,6 +31,9 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
     if snowgrave_scout.done {
         return Err(DbErr::Custom("Already done!".to_string()));
     }
+    if snowgrave_scout.is_redo {
+        return Err(DbErr::Custom("Please edit not insert!".to_string()));
+    }
     let snowgrave_team = upcoming_team::Entity::find_by_id(snowgrave_scout.team_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find team!".to_string()))?;
     let snowgrave_game = upcoming_game::Entity::find_by_id(snowgrave_scout.game_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
     let username = match get_by_uuid(&snowgrave_scout.scouter_id, db).await {
@@ -83,6 +86,10 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
     };
     let _res = backenddb::game::insert_game(&insert_stuff, db).await?; // dont need id 
 
+    let mut scouter_active: game_scouts::ActiveModel = snowgrave_scout.into();
+    scouter_active.done = Set(true);
+    let res2 = scouter_active.update(db).await?;
+
     let res = match check_complete::check_match(snowgrave_game.id, db).await {
         Err(CheckMatchErr::DbErr(a)) => {
             return Err(DbErr::Custom(format!("Check failed: {:?}", a)));
@@ -91,9 +98,6 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
             ()
         }
     };
-    let mut scouter_active: game_scouts::ActiveModel = snowgrave_scout.into();
-    scouter_active.done = Set(true);
-    let res2 = scouter_active.update(db).await?;
 
     Ok(())
 }

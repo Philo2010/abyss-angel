@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, value};
 
 use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters}, snowgrave::{check_complete::CheckMatchErr, datatypes::{FullMvp, GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six}}};
 
@@ -99,6 +99,15 @@ pub async fn hydrate_game(
     if partial.teams.len() != 6 || scouts_by_team.len() != 6 {
         return Ok(None); // game not ready
     }
+
+    scouts_by_team
+    .values()
+    .for_each(|x| {
+        x.iter()
+            .filter(|e| !e.done)
+            .for_each(|e| println!("{:?}", e));
+    });
+
 
     // check if all scouts are done
     if scouts_by_team.values().any(|sc| sc.iter().any(|s| !s.done)) {

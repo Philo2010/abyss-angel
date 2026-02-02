@@ -30,3 +30,8 @@ Edit:
         //mark done true and redo false no need this state is ok
         mark  marked false, dup (only once per type) false, and pending false
     ret 
+
+
+
+Allow edit scouter assign
+allow for multabpe autors

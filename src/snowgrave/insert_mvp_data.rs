@@ -22,6 +22,9 @@ pub struct MvpInsert {
 pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result<(), DbErr> {
     //Check if mvp scouter is even real
     let mvp_mod = mvp_scouters::Entity::find_by_id(data.mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find scouter!".to_string()))?;
+    if mvp_mod.data.is_some() {
+        return Err(DbErr::Custom("There is already data!".to_string()));
+    }
     let mut mvp: mvp_scouters::ActiveModel = mvp_mod.clone().into();
 
     //Insert data into db
