@@ -35,3 +35,4 @@ Edit:
 
 Allow edit scouter assign
 allow for multabpe autors
+Sometimes MVP wont count

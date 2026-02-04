@@ -1414,9 +1414,24 @@
           "teams": {
             "type": "array",
             "items": {
-              "type": "integer",
-              "format": "int32"
+              "$ref": "#/components/schemas/TeamData"
             }
+          }
+        }
+      },
+      "TeamData": {
+        "type": "object",
+        "required": [
+          "is_ab_team",
+          "team"
+        ],
+        "properties": {
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "team": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1822,22 +1837,6 @@
             "items": {
               "$ref": "#/components/schemas/ScouterWithoutId"
             }
-          }
-        }
-      },
-      "TeamData": {
-        "type": "object",
-        "required": [
-          "is_ab_team",
-          "team"
-        ],
-        "properties": {
-          "is_ab_team": {
-            "type": "boolean"
-          },
-          "team": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },

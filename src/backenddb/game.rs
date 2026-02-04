@@ -138,10 +138,11 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
 
-async fn prim_graph_game(model: Box<dyn YearOp>, team: &i32, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
+async fn prim_graph_game(model: Box<dyn YearOp>, team: &i32, is_ab_team: &bool, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
     
     let mut command = genertic_header::Entity::find()
         .filter(genertic_header::Column::Team.eq(*team))
+        .filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team))
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::IsMarked.eq(false))
         .filter(genertic_header::Column::IsPending.eq(false))
@@ -484,10 +485,10 @@ pub async fn insert_game(data: &GamesInserts, db: &DatabaseConnection) -> Result
     prim_insert_game(data, game, db).await
 }
 
-pub async fn graph_game(team: &i32, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
+pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
-    prim_graph_game(game, team, event_code, db).await
+    prim_graph_game(game, team, is_ab_team, event_code, db).await
 }
 
 pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result<Vec<GamesFull>, DbErr> {
