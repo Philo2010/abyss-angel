@@ -92,7 +92,7 @@ pub async fn hydrate_game(
     // fetch all scouts for each team
     let scouts_by_team: HashMap<i32, Vec<ScouterWithScore>> = match fetch_scouts_for_game(partial.id, db).await {
         Ok(a) => a,
-        Err(a) => {panic!("Fetch failed!")},
+        Err(a) => {dbg!(a);panic!("Fetch failed")},
     };
 
     // check if any team is missing scouts

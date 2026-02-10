@@ -21,12 +21,6 @@ use std::collections::HashMap;
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 
 async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
-    let created_at = match Local.from_local_datetime(&model.created_at).single() {
-        Some(a) => a,
-        None => {
-            return Err(DbErr::Custom("Could not parse time!".to_string()));
-        },
-    };
     let username = match auth::get_by_user::get_by_uuid(&model.user, db).await {
         Ok(a) => a,
         Err(a) => {
@@ -53,19 +47,29 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         event_code: model.event_code,
         tournament_level: model.tournament_level,
         station: model.station,
-        created_at: created_at,
+        created_at: model.created_at,
         is_marked: model.is_marked,
         is_pending: model.is_pending,
         is_mvp: model.is_mvp,
-        snowgrave_scout_id: model.snowgrave_scout_id
+        snowgrave_scout_id: model.snowgrave_scout_id,
+        defence: model.defence,
+        auto_score: model.auto_score,
+        teleop_score: model.teleop_score,
     })
+}
+
+pub struct InsertReturn {
+    pub game_type: i32,
+    pub game_id: i32,
+    pub total_score: i32,
+    pub teleop_score: i32,
+    pub auto_score: i32,
 }
 
 #[async_trait]
 pub trait YearOp: Send + Sync {
     fn get_year_id(&self) -> i32;
-    async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<(i32, i32, i32), DbErr>;
-    async fn graph(&self, ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesGraphSpecific>, DbErr>;
+    async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
     // Not is the name order!
     async fn average_team(&self, ids: Vec<(i32, Vec<i32>)>, db: &DatabaseConnection) -> Result<Vec<(i32, GamesAvgSpecific)>, DbErr>;
     async fn get_full_matches(&self, ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesFullSpecific>, DbErr>;
@@ -84,6 +88,7 @@ pub struct HeaderInsert {
     pub match_id: i32,
     pub set: i32,
     //Total score is irraiven as it will be computed at server side
+    pub defence: i32,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
@@ -96,7 +101,7 @@ pub struct HeaderInsert {
 
 async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &DatabaseConnection) -> Result<i32, DbErr> {
     //Insert game spcific
-    let (game_type_id, game_id, total_score) = model.insert(&data.game, db).await?;
+    let res = model.insert(&data.game, db).await?;
     
     //Get UUid
     let a = match crate::auth::get_by_user::get_by_username(&data.header.user, db).await {
@@ -122,58 +127,26 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         is_ab_team: Set(data.header.is_ab_team),
         match_id: Set(data.header.match_id),
         set: Set(data.header.set),
-        total_score: Set(total_score),
+        total_score: Set(res.total_score),
         event_code: Set(data.header.event_code.clone()),
         tournament_level: Set(data.header.tournament_level.clone()),
         station: Set(data.header.station.clone()),
-        created_at: Set(created_at.naive_local()),
+        created_at: Set(created_at),
         is_mvp: Set(data.header.is_mvp),
-        game_type_id: Set(game_type_id),
-        game_id: Set(game_id),
+        game_type_id: Set(res.game_type),
+        game_id: Set(res.game_id),
         is_marked: Set(false),
         is_pending: Set(true),
         is_dup: Set(true),
-        snowgrave_scout_id: Set(data.header.snowgrave_scout_id)
+        snowgrave_scout_id: Set(data.header.snowgrave_scout_id),
+        teleop_score: Set(res.teleop_score),
+        auto_score: Set(res.auto_score),
+        defence: Set(data.header.defence),
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
 
-async fn prim_graph_game(model: Box<dyn YearOp>, team: &i32, is_ab_team: &bool, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
-    
-    let mut command = genertic_header::Entity::find()
-        .filter(genertic_header::Column::Team.eq(*team))
-        .filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team))
-        .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
-        .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false))
-        .filter(genertic_header::Column::IsDup.eq(false));
-    if let Some(e) = event_code {
-        command = command.filter(genertic_header::Column::EventCode.eq(e));
-    }
-    let res: Vec<(HeaderGraph, i32)> = command
-        .select_only()
-        .column(genertic_header::Column::CreatedAt)
-        .column(genertic_header::Column::TotalScore)
-        .column(genertic_header::Column::GameId)
-        .into_tuple()
-        .all(db)
-        .await?.iter().map(|x: &(DateTime<Local>, i32, i32)| {
-        (HeaderGraph {
-            time: x.0,
-            total_score: x.1
-        }, x.2)
-    }).collect();
 
-    let game_data = model.graph(res.iter().map(|x | x.1).collect(), db).await?;
-
-    let header: Vec<HeaderGraph> = res.into_iter().map(|x| x.0).collect();
-
-    let merged: Vec<GamesGraph> = header.into_iter()
-        .zip(game_data.into_iter())
-        .map(|(header, game)| GamesGraph { header, game}).collect();
-
-    Ok(merged)
-}
 
 async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &DatabaseConnection) -> Result<Vec<GamesFull>, DbErr> {
     let mut game_headers = genertic_header::Entity::find().filter(genertic_header::Column::GameTypeId.eq(param.year));
@@ -337,16 +310,14 @@ pub struct GamesInserts {
     pub game: GamesInsertsSpecific
 }
 
-#[derive(Serialize, JsonSchema)]
-pub struct HeaderGraph  {
+
+#[derive(Serialize, JsonSchema, FromQueryResult, Deserialize)]
+pub struct GamesGraph {
     pub time: DateTime<Local>,
     pub total_score: i32,
-}
-
-#[derive(Serialize, JsonSchema)]
-pub struct GamesGraph {
-    pub header: HeaderGraph,
-    pub game: GamesGraphSpecific
+    pub auto_score: i32,
+    pub teleop_score: i32,
+    pub defence: i32,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -391,6 +362,8 @@ pub struct HeaderFull {
     pub match_id: i32,
     pub set: i32,
     pub total_score: i32,
+    pub auto_score: i32,
+    pub teleop_score: i32,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
@@ -399,6 +372,7 @@ pub struct HeaderFull {
     pub is_marked: bool,
     pub is_mvp: bool,
     pub snowgrave_scout_id: i32,
+    pub defence: i32,
 }
 
 pub struct HeaderFullEdit {
@@ -415,18 +389,11 @@ pub struct HeaderFullEdit {
     pub is_marked: Option<bool>,
     pub is_pending: Option<bool>,
     pub snowgrave_id: Option<i32>,
-    pub is_mvp: Option<bool>
+    pub is_mvp: Option<bool>,
+    pub defence: Option<i32>
 }
 
 async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<genertic_header::ActiveModel, DbErr> {
-
-    let created_at;
-
-    if let Some(c) = header.created_at {
-        created_at = Some(c.naive_local());
-    } else {
-        created_at = None;
-    }
     let username: Option<Uuid>;
 
     if let Some(name) = header.user {
@@ -466,7 +433,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         event_code: header.event_code.map(Set).unwrap_or(NotSet),
         tournament_level: header.tournament_level.map(Set).unwrap_or(NotSet),
         station: header.station.map(Set).unwrap_or(NotSet),
-        created_at: created_at.map(Set).unwrap_or(NotSet),
+        created_at: header.created_at.map(Set).unwrap_or(NotSet),
         is_marked: header.is_marked.map(Set).unwrap_or(NotSet),
         is_pending: header.is_pending.map(Set).unwrap_or(NotSet),
         is_dup: NotSet, //We never change this, that is snowgrave's job
@@ -474,6 +441,9 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         is_mvp: header.is_mvp.map(Set).unwrap_or(NotSet),
         game_type_id: Set(game_model.game_type_id),
         game_id: Set(game_model.game_id),
+        teleop_score: NotSet,
+        auto_score: NotSet,
+        defence: header.defence.map(Set).unwrap_or(NotSet),
     })
 }
 
@@ -488,7 +458,28 @@ pub async fn insert_game(data: &GamesInserts, db: &DatabaseConnection) -> Result
 pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<String>, db: &DatabaseConnection) -> Result<Vec<GamesGraph>, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
-    prim_graph_game(game, team, is_ab_team, event_code, db).await
+    let mut command = genertic_header::Entity::find()
+        .filter(genertic_header::Column::Team.eq(*team))
+        .filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team))
+        .filter(genertic_header::Column::GameTypeId.eq(game.get_year_id()))
+        .filter(genertic_header::Column::IsMarked.eq(false))
+        .filter(genertic_header::Column::IsPending.eq(false))
+        .filter(genertic_header::Column::IsDup.eq(false));
+    if let Some(e) = event_code {
+        command = command.filter(genertic_header::Column::EventCode.eq(e));
+    }
+    let res: Vec<GamesGraph> = command
+        .select_only()
+        .column_as(genertic_header::Column::CreatedAt, "time")
+        .column_as(genertic_header::Column::TotalScore, "total_score")
+        .column_as(genertic_header::Column::AutoScore, "auto_score")
+        .column_as(genertic_header::Column::TeleopScore, "teleop_score")
+        .column_as(genertic_header::Column::Defence, "defence")
+        .into_model::<GamesGraph>()
+        .all(db)
+    .await?;
+
+    Ok(res)
 }
 
 pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result<Vec<GamesFull>, DbErr> {

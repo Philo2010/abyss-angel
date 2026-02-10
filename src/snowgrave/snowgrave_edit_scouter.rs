@@ -20,6 +20,7 @@ pub struct EditSnow {
     //pub tournament_level: TournamentLevels,
     //pub station: Stations,
     pub snowgrave_scout_id: i32,
+    pub defence: Option<i32>,
     //Created At no need to import as this will be seen by the server
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
@@ -62,6 +63,7 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
         is_pending: Some(true),
         snowgrave_id: None,
         is_mvp: None,
+        defence: data.defence,
     };
     let res = backenddb::game::edit_game(GamesEdit {
         header,

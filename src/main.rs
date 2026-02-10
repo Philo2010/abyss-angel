@@ -163,8 +163,8 @@ async fn main() -> Result<(), DbErr> {
     check_complete::check_match(36, &db_conn).await;
 
     Ok(())
-}
-*/
+}*/
+
 
 /* 
 #[launch]

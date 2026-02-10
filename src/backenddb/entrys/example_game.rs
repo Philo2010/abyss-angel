@@ -2,7 +2,7 @@
 use schemars::JsonSchema;
 use sea_orm::{ActiveValue::{NotSet, Set}, EntityOrSelect, ExprTrait, QuerySelect, entity::prelude::*, sea_query::{Alias, Func, Mode}};
 use serde::{Deserialize, Serialize};
-use crate::{backenddb::game::{self, GamesAvg, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, GamesGraph, GamesGraphSpecific, GamesInserts, GamesInsertsSpecific, NormalSpcDataAvg, YearOp}, entity::genertic_header};
+use crate::{backenddb::game::{self, GamesAvg, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, GamesGraph, GamesGraphSpecific, GamesInserts, GamesInsertsSpecific, InsertReturn, NormalSpcDataAvg, YearOp}, entity::genertic_header};
 use abyss_macro::enum_builder_variant;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, JsonSchema)]
@@ -23,6 +23,14 @@ fn get_total_score(hehe: i32, beep: i32) -> i32 {
         hehe * 6 + beep * 7
 }
 
+fn get_auto_score(hehe: i32, beep: i32) -> i32 {
+    hehe * 6
+}
+
+fn get_teleop_score(hehe: i32, beep: i32) -> i32 {
+    beep * 7
+}
+
 pub struct Functions;
 
 //                                                             Game Type ID>↓.     ↓<Game Id
@@ -32,7 +40,8 @@ impl YearOp for Functions {
     fn get_year_id(&self) -> i32 {
         YEAR
     }
-    async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<(i32, i32, i32), DbErr> {
+
+    async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr> {
         match &data {
             GamesInsertsSpecific::ExampleGame(a) => {
                 let game_db: ActiveModel = ActiveModel { 
@@ -41,33 +50,20 @@ impl YearOp for Functions {
                     beep: Set(a.beep), 
                     hoohoo: Set(a.hoohoo.clone())
                 };
-                Ok((YEAR, Entity::insert(game_db).exec(db).await?.last_insert_id, get_total_score(a.hehe, a.beep)))
+                let res = InsertReturn {
+                    game_type: self.get_year_id(),
+                    game_id: Entity::insert(game_db).exec(db).await?.last_insert_id,
+                    total_score: get_total_score(a.hehe, a.beep),
+                    teleop_score: get_teleop_score(a.hehe, a.beep),
+                    auto_score: get_auto_score(a.hehe, a.beep)
+                };
+                return Ok(res);
             },
             _ => {
                 Err(DbErr::AttrNotSet("This is invaild type for the current year!".to_string()))
             }
         }
     }
-
-    async fn graph(&self, ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesGraphSpecific>, DbErr> {
-        let mut entries = Entity::find()
-            .filter(Column::Id.is_in(ids.clone()))
-            .all(db).await?; //TODO Op info
-        
-        entries.sort_by_key(|entry| {
-            ids.iter().position(|id| *id == entry.id).unwrap_or(usize::MAX)
-        });
-
-        let enume: Vec<GamesGraphSpecific> = entries.iter().map(|x| {
-            GamesGraphSpecific::ExampleGame(Graph { 
-                hehe: x.hehe,
-                beep: x.beep })
-        }).collect();
-
-
-        Ok(enume)
-    }
-
     async fn average_team(&self, ids: Vec<(i32, Vec<i32>)>, db: &DatabaseConnection) -> Result<Vec<(i32, GamesAvgSpecific)>, DbErr> {
         //todo
         todo!()
@@ -115,7 +111,11 @@ impl YearOp for Functions {
                 let hehe = a.hehe.unwrap_or(total_score.hehe);
                 let beep = a.beep.unwrap_or(total_score.beep);
                 let score = get_total_score(hehe, beep);
+                let auto_score = get_auto_score(hehe, beep);
+                let teleop_score = get_teleop_score(hehe, beep);
                 header.total_score = Set(score);
+                header.auto_score = Set(auto_score);
+                header.teleop_score = Set(teleop_score);
                 let header_data = header.update(db).await?;
 
                 ActiveModel {

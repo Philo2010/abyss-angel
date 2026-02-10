@@ -29,7 +29,7 @@ impl<T> TryFrom<Vec<T>> for Six<T> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Copy)]
 pub struct TeamData {
     pub is_ab_team: bool,
     pub team: i32,

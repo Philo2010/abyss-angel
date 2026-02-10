@@ -23,6 +23,7 @@ pub struct InsertSnow {
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
     pub game: GamesInsertsSpecific,
+    pub defence: i32,
 }
 
 
@@ -78,7 +79,8 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
         tournament_level: snowgrave_game.tournament_level,
         station: snowgrave_team.station,
         snowgrave_scout_id: data.snowgrave_scout_id,
-        is_mvp
+        is_mvp,
+        defence: data.defence,
     };
     let insert_stuff = GamesInserts {
         header,

@@ -2,6 +2,7 @@
 
 use super::sea_orm_active_enums::Stations;
 use super::sea_orm_active_enums::TournamentLevels;
+use chrono::Utc;
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
@@ -16,10 +17,13 @@ pub struct Model {
     pub match_id: i32,
     pub set: i32,
     pub total_score: i32,
+    pub teleop_score: i32,
+    pub auto_score: i32,
+    pub defence: i32,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
-    pub created_at: DateTime,
+    pub created_at: DateTimeLocal,
     pub is_pending: bool,
     pub is_marked: bool,
     pub is_dup: bool,

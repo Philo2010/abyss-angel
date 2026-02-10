@@ -259,7 +259,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Array_of_GamesGraph"
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_GraphTeam"
                 }
               }
             }
@@ -1290,7 +1290,7 @@
           }
         }
       },
-      "ApiResult_for_Array_of_Array_of_GamesGraph": {
+      "ApiResult_for_Array_of_GraphTeam": {
         "oneOf": [
           {
             "type": "object",
@@ -1308,10 +1308,7 @@
               "message": {
                 "type": "array",
                 "items": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/GamesGraph"
-                  }
+                  "$ref": "#/components/schemas/GraphTeam"
                 }
               }
             }
@@ -1336,24 +1333,30 @@
           }
         ]
       },
-      "GamesGraph": {
+      "GraphTeam": {
         "type": "object",
         "required": [
-          "game",
-          "header"
+          "data",
+          "team"
         ],
         "properties": {
-          "header": {
-            "$ref": "#/components/schemas/HeaderGraph"
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesGraph"
+            }
           },
-          "game": {
-            "$ref": "#/components/schemas/GamesGraphSpecific"
+          "team": {
+            "$ref": "#/components/schemas/TeamData"
           }
         }
       },
-      "HeaderGraph": {
+      "GamesGraph": {
         "type": "object",
         "required": [
+          "auto_score",
+          "defence",
+          "teleop_score",
           "time",
           "total_score"
         ],
@@ -1365,37 +1368,32 @@
           "total_score": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "GamesGraphSpecific": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "ExampleGame"
-            ],
-            "properties": {
-              "ExampleGame": {
-                "$ref": "#/components/schemas/Graph"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
-      "Graph": {
-        "type": "object",
-        "required": [
-          "beep",
-          "hehe"
-        ],
-        "properties": {
-          "hehe": {
+          },
+          "auto_score": {
             "type": "integer",
             "format": "int32"
           },
-          "beep": {
+          "teleop_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "defence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TeamData": {
+        "type": "object",
+        "required": [
+          "is_ab_team",
+          "team"
+        ],
+        "properties": {
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "team": {
             "type": "integer",
             "format": "int32"
           }
@@ -1416,22 +1414,6 @@
             "items": {
               "$ref": "#/components/schemas/TeamData"
             }
-          }
-        }
-      },
-      "TeamData": {
-        "type": "object",
-        "required": [
-          "is_ab_team",
-          "team"
-        ],
-        "properties": {
-          "is_ab_team": {
-            "type": "boolean"
-          },
-          "team": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -1496,7 +1478,9 @@
       "HeaderFull": {
         "type": "object",
         "required": [
+          "auto_score",
           "created_at",
+          "defence",
           "event_code",
           "id",
           "is_ab_team",
@@ -1508,6 +1492,7 @@
           "snowgrave_scout_id",
           "station",
           "team",
+          "teleop_score",
           "total_score",
           "tournament_level",
           "user"
@@ -1539,6 +1524,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "auto_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "teleop_score": {
+            "type": "integer",
+            "format": "int32"
+          },
           "event_code": {
             "type": "string"
           },
@@ -1562,6 +1555,10 @@
             "type": "boolean"
           },
           "snowgrave_scout_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "defence": {
             "type": "integer",
             "format": "int32"
           }
@@ -1931,6 +1928,11 @@
             "type": "integer",
             "format": "int32"
           },
+          "defence": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "game": {
             "$ref": "#/components/schemas/GamesEditSpecific"
           }
@@ -1974,6 +1976,7 @@
       "InsertSnow": {
         "type": "object",
         "required": [
+          "defence",
           "game",
           "snowgrave_scout_id"
         ],
@@ -1984,6 +1987,10 @@
           },
           "game": {
             "$ref": "#/components/schemas/GamesInsertsSpecific"
+          },
+          "defence": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
