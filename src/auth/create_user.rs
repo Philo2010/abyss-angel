@@ -1,6 +1,5 @@
 use rocket::http::CookieJar;
 use rocket::{State, form::Form};
-use rocket_dyn_templates::{Template, context};
 use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde::Deserialize;
@@ -24,11 +23,11 @@ fn parse_out_string_bool(value: &str) -> bool {
 
 //for backend init only (its not mounted at /api/)
 #[post("/create_user", data="<data>")]
-pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnection>) -> Template {
+pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnection>) -> &'static str {
     let hash = match bcrypt::hash(data.password.clone(), SETTINGS.bcrypt) {
         Ok(a) => a,
-        Err(a) => {
-            return Template::render("error", context! {error: format!("Could not gen Bcrypt: {a}")});
+        Err(_) => {
+            return "Could not gen Bcrypt";
         },
     };
 
@@ -44,10 +43,10 @@ pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnecti
 
     match users::ActiveModel::insert(acvmodel, db.inner()).await {
         Ok(_) => {
-            Template::render("suc", context! {message: "User Created!"})
+            return "User Created!";
         },
-        Err(a) => {
-            Template::render("error", context! {error: format!("Could not insert into database: {a}")})
+        Err(_) => {
+            return "Could not insert into database";
         },
     }
 }

@@ -1,6 +1,5 @@
 #[macro_use] extern crate rocket;
-use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}};
-use rocket_dyn_templates::Template;
+use rocket::{Config, data::{ByteUnit, Limits}};
 
 use crate::setting::Settings;
 
@@ -221,7 +220,6 @@ async fn rocket() -> _ {
     rocket::custom(figment)
     .manage(db_conn)
     .manage(client)
-    .attach(Template::fairing())
     .mount("/", routes![
     frontend::pit::edit::edit_pit,
     frontend::pit::get::get,
@@ -255,5 +253,4 @@ async fn rocket() -> _ {
     setting::setevent::get_event,
     frontend::pit::assign_pit::assign_pit
     ])
-    .mount("/", FileServer::from(relative!("static")))
 }
