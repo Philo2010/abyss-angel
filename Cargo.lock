@@ -6,7 +6,6 @@ version = 4
 name = "abyss-angel"
 version = "0.1.0"
 dependencies = [
- "abyss-macro",
  "async-trait",
  "bcrypt",
  "chrono",
@@ -23,16 +22,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
-]
-
-[[package]]
-name = "abyss-macro"
-version = "0.1.0"
-dependencies = [
- "quote",
- "sea-orm",
- "syn 2.0.111",
- "walkdir",
 ]
 
 [[package]]

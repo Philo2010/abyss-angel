@@ -3,7 +3,6 @@ use schemars::JsonSchema;
 use sea_orm::{ActiveValue::{NotSet, Set}, EntityOrSelect, ExprTrait, FromQueryResult, QuerySelect, entity::prelude::*, sea_query::{Alias, Func, Mode}};
 use serde::{Deserialize, Serialize};
 use crate::{backenddb::{entrys::example_game, game::{self, AvgReturn, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, GamesGraph, GamesGraphSpecific, GamesInserts, GamesInsertsSpecific, InsertReturn, NormalSpcDataAvg, TeamAvg, TeamGameUnMergedData, YearOp}}, entity::genertic_header};
-use abyss_macro::enum_builder_variant;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, JsonSchema)]
 #[sea_orm(table_name = "example_game")]
