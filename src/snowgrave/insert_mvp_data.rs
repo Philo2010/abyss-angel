@@ -1,8 +1,8 @@
 use schemars::{JsonSchema};
-use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::{MvpData, TeamData}}};
+use crate::{entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::TeamData}};
 
 
 
@@ -61,7 +61,7 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
 
     //great now to insert this into the right game
 
-    let match_data = match genertic_header::Entity::find()
+    match genertic_header::Entity::find()
         .filter(genertic_header::Column::EventCode.eq(game_id.event_code))
         .filter(genertic_header::Column::MatchId.eq(game_id.match_id))
         .filter(genertic_header::Column::Set.eq(game_id.set))
@@ -80,13 +80,8 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
         };
 
     
-    let res = match check_complete::check_match(game_id.id, db).await {
-        Err(CheckMatchErr::DbErr(a)) => {
-            return Err(a);
-        }
-        _ => {
-            ()
-        }
+    let res = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(game_id.id, db).await {
+        return Err(a);
     };
 
     Ok(res)

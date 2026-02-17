@@ -1,13 +1,8 @@
-use std::num::ParseIntError;
-use std::ops::Not;
 
-use sea_orm::ActiveValue::{NotSet, Set};
-use sea_orm::{Database, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{DatabaseConnection, EntityTrait};
 
-use crate::backenddb::game;
-use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
-use crate::entity::upcoming_game::ActiveModel;
-use crate::snowgrave::blue::{self, TbaMatch, pull_from_blue};
+use crate::entity::sea_orm_active_enums::TournamentLevels;
+use crate::snowgrave::blue::{self};
 use crate::entity::{upcoming_game, upcoming_team};
 use crate::snowgrave::snowgrave_que::{into_snow, into_snow_team};
 use crate::snowgrave::snowgrave_que::Blue2DBErr;
@@ -16,7 +11,7 @@ use crate::snowgrave::snowgrave_que::Blue2DBErr;
 pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, db: &DatabaseConnection) -> Result<(), Blue2DBErr> {
     let mut games_ids: Vec<i32> = Vec::new();
     for game in &games {
-        let res = into_snow(&game, event_code)?;
+        let res = into_snow(game, event_code)?;
         if res.tournament_level.clone().unwrap() == TournamentLevels::QualificationMatch {
             continue;
         }

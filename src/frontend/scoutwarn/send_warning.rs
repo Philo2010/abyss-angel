@@ -2,10 +2,8 @@ use rocket::{State, http::CookieJar, serde::json::Json};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use uuid::Uuid;
 
-use crate::{auth::{self, get_by_cookie, get_by_user::{AuthGetUuidError, get_by_username}}, frontend::{ApiResult, scoutwarn}, scoutwarn::get_warning::ReturnWarning};
+use crate::{auth::{self, get_by_cookie, get_by_user::{AuthGetUuidError, get_by_username}}, frontend::ApiResult};
 
 
 
@@ -51,7 +49,7 @@ pub async fn send_scoutwarn(data: Json<Message>, db: &State<DatabaseConnection>,
     }
 
     let warning = crate::scoutwarn::send_warning::SendWarning {
-        sender: sender,
+        sender,
         receiver: resv,
         message: data.message.clone()
     };
@@ -61,7 +59,7 @@ pub async fn send_scoutwarn(data: Json<Message>, db: &State<DatabaseConnection>,
             return Json(ApiResult::Success("Able to send message, they shall pay for there sins".to_string()));
         },
         Err(a) => {
-            return Json(ApiResult::Error(format!("Database error while sending scouter: {a}")));
+            Json(ApiResult::Error(format!("Database error while sending scouter: {a}")))
         },
-    };
+    }
 }

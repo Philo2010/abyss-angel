@@ -1,5 +1,4 @@
-use bcrypt::bcrypt;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, DbErr, EntityTrait};
 use uuid::Uuid;
 
 use crate::{SETTINGS, entity::users};
@@ -20,7 +19,7 @@ pub async fn reset_password(user: &Uuid, new_password: &String, db: &DatabaseCon
     };
     user_data.bcrypt_hash = Set(pass_hash);
     match user_data.update(db).await {
-        Ok(a) => {
+        Ok(_) => {
             Ok(())
         },
         Err(a) => {

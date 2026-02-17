@@ -3,11 +3,11 @@ use std::collections::HashSet;
 
 use schemars::{JsonSchema};
 use sea_orm::TransactionTrait;
-use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, Database, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{entity::{game_scouts, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, frontend::ApiResult};
+use crate::entity::{game_scouts, mvp_scouters, upcoming_game, upcoming_team};
 
 
 pub struct ScouterInsertForm {

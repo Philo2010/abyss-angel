@@ -2,7 +2,6 @@
 
 use super::sea_orm_active_enums::Stations;
 use super::sea_orm_active_enums::TournamentLevels;
-use chrono::Utc;
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]

@@ -1,19 +1,15 @@
 use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
-use sea_orm::dynamic::Column;
 use sea_orm::prelude::Expr;
-use sea_orm::sea_query::{Alias, SelectStatement};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
-use sea_orm::sqlx::types::chrono::{self, DateTime, Local, TimeZone};
+use sea_orm::sea_query::Alias;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
+use sea_orm::sqlx::types::chrono::{self, DateTime, Local};
 use sea_orm::{DbErr};
 use serde::Serialize;
-use serde_json::Value;
 use uuid::Uuid;
-use crate::auth::get_by_user::{AuthGetUuidError, get_by_uuid};
-use crate::backenddb::entrys::example_game::Avg;
+use crate::auth::get_by_user::AuthGetUuidError;
 use crate::entity::genertic_header;
-use crate::entity::prelude::GenerticHeader;
-use crate::{SETTINGS, auth, backenddb::*};
+use crate::{SETTINGS, auth};
 use crate::define_games;
 use itertools::Itertools;
 use async_trait::async_trait;
@@ -81,6 +77,7 @@ pub trait YearOp: Send + Sync {
     async fn average_team(&self, ids: Vec<TeamGameUnMergedData>, db: &DatabaseConnection) -> Result<Vec<AvgReturn>, DbErr>;
     async fn get_full_matches(&self, game_ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesFullSpecific>, DbErr>;
     async fn delete(&self, id: i32, db: &DatabaseConnection) -> Result<(), DbErr>;
+    #[allow(dead_code)]
     async fn get(&self, id: i32, db: &DatabaseConnection) -> Result<GamesFullSpecific, DbErr>;
     async fn edit(&self, header: genertic_header::ActiveModel, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr>;
 }
@@ -136,8 +133,8 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         set: Set(data.header.set),
         total_score: Set(res.total_score),
         event_code: Set(data.header.event_code.clone()),
-        tournament_level: Set(data.header.tournament_level.clone()),
-        station: Set(data.header.station.clone()),
+        tournament_level: Set(data.header.tournament_level),
+        station: Set(data.header.station),
         created_at: Set(created_at),
         is_mvp: Set(data.header.is_mvp),
         game_type_id: Set(res.game_type),
@@ -193,10 +190,10 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
         game_headers = game_headers.filter(genertic_header::Column::EventCode.eq(event_code));
     }
     if let Some(tournament_level) = &param.tournament_level {
-        game_headers = game_headers.filter(genertic_header::Column::TournamentLevel.eq(tournament_level.clone()));
+        game_headers = game_headers.filter(genertic_header::Column::TournamentLevel.eq(*tournament_level));
     }
     if let Some(station) = &param.station {
-        game_headers = game_headers.filter(genertic_header::Column::EventCode.eq(station.clone()));
+        game_headers = game_headers.filter(genertic_header::Column::EventCode.eq(*station));
     }
     if let Some(mvp) = &param.is_mvp {
         game_headers = game_headers.filter(genertic_header::Column::IsMvp.eq(*mvp));
@@ -293,7 +290,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .into_group_map_by(|record| (record.team, record.is_ab_team))
         .into_iter()
         .map(|((team, is_ab_team), records)| {
-            TeamGameUnMergedData { team: team, is_ab_team: is_ab_team, game_ids: records.into_iter().map(|r| r.game_id).collect() }
+            TeamGameUnMergedData { team, is_ab_team, game_ids: records.into_iter().map(|r| r.game_id).collect() }
         })
         .collect();
 
@@ -324,7 +321,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
     
     Ok(done)
 }
-
+#[allow(dead_code)]
 async fn prim_get_game(model: Box<dyn YearOp>, id: i32, db: &DatabaseConnection) -> Result<GamesFull, DbErr> {
     let header = match genertic_header::Entity::find_by_id(id).one(db).await? {
         None => {
@@ -546,6 +543,7 @@ pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Resul
     prim_average_game(game, event_code, db).await
 }
 
+#[allow(dead_code)]
 pub async fn get_game(id: i32, db: &DatabaseConnection) -> Result<GamesFull, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 

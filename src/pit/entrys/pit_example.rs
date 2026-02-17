@@ -33,6 +33,7 @@ pub struct Functions;
 #[async_trait]
 impl PitScoutStandard for Functions {
     async fn insert_game_specific(&self, data: PitInsertsSpecific, db: &DatabaseConnection) -> Result<i32, DbErr> {
+        #[allow(unreachable_patterns)]
         match data {
             PitInsertsSpecific::ExamplePit(a) => {
                 println!("in ex");
@@ -56,6 +57,7 @@ impl PitScoutStandard for Functions {
         Ok(res)
     }
     async fn edit_pit(&self, id: i32, data: PitEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr> {
+        #[allow(unreachable_patterns)]
         let data_u = match data {
             PitEditSpecific::ExamplePit(a) => {
                 a
@@ -73,12 +75,12 @@ impl PitScoutStandard for Functions {
             height: data_u.height.map(Set).unwrap_or(NotSet) 
         };
         println!("{:?}", active);
-        let res = Entity::update(active).exec(db).await?;
+        let _res = Entity::update(active).exec(db).await?;
 
         Ok(())
     }
     fn get_type_year(&self) -> i32 {
-        return YEAR;
+        YEAR
     }
 }
 

@@ -1,6 +1,6 @@
 use sea_orm::entity::prelude::*;
 
-use crate::entity::{game_scouts, sea_orm_active_enums::Stations, upcoming_game, upcoming_team};
+use crate::entity::{sea_orm_active_enums::Stations, upcoming_game, upcoming_team};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "game_scouts")]

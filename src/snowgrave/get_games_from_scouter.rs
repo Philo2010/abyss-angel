@@ -145,17 +145,15 @@ pub async fn get_games_for_scouter(
         let mut mvp_blue = None;
         let mut mvp_red = None;
 
-        if let Some(id) = game.mvp_id_blue {
-            if mvps.contains_key(&id) {
+        if let Some(id) = game.mvp_id_blue
+            && mvps.contains_key(&id) {
                 mvp_blue = Some(id);
             }
-        }
 
-        if let Some(id) = game.mvp_id_red {
-            if mvps.contains_key(&id) {
+        if let Some(id) = game.mvp_id_red
+            && mvps.contains_key(&id) {
                 mvp_red = Some(id);
             }
-        }
 
         let mvp = MvpIds {
             blue: mvp_blue,

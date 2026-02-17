@@ -3,7 +3,6 @@
 // =========================
 
 use std::collections::HashMap;
-use rocket::data::N;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -113,6 +112,7 @@ pub struct MvpData {
     pub penalty_score: i32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Mvp {
     pub scouter: MvpScouter,
@@ -255,6 +255,7 @@ pub struct FullMvp {
 pub type GameFull =
     Game<Six<ScoutingTeamFull>, FullMvp>;
 
+#[allow(dead_code)]
 pub fn build_teams_thin(
     teams: Vec<upcoming_team::Model>,
     scouts: HashMap<i32, Vec<game_scouts::Model>>,

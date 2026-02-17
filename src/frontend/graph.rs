@@ -1,19 +1,16 @@
 
 use rocket::State;
-use rocket::form::Form;
 use rocket::http::CookieJar;
 use rocket::post;
 use rocket::serde::json::Json;
-use rocket_dyn_templates::{Template, context};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 
 use crate::backenddb::game::{GamesGraph, graph_game};
 use crate::frontend::ApiResult;
 use crate::snowgrave::datatypes::TeamData;
-use crate::{SETTINGS, auth, sexymac};
+use crate::auth;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GraphForm {

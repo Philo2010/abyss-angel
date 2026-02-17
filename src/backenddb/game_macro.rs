@@ -16,13 +16,6 @@ macro_rules! define_games {
             )*
         }
         
-        #[derive(Serialize, JsonSchema)]
-        pub enum GamesGraphSpecific {
-            $(
-                $name($($module)::+::Graph),
-            )*
-        }
-        
         #[derive(Serialize, Deserialize, JsonSchema)]
         pub enum GamesInsertsSpecific {
             $(

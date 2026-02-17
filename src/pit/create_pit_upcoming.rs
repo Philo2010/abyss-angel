@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sea_orm::{ActiveValue::NotSet, ColumnTrait, Database, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ActiveValue::NotSet, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use sea_orm::Set;
 use crate::entity::{pit_upcoming, upcoming_game, upcoming_team};
 

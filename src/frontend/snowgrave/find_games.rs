@@ -1,8 +1,6 @@
-use rocket::{State, http::{CookieJar, private::cookie}, serde::json::Json};
-use rocket_okapi::JsonSchema;
+use rocket::{State, http::CookieJar, serde::json::Json};
 use sea_orm::{DatabaseConnection};
-use serde_json::Value;
-use crate::{auth, frontend::{ApiResult, snowgrave}, snowgrave::datatypes::{GamePartial, GamePartialWithoutId}};
+use crate::{auth, frontend::ApiResult, snowgrave::datatypes::GamePartialWithoutId};
 
 
 

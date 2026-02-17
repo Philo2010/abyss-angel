@@ -25,7 +25,7 @@ pub async fn pit_insert(db: &DatabaseConnection, data: PitInsertForm) -> Result<
     };
     let insert_pit = PitInsert {
         header: PitHeaderInsert {
-            user: user,
+            user,
             team: pit_data.team,
             is_ab_team: pit_data.is_ab_team,
             event_code: pit_data.event_code.clone(),

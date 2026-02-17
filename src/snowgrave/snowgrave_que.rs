@@ -1,14 +1,12 @@
 use std::num::ParseIntError;
-use std::ops::Not;
 
 use sea_orm::ActiveValue::{NotSet, Set};
-use sea_orm::{Database, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{DatabaseConnection, DbErr, EntityTrait};
 
-use crate::backenddb::game;
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 use crate::entity::upcoming_game::ActiveModel;
 use crate::pit::create_pit_upcoming;
-use crate::snowgrave::blue::{self, TbaMatch, pull_from_blue};
+use crate::snowgrave::blue::{self, TbaMatch};
 use crate::entity::{upcoming_game, upcoming_team};
 
 pub enum Blue2DBErr {
@@ -30,7 +28,7 @@ pub fn blue_to_db_tour_level(data: &str) -> Result<TournamentLevels, Blue2DBErr>
     }
 }
 
-pub fn into_snow(data: &TbaMatch, event_code: &String) -> Result<(upcoming_game::ActiveModel), Blue2DBErr> {
+pub fn into_snow(data: &TbaMatch, event_code: &String) -> Result<upcoming_game::ActiveModel, Blue2DBErr> {
     let level = blue_to_db_tour_level(&data.comp_level)?;
 
     Ok(ActiveModel {
@@ -123,10 +121,10 @@ pub fn into_snow_team(data: &TbaMatch, id: i32) -> Result<Vec<upcoming_team::Act
     Ok(teams)
 }
 
-pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, client: &reqwest::Client, db: &DatabaseConnection) -> Result<(), Blue2DBErr> {
+pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, db: &DatabaseConnection) -> Result<(), Blue2DBErr> {
     let mut games_ids: Vec<i32> = Vec::new();
     for game in &games {
-        let res = into_snow(&game, event_code)?;
+        let res = into_snow(game, event_code)?;
         let db_res = match upcoming_game::Entity::insert(res).exec(db).await {
             Ok(a) => a,
             Err(a) => {
@@ -145,7 +143,7 @@ pub async fn queue_snow(games: Vec<blue::TbaMatch>, event_code: &String, client:
         };
     }
     //for pit
-    create_pit_upcoming::create_pit_upcoming(db,event_code).await.map_err(|x| Blue2DBErr::DbErr(x))?;
+    create_pit_upcoming::create_pit_upcoming(db,event_code).await.map_err(Blue2DBErr::DbErr)?;
 
 
     Ok(())

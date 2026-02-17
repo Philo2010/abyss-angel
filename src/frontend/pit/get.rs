@@ -1,16 +1,13 @@
 use chrono::{DateTime, Local};
-use rocket::form::Form;
 use rocket::{State, http::CookieJar, serde::json::Json};
-use rocket_dyn_templates::{Template, context};
 use schemars::JsonSchema;
-use sea_orm::{DatabaseConnection, DbErr};
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use crate::auth;
 
 use crate::auth::get_by_user::{AuthGetUuidError, get_by_uuid};
 use crate::frontend::ApiResult;
-use crate::pit::pit::{PitGet, PitHeaderInsert, PitInsert, PitInsertsSpecific, PitSpecific, pit_get};
-use crate::{SETTINGS, backenddb::game::{TeamAvg, average_game}, sexymac};
+use crate::pit::pit::{PitGet, PitSpecific, pit_get};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct PitHeaderGetFront { 
@@ -21,7 +18,7 @@ pub struct PitHeaderGetFront {
 
 
 #[derive(Serialize, rocket_okapi::JsonSchema)]
-struct FullHeaderSend {
+pub struct FullHeaderSend {
     pub id: i32,
     pub user: String,
     pub team: i32,
@@ -76,7 +73,7 @@ pub async fn get(data: Json<PitHeaderGetFront>,  db: &State<DatabaseConnection>,
             return Json(ApiResult::Success(send));
         },
         Err(a) => {
-            return Json(ApiResult::Error(format!("Database error while trying to fetch game data: {a}")));
+            Json(ApiResult::Error(format!("Database error while trying to fetch game data: {a}")))
         }
-    };
+    }
 }

@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 use serde::Serialize;
 
-use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
+use crate::entity::sea_orm_active_enums::TournamentLevels;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
 #[sea_orm(table_name = "upcoming_game")]

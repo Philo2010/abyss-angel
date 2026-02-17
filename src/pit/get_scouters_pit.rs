@@ -23,16 +23,13 @@ pub async fn get_scouters_pit(scouter: Uuid, event: &String, db: &DatabaseConnec
 
     let mut instance: Vec<PitScouterInstance> = Vec::with_capacity(upcoming_pit.len());
     for pit in upcoming_pit {
-        let is_sum = match pit.pit_header_id {
-            Some(_) => true,
-            None => false,
-        };
+        let is_sum = pit.pit_header_id.is_some();
         instance.push(PitScouterInstance {
             id: pit.id ,
             event: pit.event_code,
             team: pit.team,
             is_ab_team: pit.is_ab_team,
-            is_sum: is_sum
+            is_sum
         });
     }
 

@@ -1,10 +1,10 @@
 use rocket::{State, serde::json::Json};
 use schemars::JsonSchema;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-use crate::{auth::{self, get_by_user::get_by_username}, entity::users, frontend::ApiResult};
+use crate::{auth::{self, get_by_user::get_by_username}, frontend::ApiResult};
+
 
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -31,7 +31,7 @@ pub async fn reset_password(db: &State<DatabaseConnection>, data: Json<ResetPass
         },
     };
     match auth::reset_password::reset_password(&uuid, &data_of_form.new_password, db).await {
-        Ok(a) => {
+        Ok(_) => {
             Json(ApiResult::Success("Done!".to_string()))
         },
         Err(a) => {

@@ -1,11 +1,8 @@
 #[macro_use] extern crate rocket;
-use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}, tokio};
+use rocket::{Config, data::{ByteUnit, Limits}, fs::{FileServer, relative}};
 use rocket_dyn_templates::Template;
-use rocket_okapi::{r#gen::OpenApiGenerator, okapi::openapi3::OpenApi, openapi_get_routes_spec, openapi_get_spec, settings::OpenApiSettings};
-use sea_orm::DbErr;
-use serde_json::to_string_pretty;
 
-use crate::{ frontend::delete::delete_scout, setting::Settings, snowgrave::{check::CheckFailerReturn, check_complete::{self, CheckMatchErr}, datatypes::GamePartial, hydrate::hydrate_game}};
+use crate::setting::Settings;
 
 mod sexymac;
 mod setting;
@@ -179,9 +176,9 @@ async fn rocket() -> _ {
         },
     };
 
-    let res = match db_conn.get_schema_registry("abyss-angel::entity").sync(&db_conn).await {
+    match db_conn.get_schema_registry("abyss-angel::entity").sync(&db_conn).await {
         Ok(_) => {
-            ()
+            
         },
         Err(a) => {
             let strhe = a.to_string();
@@ -190,9 +187,9 @@ async fn rocket() -> _ {
         },
     };
 
-    let res2 = match db_conn.get_schema_registry("abyss-angel::pit::entrys").sync(&db_conn).await {
+    match db_conn.get_schema_registry("abyss-angel::pit::entrys").sync(&db_conn).await {
         Ok(_) => {
-            ()
+            
         },
         Err(a) => {
             let strhe = a.to_string();
@@ -201,9 +198,9 @@ async fn rocket() -> _ {
         },
     };
 
-    let res3 =  match db_conn.get_schema_registry("abyss-angel::backenddb::entrys").sync(&db_conn).await {
+    match db_conn.get_schema_registry("abyss-angel::backenddb::entrys").sync(&db_conn).await {
         Ok(_) => {
-            ()
+            
         },
         Err(a) => {
             let strhe = a.to_string();

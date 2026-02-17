@@ -6,11 +6,10 @@ pub struct Model {
 } */
 
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
-use rocket::Data;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
-use crate::{SETTINGS, define_pits, entity::pit_header, pit::entrys::pit_example};
+use crate::{SETTINGS, define_pits, entity::pit_header};
 
 
 #[async_trait]
@@ -90,10 +89,10 @@ async fn prim_pit_get(team: i32, is_ab_team: bool, event_code: &String, db: &Dat
         team: header_data.team,
         is_ab_team: header_data.is_ab_team,
         event_code: header_data.event_code,
-        created_at: created_at
+        created_at
     };
     let total_data = PitGet {
-        header: header,
+        header,
         pit: pit_data
     };
 

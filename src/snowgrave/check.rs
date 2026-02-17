@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::entity::sea_orm_active_enums::Stations;
 use crate::snowgrave::{check_complete::CheckMatchErr, datatypes::GameFull};
-use crate::snowgrave::datatypes::{ScouterWithScore, MvpScouter};
+use crate::snowgrave::datatypes::ScouterWithScore;
 
 
 const AGREE_AMOUNT: f32 = 0.8;
@@ -49,7 +49,7 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
 
         let ratio = count as f32 / scores.len() as f32;
 
-        let (mut ok, mut bad): (Vec<_>, Vec<_>) =
+        let (mut ok, bad): (Vec<_>, Vec<_>) =
             team.scouters.iter().copied()
                 .partition(|s| s.total_score == score);
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, value};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters}, snowgrave::{check_complete::CheckMatchErr, datatypes::{FullMvp, GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six}}};
 
@@ -120,16 +120,16 @@ pub async fn hydrate_game(
     // fetch MVP
     let mvp_full_red = match &partial.mvp.red {
         Some(m) => {
-            let res = fetch_mvp_full(m.id, db).await?;
-            res
+            
+            fetch_mvp_full(m.id, db).await?
         },
         None => return Ok(None),
     };
 
     let mvp_full_blue = match &partial.mvp.blue {
         Some(m) => {
-            let res = fetch_mvp_full(m.id, db).await?;
-            res
+            
+            fetch_mvp_full(m.id, db).await?
         },
         None => return Ok(None),
     };

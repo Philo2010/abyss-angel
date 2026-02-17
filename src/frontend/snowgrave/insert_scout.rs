@@ -2,7 +2,6 @@ use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use rocket::State;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use rocket::serde::json::Json;
 use uuid::Uuid;
 use crate::{auth::get_by_user::get_by_username, frontend::ApiResult, snowgrave::snowgrave_insert_scouters::{GameTeamDataMvp, GameTeamDataScouter, ScouterInsertForm, insert_scouters}};
@@ -70,7 +69,7 @@ pub async fn insert_scout(db: &State<DatabaseConnection>, data: Json<ScouterInse
             Err(a) => {
                 match a {
                     crate::auth::get_by_user::AuthGetUuidError::UserIsNotHere => {
-                        return Json(ApiResult::Error(format!("Failed to get user")));
+                        return Json(ApiResult::Error("Failed to get user".to_string()));
                     },
                     crate::auth::get_by_user::AuthGetUuidError::DatabaseError(db_err) => {
                         return Json(ApiResult::Error(format!("Db error while getting user: {db_err}")));
@@ -83,7 +82,7 @@ pub async fn insert_scout(db: &State<DatabaseConnection>, data: Json<ScouterInse
             Err(a) => {
                 match a {
                     crate::auth::get_by_user::AuthGetUuidError::UserIsNotHere => {
-                        return Json(ApiResult::Error(format!("Failed to get user")));
+                        return Json(ApiResult::Error("Failed to get user".to_string()));
                     },
                     crate::auth::get_by_user::AuthGetUuidError::DatabaseError(db_err) => {
                         return Json(ApiResult::Error(format!("Db error while getting user: {db_err}")));

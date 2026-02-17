@@ -1,19 +1,16 @@
 
 use rocket::State;
-use rocket::form::Form;
 use rocket::http::CookieJar;
 use rocket::post;
 use rocket::serde::json::Json;
-use rocket_dyn_templates::{Template, context};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use serde_json::Value;
 
 use crate::backenddb::game::{SearchParam, search_game};
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 use crate::frontend::ApiResult;
-use crate::{SETTINGS, auth, sexymac};
+use crate::{SETTINGS, auth};
 
 
 #[derive(Deserialize, JsonSchema)]
@@ -31,20 +28,20 @@ pub struct SearchParamData {
     pub is_mvp: Option<bool>
 }
 
-impl Into<SearchParam> for SearchParamData {
-    fn into(self) -> SearchParam {
+impl From<SearchParamData> for SearchParam {
+    fn from(val: SearchParamData) -> Self {
         SearchParam { 
-            user: self.user,
-            team: self.team,
-            is_ab_team: self.is_ab_team,
-            match_id: self.match_id,
-            set: self.set,
-            total_score: self.total_score,
-            event_code: self.event_code,
-            tournament_level: self.tournament_level,
-            station: self.station,
+            user: val.user,
+            team: val.team,
+            is_ab_team: val.is_ab_team,
+            match_id: val.match_id,
+            set: val.set,
+            total_score: val.total_score,
+            event_code: val.event_code,
+            tournament_level: val.tournament_level,
+            station: val.station,
             year: SETTINGS.year,
-            is_mvp: self.is_mvp
+            is_mvp: val.is_mvp
         }
     }
 }
@@ -58,7 +55,7 @@ pub async fn search(body: Json<SearchParamData>, db: &State<DatabaseConnection>,
     }
     let data: SearchParam = body.into_inner().into();
 
-    let a: Vec<crate::backenddb::game::GamesFull> = match search_game(&data, db).await {
+    let _a: Vec<crate::backenddb::game::GamesFull> = match search_game(&data, db).await {
         Ok(a) => {
             return Json(ApiResult::Success(a));
         },

@@ -1,9 +1,8 @@
 
 use rocket::{State, http::CookieJar, serde::json::Json};
-use rocket_dyn_templates::{Template, context};
 use sea_orm::DatabaseConnection;
 
-use crate::{SETTINGS, auth, backenddb::game::{TeamAvg, average_game}, frontend::ApiResult, sexymac};
+use crate::{auth, backenddb::game::{TeamAvg, average_game}, frontend::ApiResult};
 
 #[rocket_okapi::openapi]
 #[get("/api/averages/<event>")]

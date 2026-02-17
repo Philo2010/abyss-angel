@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ConnectionTrait, DbErr, EntityTrait};
 use uuid::Uuid;
 
 use crate::entity::{unsent_warning, users, warning};

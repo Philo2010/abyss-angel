@@ -28,9 +28,9 @@ pub async fn pit_edit(db: &DatabaseConnection, data: PitEditForm) -> Result<(), 
         None => {
             return Err(DbErr::Custom("Could not find pit header".to_string()));
         },
-    };;
+    };
 
-    let _res = pit::pit_edit(data.pit, db, header.pit_data).await?;
+    pit::pit_edit(data.pit, db, header.pit_data).await?;
 
     Ok(())
 }

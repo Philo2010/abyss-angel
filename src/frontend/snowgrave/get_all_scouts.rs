@@ -1,9 +1,9 @@
 use rocket::{State, serde::json::Json};
 use schemars::JsonSchema;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Related};
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::get_by_user::{get_by_username, get_by_uuid}, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::{Stations, TournamentLevels}, upcoming_game, upcoming_team}, frontend::ApiResult};
+use crate::{auth::get_by_user::get_by_uuid, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::{Stations, TournamentLevels}, upcoming_game, upcoming_team}, frontend::ApiResult};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct Game {
@@ -85,7 +85,7 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
         let red = if let Some(id) = game.mvp_id_red {
             let res = match mvp_scouters::Entity::find_by_id(id).one(db.inner()).await {
                 Ok(a) => a,
-                Err(a) => {
+                Err(_a) => {
                     return Json(ApiResult::Error("Failed to find red mvp".to_string()));
                 },
             };
@@ -119,7 +119,7 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
         let blue = if let Some(id) = game.mvp_id_blue {
             let res = match mvp_scouters::Entity::find_by_id(id).one(db.inner()).await {
                 Ok(a) => a,
-                Err(a) => {
+                Err(_a) => {
                     return Json(ApiResult::Error("Failed to find blue mvp".to_string()));
                 },
             };

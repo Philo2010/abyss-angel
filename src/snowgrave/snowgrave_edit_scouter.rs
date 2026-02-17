@@ -1,9 +1,8 @@
-use rocket::data::N;
 use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit}}, entity::{game_scouts, genertic_header, upcoming_game, upcoming_team}, snowgrave::check_complete};
+use crate::{backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit}}, entity::{game_scouts, genertic_header, upcoming_game}, snowgrave::check_complete};
 
 
 
@@ -65,7 +64,7 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
         is_mvp: None,
         defence: data.defence,
     };
-    let res = backenddb::game::edit_game(GamesEdit {
+    backenddb::game::edit_game(GamesEdit {
         header,
         game: data.game
     }, db).await?;
@@ -74,7 +73,7 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     println!("header ran");
 
     //now time to do the check itself
-    let res = check_complete::check_match(snowgrave_game.id, db).await;
+    let _res = check_complete::check_match(snowgrave_game.id, db).await;
 
     Ok(())
 }

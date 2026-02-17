@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityOrSelect, EntityTrait, QueryFilter, prelude::Expr};
+use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, prelude::Expr};
 use uuid::Uuid;
 
 use crate::entity::{game_scouts, mvp_scouters};

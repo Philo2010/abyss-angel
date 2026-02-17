@@ -1,12 +1,9 @@
-use rocket::{State, form::Form, serde::json::Json};
-use rocket_dyn_templates::Template;
+use rocket::{State, serde::json::Json};
 use schemars::JsonSchema;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, entity};
-use rocket_dyn_templates::context;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use serde::Deserialize;
-use serde_json::Value;
 
-use crate::{frontend::ApiResult, setting};
+use crate::frontend::ApiResult;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct SetEvent {
@@ -71,7 +68,7 @@ pub async fn get_event(db: &State<DatabaseConnection>) -> Json<ApiResult<String>
     let setting = match crate::entity::dyn_settings::Entity::find().one(db.inner()).await {
         Ok(Some(a)) => {a},
         Ok(None) => {
-            return Json(ApiResult::Error(format!("Could not find settings mod")));
+            return Json(ApiResult::Error("Could not find settings mod".to_string()));
         },
         Err(a) => {
             return Json(ApiResult::Error(format!("Could not find settings mod: {a}")));

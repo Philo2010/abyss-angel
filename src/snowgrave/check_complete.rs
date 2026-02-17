@@ -1,12 +1,6 @@
-use std::collections::HashMap;
 
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
-use crate::{
-    entity::{game_scouts, mvp_data, mvp_scouters, upcoming_game, upcoming_team},
-    snowgrave::{cast_snowgrave, check, datatypes::{
-        GameFull, GamePartial, Mvp, MvpScouter, ScouterWithScore, ScoutingTeamFull, Six, TeamData
-    }, hydrate::hydrate_game},
-};
+use sea_orm::{DatabaseConnection, DbErr};
+use crate::snowgrave::{cast_snowgrave, check, datatypes::GamePartial, hydrate::hydrate_game};
 
 #[derive(Debug)]
 pub enum CheckMatchErr {
@@ -14,7 +8,6 @@ pub enum CheckMatchErr {
     MvpIsNotDone,
     ThereIsNotOneScouterPerTeam,
     ThereIsNoMVP,
-    NoMatch,
     Not6Teams,
     DbErr(DbErr),
 }
@@ -52,7 +45,7 @@ pub async fn check_match(
 
     let res = check::check(&game_full)?;
 
-    let true_res = cast_snowgrave::cast_snowgrave(game_id, res, db).await?;
+    cast_snowgrave::cast_snowgrave(game_id, res, db).await?;
 
-    return Ok(true_res);
+    return Ok(());
 }

@@ -1,11 +1,10 @@
 //both normal and playoffs
 
 use reqwest::Client;
-use rocket::{State, data::FromData, http::CookieJar, serde::json::Json};
+use rocket::{State, http::CookieJar, serde::json::Json};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use serde_json::Value;
 
 use crate::{auth, frontend::ApiResult, snowgrave::{self, snowgrave_que::Blue2DBErr}};
 
@@ -17,16 +16,16 @@ pub struct QueueInput {
 fn handle_blue_err(a: Blue2DBErr) -> Json<ApiResult<String>> {
     match a {
                 snowgrave::snowgrave_que::Blue2DBErr::FailedToFindRightTourLevel(a) => {
-                    return Json(ApiResult::Error(format!("Failed to find right tournament level: {a}")));
+                    Json(ApiResult::Error(format!("Failed to find right tournament level: {a}")))
                 },
                 snowgrave::snowgrave_que::Blue2DBErr::FailedToParseTeam(parse_int_error) => {
-                    return Json(ApiResult::Error(format!("Failed to parse a teams value: {parse_int_error}")));
+                    Json(ApiResult::Error(format!("Failed to parse a teams value: {parse_int_error}")))
                 },
                 snowgrave::snowgrave_que::Blue2DBErr::InvaildStation(a) => {
-                    return Json(ApiResult::Error(format!("Invaild station id: {a}")));
+                    Json(ApiResult::Error(format!("Invaild station id: {a}")))
                 },
                 snowgrave::snowgrave_que::Blue2DBErr::DbErr(db_err) => {
-                    return Json(ApiResult::Error(format!("Database Error: {db_err}")));
+                    Json(ApiResult::Error(format!("Database Error: {db_err}")))
                 },
             }
 }
@@ -48,7 +47,7 @@ pub async fn queue(data: Json<QueueInput>, client: &State<Client>, db: &State<Da
         },
     };
 
-    let res = match snowgrave::snowgrave_que::queue_snow(tba_games, &data.event, client, db).await {
+    match snowgrave::snowgrave_que::queue_snow(tba_games, &data.event, db).await {
         Ok(a) => a,
         Err(a) => {
             return handle_blue_err(a);
@@ -74,7 +73,7 @@ pub async fn queue_playoff(data: Json<QueueInput>, client: &State<Client>, db: &
         },
     };
 
-    let res = match snowgrave::snowgrave_que_only_playoff::queue_snow(tba_games, &data.event, db).await {
+    match snowgrave::snowgrave_que_only_playoff::queue_snow(tba_games, &data.event, db).await {
         Ok(a) => a,
         Err(a) => {
             return handle_blue_err(a);

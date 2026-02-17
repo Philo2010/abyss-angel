@@ -1,6 +1,5 @@
 use rocket::{State, serde::json::Json};
 use sea_orm::{DatabaseConnection, EntityTrait};
-use serde_json::Value;
 
 use crate::{entity::users, frontend::ApiResult};
 

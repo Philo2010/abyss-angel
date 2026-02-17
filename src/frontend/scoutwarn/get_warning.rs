@@ -2,9 +2,8 @@ use rocket::{State, http::CookieJar, serde::json::Json};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-use crate::{auth::{get_by_cookie, get_by_user::get_by_uuid}, frontend::{ApiResult, scoutwarn}, scoutwarn::get_warning::ReturnWarning};
+use crate::{auth::{get_by_cookie, get_by_user::get_by_uuid}, frontend::ApiResult};
 
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -40,16 +39,16 @@ pub async fn get_scoutwarn(db: &State<DatabaseConnection>, cookies: &CookieJar<'
                 let thing = ReturnWarningSend {
                     unsent_id: warn.unsent_id,
                     id: warn.message.id,
-                    sender: sender,
+                    sender,
                     receiver: rec,
                     message: warn.message.message};
                 send.push(thing);
             }
 
-            return Json(ApiResult::Success(send));
+            Json(ApiResult::Success(send))
         },
         Err(a) => {
-            return Json(ApiResult::Error(format!("Database error while trying to get games: {a}")));
+            Json(ApiResult::Error(format!("Database error while trying to get games: {a}")))
         },
     }
 }

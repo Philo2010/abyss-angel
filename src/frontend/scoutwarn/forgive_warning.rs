@@ -1,10 +1,10 @@
-use rocket::{State, http::CookieJar, serde::json::Json};
+use rocket::{State, serde::json::Json};
 use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
-use serde_json::Value;
 
 use crate::frontend::ApiResult;
+
 
 
 #[derive(Deserialize, JsonSchema)]
@@ -16,11 +16,11 @@ pub struct Forgive {
 #[post("/api/scoutwarn/forgive", data="<data>")]
 pub async fn forgive_scoutwarn(db: &State<DatabaseConnection>, data: Json<Forgive>) -> Json<ApiResult<String>> {
     match crate::scoutwarn::forgive_warning::forgive_warning(data.id, db).await {
-        Ok(a) => {
+        Ok(_) => {
             return Json(ApiResult::Success("Forgiven".to_string()));
         },
         Err(a) => {
-            return Json(ApiResult::Error(format!("Database Error: {a}")));
+            Json(ApiResult::Error(format!("Database Error: {a}")))
         },
-    };
+    }
 }

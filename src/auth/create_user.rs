@@ -1,11 +1,9 @@
 use rocket::http::CookieJar;
 use rocket::{State, form::Form};
 use rocket_dyn_templates::{Template, context};
-use rocket_okapi::okapi;
 use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, DatabaseConnection};
 use serde::Deserialize;
-use serde_json::Value;
 use uuid::Uuid;
 use crate::SETTINGS;
 use crate::auth::check;
@@ -20,12 +18,8 @@ pub struct CreateUserForm {
     is_admin: String, // should be a ("yes", "no") value
 }
 
-fn parse_out_string_bool<'a>(value: &'a str) -> bool {
-    if value == "yes" {
-        true
-    } else {
-        false
-    }
+fn parse_out_string_bool(value: &str) -> bool {
+    value == "yes"
 }
 
 //for backend init only (its not mounted at /api/)
@@ -62,13 +56,14 @@ pub async fn create_user(data: Form<CreateUserForm>, db: &State<DatabaseConnecti
 #[rocket_okapi::openapi]
 #[post("/api/create_user", data="<data>")]
 pub async fn create_user_front(data: Json<CreateUserForm>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<String>> {
-    if (!check::check(cookies, db).await) {
-
+    if !check::check(cookies, db).await {
+        return Json(ApiResult::Error("Not Admin".to_string()));
     }
+
 
     let hash = match bcrypt::hash(data.password.clone(), SETTINGS.bcrypt) {
         Ok(a) => a,
-        Err(a) => {
+        Err(_) => {
             return Json(ApiResult::Error("Failed handled".to_string()));
         },
     };
@@ -85,10 +80,10 @@ pub async fn create_user_front(data: Json<CreateUserForm>, db: &State<DatabaseCo
 
     match users::ActiveModel::insert(acvmodel, db.inner()).await {
         Ok(_) => {
-            return Json(ApiResult::Success("OK".to_string()));
+            Json(ApiResult::Success("OK".to_string()))
         },
-        Err(a) => {
-            return Json(ApiResult::Error("Failed handled".to_string()));
+        Err(_) => {
+            Json(ApiResult::Error("Failed handled".to_string()))
         },
     }
 }

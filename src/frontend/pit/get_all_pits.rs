@@ -1,4 +1,4 @@
-use rocket::{State, response::stream::Event, serde::json::Json};
+use rocket::{State, serde::json::Json};
 use schemars::JsonSchema;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};

@@ -1,11 +1,9 @@
 use rocket::serde::json::Json;
-use rocket::{State, form::Form};
-use rocket_dyn_templates::{Template, context};
+use rocket::State;
 use schemars::JsonSchema;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use rocket::http::{Cookie, CookieJar};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::auth::UUID_COOKIE_NAME;
 use crate::entity::users;
