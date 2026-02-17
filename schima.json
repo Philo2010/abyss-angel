@@ -204,7 +204,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResult_for_Array_of_GamesAvg"
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_TeamAvg"
                 }
               }
             }
@@ -1193,7 +1193,7 @@
           }
         }
       },
-      "ApiResult_for_Array_of_GamesAvg": {
+      "ApiResult_for_Array_of_TeamAvg": {
         "oneOf": [
           {
             "type": "object",
@@ -1211,7 +1211,7 @@
               "message": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/GamesAvg"
+                  "$ref": "#/components/schemas/TeamAvg"
                 }
               }
             }
@@ -1236,11 +1236,16 @@
           }
         ]
       },
-      "GamesAvg": {
+      "TeamAvg": {
         "type": "object",
         "required": [
+          "auto_score",
+          "defence_score",
           "game",
+          "is_ab_team",
+          "mvp_percent",
           "team",
+          "teleop_score",
           "total_score"
         ],
         "properties": {
@@ -1248,9 +1253,28 @@
             "type": "integer",
             "format": "int32"
           },
+          "is_ab_team": {
+            "type": "boolean"
+          },
           "total_score": {
             "type": "number",
-            "format": "float"
+            "format": "double"
+          },
+          "auto_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "teleop_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "defence_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "mvp_percent": {
+            "type": "number",
+            "format": "double"
           },
           "game": {
             "$ref": "#/components/schemas/GamesAvgSpecific"
@@ -1282,11 +1306,11 @@
         "properties": {
           "hehe_avg": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           },
           "beep_avg": {
             "type": "number",
-            "format": "float"
+            "format": "double"
           }
         }
       },

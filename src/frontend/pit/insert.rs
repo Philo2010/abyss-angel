@@ -8,7 +8,7 @@ use crate::{auth, pit};
 
 use crate::frontend::ApiResult;
 use crate::pit::pit::{PitHeaderInsert, PitInsert, PitInsertsSpecific, pit_insert};
-use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
+use crate::{SETTINGS, backenddb::game::{TeamAvg, average_game}, sexymac};
 use crate::pit::pit_insert::PitInsertForm;
 
 

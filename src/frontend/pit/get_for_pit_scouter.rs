@@ -13,7 +13,7 @@ use crate::frontend::{ApiResult, pit};
 use crate::pit::get_scouters_pit::PitScouterInstance;
 use crate::pit::pit::{PitGet, PitHeaderInsert, PitInsert, PitInsertsSpecific, PitSpecific, pit_get};
 use crate::setting::setevent::get_event_inner;
-use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
+use crate::{SETTINGS, backenddb::game::{TeamAvg, average_game}, sexymac};
 
 
 

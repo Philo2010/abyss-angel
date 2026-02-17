@@ -29,7 +29,7 @@ pub struct Model {
     pub is_dup: bool,
     pub snowgrave_scout_id: i32,
     pub game_type_id: i32,
-    pub game_id: i32,
+    pub game_id: i32, //not snowgrave
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

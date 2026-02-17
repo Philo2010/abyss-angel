@@ -1,8 +1,9 @@
 use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::dynamic::Column;
-use sea_orm::sea_query::SelectStatement;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, FromQueryResult, QueryFilter, QuerySelect};
+use sea_orm::prelude::Expr;
+use sea_orm::sea_query::{Alias, SelectStatement};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
 use sea_orm::sqlx::types::chrono::{self, DateTime, Local, TimeZone};
 use sea_orm::{DbErr};
 use serde::Serialize;
@@ -66,13 +67,19 @@ pub struct InsertReturn {
     pub auto_score: i32,
 }
 
+pub struct AvgReturn {
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub data: GamesAvgSpecific
+}
+
 #[async_trait]
 pub trait YearOp: Send + Sync {
     fn get_year_id(&self) -> i32;
     async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
     // Not is the name order!
-    async fn average_team(&self, ids: Vec<(i32, Vec<i32>)>, db: &DatabaseConnection) -> Result<Vec<(i32, GamesAvgSpecific)>, DbErr>;
-    async fn get_full_matches(&self, ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesFullSpecific>, DbErr>;
+    async fn average_team(&self, ids: Vec<TeamGameUnMergedData>, db: &DatabaseConnection) -> Result<Vec<AvgReturn>, DbErr>;
+    async fn get_full_matches(&self, game_ids: Vec<i32>, db: &DatabaseConnection) -> Result<Vec<GamesFullSpecific>, DbErr>;
     async fn delete(&self, id: i32, db: &DatabaseConnection) -> Result<(), DbErr>;
     async fn get(&self, id: i32, db: &DatabaseConnection) -> Result<GamesFullSpecific, DbErr>;
     async fn edit(&self, header: genertic_header::ActiveModel, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr>;
@@ -221,15 +228,35 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
 #[derive(FromQueryResult)]
 struct NormalGenDataAvg {
     pub team: i32,
-    pub total_score: f32,
+    pub is_ab_team: bool,
+    pub total_score: f64,
+    pub auto_score: f64,
+    pub teleop_score: f64,
+    pub defence_score: f64,
+    pub mvp_percent: f64,
 }
 #[derive(FromQueryResult)]
 pub struct NormalSpcDataAvg {
     pub team: i32,
+    pub is_ab_team: bool,
     pub game_id: i32,
 }
 
-async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &DatabaseConnection) -> Result<Vec<GamesAvg>, DbErr> {
+pub struct TeamGameUnMergedData {
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub game_ids: Vec<i32>,
+}
+
+pub struct Scores {
+    pub total_score: f64,
+    pub auto_score: f64,
+    pub teleop_score: f64,
+    pub defence: f64,
+    pub mvp_percent: f64,
+}
+
+async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let select_avg_score: Vec<NormalGenDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
@@ -237,9 +264,15 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .filter(genertic_header::Column::IsPending.eq(false))
         .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
-        .column_as(genertic_header::Column::TotalScore.avg(), "total_score")
+        .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
+        .column_as(genertic_header::Column::AutoScore.avg().cast_as(Alias::new("FLOAT8")), "auto_score")
+        .column_as(genertic_header::Column::TeleopScore.avg().cast_as(Alias::new("FLOAT8")), "teleop_score")
+        .column_as(genertic_header::Column::Defence.avg().cast_as(Alias::new("FLOAT8")), "defence_score")
+        .column_as(Expr::col(genertic_header::Column::IsMvp).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")),"mvp_percent")
         .column_as(genertic_header::Column::Team, "team")
+        .column_as(genertic_header::Column::IsAbTeam, "is_ab_team")
         .group_by(genertic_header::Column::Team)
+        .group_by(genertic_header::Column::IsAbTeam)
         .into_model::<NormalGenDataAvg>()
         .all(db).await?;
     
@@ -251,26 +284,40 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .filter(genertic_header::Column::IsPending.eq(false))
         .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
-        .column(genertic_header::Column::GameId)
+        .column(genertic_header::Column::GameId) //Not snowgrave
         .column(genertic_header::Column::Team)
+        .column(genertic_header::Column::IsAbTeam)
         .into_model::<NormalSpcDataAvg>().all(db).await?;
 
-    let data: Vec<(i32, Vec<i32>)> = ids.into_iter()
-        .into_group_map_by(|record| record.team)
+    let data: Vec<TeamGameUnMergedData> = ids.into_iter()
+        .into_group_map_by(|record| (record.team, record.is_ab_team))
         .into_iter()
-        .map(|(team, records)| {
-            (team, records.into_iter().map(|r| r.game_id).collect())
+        .map(|((team, is_ab_team), records)| {
+            TeamGameUnMergedData { team: team, is_ab_team: is_ab_team, game_ids: records.into_iter().map(|r| r.game_id).collect() }
         })
         .collect();
 
-    let avg_map: HashMap<i32, f32> = select_avg_score.into_iter().map(|x|
-        (x.team, x.total_score)).collect();
+    let avg_map: HashMap<(i32, bool), Scores> = select_avg_score.into_iter().map(|x|
+        ((x.team, x.is_ab_team), Scores { total_score: x.total_score,
+            auto_score: x.auto_score,
+            teleop_score: x.teleop_score,
+            defence: x.defence_score,
+            mvp_percent: x.mvp_percent,
+        })).collect();
 
-    let a: Vec<(i32, GamesAvgSpecific)> = model.average_team(data, db).await?;
-    let mut done: Vec<GamesAvg> = Vec::with_capacity(a.len());
-    for spc in a {
-        let avg = avg_map.get(&spc.0).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
-        done.push(GamesAvg { team: spc.0, total_score: *avg, game: spc.1 });
+    let a: Vec<AvgReturn> = model.average_team(data, db).await?;
+    let mut done: Vec<TeamAvg> = Vec::with_capacity(a.len());
+    for team_avg_data in a {
+        let avg = avg_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
+        done.push(TeamAvg { team: team_avg_data.team,
+            is_ab_team: team_avg_data.is_ab_team,
+            total_score: avg.total_score,
+            auto_score: avg.auto_score,
+            teleop_score: avg.teleop_score,
+            defence_score: avg.defence,
+            game: team_avg_data.data,
+            mvp_percent: avg.mvp_percent,
+        });
     }
 
 
@@ -321,9 +368,14 @@ pub struct GamesGraph {
 }
 
 #[derive(Serialize, JsonSchema)]
-pub struct GamesAvg {
+pub struct TeamAvg {
     pub team: i32,
-    pub total_score: f32,
+    pub is_ab_team: bool,
+    pub total_score: f64,
+    pub auto_score: f64,
+    pub teleop_score: f64,
+    pub defence_score: f64,
+    pub mvp_percent: f64,
     pub game: GamesAvgSpecific
 }
 
@@ -488,7 +540,7 @@ pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result
     prim_search_game(game, param, db).await
 }
 
-pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Result<Vec<GamesAvg>, DbErr> {
+pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
     prim_average_game(game, event_code, db).await

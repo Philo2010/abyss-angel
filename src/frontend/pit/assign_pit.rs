@@ -13,7 +13,7 @@ use crate::auth::get_by_user::get_by_username;
 use crate::frontend::ApiResult;
 use crate::pit::assign_pit_scouts::{self, AssignScoutForm};
 use crate::pit::pit::{PitEditSpecific, PitGet, PitHeaderInsert, PitInsert, PitInsertsSpecific, pit_edit, pit_get};
-use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
+use crate::{SETTINGS, backenddb::game::{TeamAvg, average_game}, sexymac};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct AssignScoutFormButCool {

@@ -10,7 +10,7 @@ use crate::auth;
 use crate::auth::get_by_user::{AuthGetUuidError, get_by_uuid};
 use crate::frontend::ApiResult;
 use crate::pit::pit::{PitGet, PitHeaderInsert, PitInsert, PitInsertsSpecific, PitSpecific, pit_get};
-use crate::{SETTINGS, backenddb::game::{GamesAvg, average_game}, sexymac};
+use crate::{SETTINGS, backenddb::game::{TeamAvg, average_game}, sexymac};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct PitHeaderGetFront { 
