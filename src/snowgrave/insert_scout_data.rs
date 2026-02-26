@@ -23,6 +23,7 @@ pub struct InsertSnow {
     //No need for game id as that will be seen by the enum
     pub game: GamesInsertsSpecific,
     pub defence: i32,
+    pub comment: String,
 }
 
 
@@ -78,6 +79,7 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
         snowgrave_scout_id: data.snowgrave_scout_id,
         is_mvp,
         defence: data.defence,
+        comment: data.comment
     };
     let insert_stuff = GamesInserts {
         header,

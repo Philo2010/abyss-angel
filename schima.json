@@ -1286,10 +1286,10 @@
           {
             "type": "object",
             "required": [
-              "ExampleGame"
+              "RebuiltGame"
             ],
             "properties": {
-              "ExampleGame": {
+              "RebuiltGame": {
                 "$ref": "#/components/schemas/Avg"
               }
             },
@@ -1300,15 +1300,65 @@
       "Avg": {
         "type": "object",
         "required": [
-          "beep_avg",
-          "hehe_avg"
+          "beach_on_bump",
+          "defence_main_avg",
+          "fuel_pass_auto_avg",
+          "fuel_pass_teleop_avg",
+          "fuel_shoot_auto_avg",
+          "fuel_shoot_teleop_avg",
+          "level_1_avg",
+          "level_1_avg_auto",
+          "level_2_avg",
+          "level_2_avg_auto",
+          "level_3_avg",
+          "level_3_avg_auto"
         ],
         "properties": {
-          "hehe_avg": {
+          "defence_main_avg": {
             "type": "number",
             "format": "double"
           },
-          "beep_avg": {
+          "fuel_shoot_teleop_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "fuel_pass_teleop_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "fuel_shoot_auto_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "fuel_pass_auto_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_1_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_2_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_3_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_1_avg_auto": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_2_avg_auto": {
+            "type": "number",
+            "format": "double"
+          },
+          "level_3_avg_auto": {
+            "type": "number",
+            "format": "double"
+          },
+          "beach_on_bump": {
             "type": "number",
             "format": "double"
           }
@@ -1503,6 +1553,7 @@
         "type": "object",
         "required": [
           "auto_score",
+          "comment",
           "created_at",
           "defence",
           "event_code",
@@ -1565,6 +1616,9 @@
           "station": {
             "$ref": "#/components/schemas/Stations"
           },
+          "comment": {
+            "type": "string"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -1613,10 +1667,10 @@
           {
             "type": "object",
             "required": [
-              "ExampleGame"
+              "RebuiltGame"
             ],
             "properties": {
-              "ExampleGame": {
+              "RebuiltGame": {
                 "$ref": "#/components/schemas/Model2"
               }
             },
@@ -1627,9 +1681,14 @@
       "Model2": {
         "type": "object",
         "required": [
-          "beep",
-          "hehe",
-          "hoohoo",
+          "beach_on_bump",
+          "climb_auto",
+          "climb_end",
+          "defence_main",
+          "fuel_pass_auto",
+          "fuel_pass_teleop",
+          "fuel_shoot_auto",
+          "fuel_shoot_teleop",
           "id"
         ],
         "properties": {
@@ -1637,18 +1696,44 @@
             "type": "integer",
             "format": "int32"
           },
-          "hehe": {
+          "defence_main": {
+            "type": "boolean"
+          },
+          "fuel_shoot_teleop": {
             "type": "integer",
             "format": "int32"
           },
-          "beep": {
+          "fuel_pass_teleop": {
             "type": "integer",
             "format": "int32"
           },
-          "hoohoo": {
-            "type": "string"
+          "fuel_shoot_auto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fuel_pass_auto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "climb_end": {
+            "$ref": "#/components/schemas/ClimbState"
+          },
+          "climb_auto": {
+            "$ref": "#/components/schemas/ClimbState"
+          },
+          "beach_on_bump": {
+            "type": "boolean"
           }
         }
+      },
+      "ClimbState": {
+        "type": "string",
+        "enum": [
+          "Nothing",
+          "Stage1",
+          "Stage2",
+          "Stage3"
+        ]
       },
       "SearchParamData": {
         "type": "object",
@@ -1957,6 +2042,10 @@
             "format": "int32",
             "nullable": true
           },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
           "game": {
             "$ref": "#/components/schemas/GamesEditSpecific"
           }
@@ -1967,10 +2056,10 @@
           {
             "type": "object",
             "required": [
-              "ExampleGame"
+              "RebuiltGame"
             ],
             "properties": {
-              "ExampleGame": {
+              "RebuiltGame": {
                 "$ref": "#/components/schemas/Edit2"
               }
             },
@@ -1981,18 +2070,48 @@
       "Edit2": {
         "type": "object",
         "properties": {
-          "hehe": {
+          "defence_main": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "fuel_shoot_teleop": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           },
-          "beep": {
+          "fuel_pass_teleop": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           },
-          "hoohoo": {
-            "type": "string",
+          "fuel_shoot_auto": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "fuel_pass_auto": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "climb_end": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClimbState"
+              }
+            ],
+            "nullable": true
+          },
+          "climb_auto": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClimbState"
+              }
+            ],
+            "nullable": true
+          },
+          "beach_on_bump": {
+            "type": "boolean",
             "nullable": true
           }
         }
@@ -2000,6 +2119,7 @@
       "InsertSnow": {
         "type": "object",
         "required": [
+          "comment",
           "defence",
           "game",
           "snowgrave_scout_id"
@@ -2015,6 +2135,9 @@
           "defence": {
             "type": "integer",
             "format": "int32"
+          },
+          "comment": {
+            "type": "string"
           }
         }
       },
@@ -2023,10 +2146,10 @@
           {
             "type": "object",
             "required": [
-              "ExampleGame"
+              "RebuiltGame"
             ],
             "properties": {
-              "ExampleGame": {
+              "RebuiltGame": {
                 "$ref": "#/components/schemas/Insert2"
               }
             },
@@ -2037,21 +2160,43 @@
       "Insert2": {
         "type": "object",
         "required": [
-          "beep",
-          "hehe",
-          "hoohoo"
+          "beach_on_bump",
+          "climb_auto",
+          "climb_end",
+          "defence_main",
+          "fuel_pass_auto",
+          "fuel_pass_teleop",
+          "fuel_shoot_auto",
+          "fuel_shoot_teleop"
         ],
         "properties": {
-          "hehe": {
+          "defence_main": {
+            "type": "boolean"
+          },
+          "fuel_shoot_teleop": {
             "type": "integer",
             "format": "int32"
           },
-          "beep": {
+          "fuel_pass_teleop": {
             "type": "integer",
             "format": "int32"
           },
-          "hoohoo": {
-            "type": "string"
+          "fuel_shoot_auto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fuel_pass_auto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "climb_end": {
+            "$ref": "#/components/schemas/ClimbState"
+          },
+          "climb_auto": {
+            "$ref": "#/components/schemas/ClimbState"
+          },
+          "beach_on_bump": {
+            "type": "boolean"
           }
         }
       },

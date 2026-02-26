@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use schemars::{JsonSchema};
+use sea_orm::ColumnTrait;
+use sea_orm::QueryFilter;
 use sea_orm::TransactionTrait;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
@@ -30,9 +32,7 @@ pub async fn insert_scouters(
     form: ScouterInsertForm,
     db: &DatabaseConnection,
 ) -> Result<(), DbErr> {
-
     let txn = db.begin().await?;
-
     let mut scouters: Vec<game_scouts::ActiveModel> = Vec::new();
     let mut mvps: Vec<(i32, mvp_scouters::ActiveModel, mvp_scouters::ActiveModel)> = Vec::new();
     let mut teams: HashMap<i32, upcoming_team::Model> = HashMap::new();
@@ -45,13 +45,17 @@ pub async fn insert_scouters(
                 .one(&txn)
                 .await?
                 .ok_or(DbErr::RecordNotFound("No team found".to_string()))?;
-
             teams.insert(matche.0, model);
             teams.get(&matche.0).unwrap()
         };
 
-        let mut scouter_check = HashSet::new();
+        // Delete existing scouters for this team before re-inserting
+        game_scouts::Entity::delete_many()
+            .filter(game_scouts::Column::TeamId.eq(team.id))
+            .exec(&txn)
+            .await?;
 
+        let mut scouter_check = HashSet::new();
         for scouter in &matche.1 {
             let scouter_id = form
                 .player_indexs
@@ -75,38 +79,55 @@ pub async fn insert_scouters(
             });
         }
 
-        // Prepare MVPs but DO NOT insert yet
         let mvp_red = mvp_scouters::ActiveModel {
             id: NotSet,
             scouter: Set(matche.2.red),
             is_blue: Set(false),
             data: Set(None),
         };
-
         let mvp_blue = mvp_scouters::ActiveModel {
             id: NotSet,
             scouter: Set(matche.2.blue),
             is_blue: Set(true),
             data: Set(None),
         };
-
         mvps.push((team.game_id, mvp_red, mvp_blue));
     }
 
     // Insert scouts
-    game_scouts::Entity::insert_many(scouters)
-        .exec(&txn)
-        .await?;
+    if !scouters.is_empty() {
+        game_scouts::Entity::insert_many(scouters)
+            .exec(&txn)
+            .await?;
+    }
 
-    // Insert MVPs + update games
+    // Delete old MVPs and insert new ones per game
+    // Deduplicate by game_id so we don't double-delete/insert if multiple teams from same game are in the diff
+    let mut seen_games: HashSet<i32> = HashSet::new();
     for (game_id, red, blue) in mvps {
-        let red = red.insert(&txn).await?;
-        let blue = blue.insert(&txn).await?;
+        if !seen_games.insert(game_id) {
+            continue; // already handled this game
+        }
 
+        // Find and delete old MVP records via the game's existing references
         let game = upcoming_game::Entity::find_by_id(game_id)
             .one(&txn)
             .await?
             .ok_or(DbErr::Custom("Could not find game".to_string()))?;
+
+        if let Some(old_red_id) = game.mvp_id_red {
+            mvp_scouters::Entity::delete_by_id(old_red_id)
+                .exec(&txn)
+                .await?;
+        }
+        if let Some(old_blue_id) = game.mvp_id_blue {
+            mvp_scouters::Entity::delete_by_id(old_blue_id)
+                .exec(&txn)
+                .await?;
+        }
+
+        let red = red.insert(&txn).await?;
+        let blue = blue.insert(&txn).await?;
 
         let mut game_active: upcoming_game::ActiveModel = game.into();
         game_active.mvp_id_red = Set(Some(red.id));

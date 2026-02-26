@@ -1,0 +1,57 @@
+const MAX_AREA_PASS: i32 = 70;
+
+pub struct CheckReturn {
+    pub passed: Vec<usize>,
+    pub failed: Vec<usize>
+}
+
+
+
+pub fn check_pass(data_points: Vec<i32>) -> CheckReturn {
+    // Pair score with original index
+    let mut indexed: Vec<(usize, i32)> =
+        data_points.into_iter().enumerate().collect();
+
+    // Sort by score
+    indexed.sort_by_key(|&(_, score)| score);
+
+    let n = indexed.len();
+    let mut best_start = 0;
+    let mut best_end = 0;
+    let mut best_len = 0;
+
+    let mut start = 0;
+    let mut area = 0;
+
+    for end in 0..n - 1 {
+        area += indexed[end + 1].1 - indexed[end].1;
+
+        while area > MAX_AREA_PASS {
+            area -= indexed[start + 1].1 - indexed[start].1;
+            start += 1;
+        }
+
+        let len = end + 1 - start + 1;
+        if len > best_len {
+            best_len = len;
+            best_start = start;
+            best_end = end + 1;
+        }
+    }
+
+    // Convert back to ORIGINAL indexes
+    let passed: Vec<usize> =
+        indexed[best_start..=best_end]
+            .iter()
+            .map(|&(orig_index, _)| orig_index)
+            .collect();
+
+    let mut failed = Vec::new();
+    for (orig_index, _) in indexed.iter() {
+        if !passed.contains(orig_index) {
+            failed.push(*orig_index);
+        }
+    }
+
+    CheckReturn { passed, failed }
+}

@@ -19,3 +19,4 @@ pub mod snowgrave_que_only_playoff;
 pub mod snowgrave_edit_scouter;
 pub mod sub_scout;
 pub mod get_snowgrave_leader_board;
+pub mod find_point_distance;

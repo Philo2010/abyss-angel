@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::entity::sea_orm_active_enums::Stations;
+use crate::snowgrave::find_point_distance::{CheckReturn, check_pass};
 use crate::snowgrave::{check_complete::CheckMatchErr, datatypes::GameFull};
 use crate::snowgrave::datatypes::ScouterWithScore;
 
@@ -43,15 +44,14 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
 
     // ---------- TEAM CONSENSUS ----------
     for team in &game.teams.0 {
-        let scores: Vec<_> = team.scouters.iter().map(|s| s.total_score).collect();
-        let (score, count) =
-            most_common(&scores).ok_or(CheckMatchErr::NotAllScoutersAreDone)?;
+        let scores: Vec<i32> = team.scouters.iter().map(|s| s.total_score).collect();
 
-        let ratio = count as f32 / scores.len() as f32;
+        let result = check_pass(scores);
 
-        let (mut ok, bad): (Vec<_>, Vec<_>) =
-            team.scouters.iter().copied()
-                .partition(|s| s.total_score == score);
+        let passed = result.passed;
+        let failed = result.failed;
+
+        let ratio = passed.len() as f32 / team.scouters.len() as f32;
 
         if ratio < AGREE_AMOUNT {
             teams_to_redo.push(team.id);
@@ -63,27 +63,40 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
             continue;
         }
 
-        // invariant: trusted team must have at least one agreeing scouter
-        debug_assert!(!ok.is_empty());
+        // Forgive passed
+        for &i in &passed {
+            let s = team.scouters[i];
+            forgive.push(s);
+        }
 
-        winner_teams.push(ok.iter().map(|s| s.id).min().unwrap());
-        forgive.append(&mut ok);
-
-        for s in bad {
+        // Fail failed
+        for &i in &failed {
+            let s = team.scouters[i];
             if failed_ids.insert(s.id) {
                 fails.push(s);
             }
         }
 
+        // Use average (or first) passing score for alliance sum
+        let team_score: i32 =
+            passed.iter().map(|&i| team.scouters[i].total_score).sum();
+
         match team.station {
             Stations::Red1 | Stations::Red2 | Stations::Red3 => {
-                red_sum += score;
+                red_sum += team_score;
                 trusted_red.push(team.id);
             }
             _ => {
-                blue_sum += score;
+                blue_sum += team_score;
                 trusted_blue.push(team.id);
             }
+        }
+
+        // pick lowest ID among passed
+        if let Some(min_id) =
+            passed.iter().map(|&i| team.scouters[i].id).min()
+        {
+            winner_teams.push(min_id);
         }
     }
 

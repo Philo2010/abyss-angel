@@ -1,1 +1,1 @@
-pub mod example_game;
+pub mod rebuilt;

@@ -32,6 +32,4 @@ Edit:
     ret 
 
 
-
-Allow edit scouter assign
-allow for multabpe autors
+allow for multabpe autors 

@@ -9,7 +9,7 @@ use serde::Serialize;
 use uuid::Uuid;
 use crate::auth::get_by_user::AuthGetUuidError;
 use crate::entity::genertic_header;
-use crate::{SETTINGS, auth};
+use crate::{SETTINGS, auth, backenddb};
 use crate::define_games;
 use itertools::Itertools;
 use async_trait::async_trait;
@@ -51,6 +51,7 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         snowgrave_scout_id: model.snowgrave_scout_id,
         defence: model.defence,
         auto_score: model.auto_score,
+        comment: model.comment,
         teleop_score: model.teleop_score,
     })
 }
@@ -98,6 +99,7 @@ pub struct HeaderInsert {
     pub station: Stations,
     pub snowgrave_scout_id: i32,
     pub is_mvp: bool,
+    pub comment: String,
     //Created At no need to import as this will be seen by the server
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
@@ -146,6 +148,7 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         teleop_score: Set(res.teleop_score),
         auto_score: Set(res.auto_score),
         defence: Set(data.header.defence),
+        comment: Set(data.header.comment.clone()),
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
@@ -416,6 +419,7 @@ pub struct HeaderFull {
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
+    pub comment: String,
     pub created_at: DateTime<Local>,
     pub is_pending: bool,
     pub is_marked: bool,
@@ -439,7 +443,8 @@ pub struct HeaderFullEdit {
     pub is_pending: Option<bool>,
     pub snowgrave_id: Option<i32>,
     pub is_mvp: Option<bool>,
-    pub defence: Option<i32>
+    pub defence: Option<i32>,
+    pub comment: Option<String>
 }
 
 async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<genertic_header::ActiveModel, DbErr> {
@@ -493,6 +498,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         teleop_score: NotSet,
         auto_score: NotSet,
         defence: header.defence.map(Set).unwrap_or(NotSet),
+        comment: header.comment.map(Set).unwrap_or(NotSet),
     })
 }
 
@@ -565,5 +571,5 @@ pub async fn edit_game(edit: GamesEdit, db: &DatabaseConnection) -> Result<(), D
 
 define_games!(
     //Insert each year here
-    ExampleGame => crate::backenddb::entrys::example_game,
+    RebuiltGame => crate::backenddb::entrys::rebuilt
 );  

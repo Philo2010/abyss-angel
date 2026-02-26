@@ -1,5 +1,6 @@
 #[macro_use] extern crate rocket;
 use rocket::{Config, data::{ByteUnit, Limits}};
+use rocket_okapi::{openapi_get_spec, settings::OpenApiSettings};
 
 use crate::setting::Settings;
 
@@ -15,7 +16,7 @@ mod snowgrave;
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
-    year: 9999,
+    year: 2026,
     bcrypt: 12,
     db_path: "postgres://philipbedrosian@localhost/testdb",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"

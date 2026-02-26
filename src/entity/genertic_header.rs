@@ -19,6 +19,7 @@ pub struct Model {
     pub teleop_score: i32,
     pub auto_score: i32,
     pub defence: i32,
+    pub comment: String,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
