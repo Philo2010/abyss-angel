@@ -17,3 +17,4 @@ pub mod warning;
 pub mod unsent_warning;
 pub mod pit_header;
 pub mod pit_upcoming;
+pub mod scout_game_midway_insert;

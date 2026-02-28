@@ -22,7 +22,7 @@ pub struct InsertSnow {
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
     pub game: GamesInsertsSpecific,
-    pub defence: i32,
+    pub defence: f32,
     pub comment: String,
 }
 

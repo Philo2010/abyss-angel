@@ -30,6 +30,13 @@ macro_rules! define_games {
             )*
         }
 
+        pub enum FrontRunnerReturn {
+            $(
+                $name($($module)::+::FrontRunner),
+            )*
+        }
+
+
         fn game_dispatch(year_id: i32) -> Box<dyn YearOp> {
             match year_id {
                 $(

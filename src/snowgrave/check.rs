@@ -37,14 +37,14 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
     let mut winner_teams = Vec::new();
     let mut failed_ids = HashSet::new();
 
-    let mut red_sum = 0;
-    let mut blue_sum = 0;
+    let mut red_sum: f32 = 0.0;
+    let mut blue_sum: f32 = 0.0;
     let mut trusted_red = Vec::new();
     let mut trusted_blue = Vec::new();
 
     // ---------- TEAM CONSENSUS ----------
     for team in &game.teams.0 {
-        let scores: Vec<i32> = team.scouters.iter().map(|s| s.total_score).collect();
+        let scores: Vec<f32> = team.scouters.iter().map(|s| s.total_score).collect();
 
         let result = check_pass(scores);
 
@@ -78,7 +78,7 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
         }
 
         // Use average (or first) passing score for alliance sum
-        let team_score: i32 =
+        let team_score: f32 =
             passed.iter().map(|&i| team.scouters[i].total_score).sum();
 
         match team.station {
@@ -112,9 +112,9 @@ pub fn check(game: &GameFull) -> Result<CheckFailerReturn, CheckMatchErr> {
         .filter(|t| matches!(t.station, Stations::Blue1 | Stations::Blue2 | Stations::Blue3))
         .count();
 
-    let check_alliance = |trusted: &Vec<i32>, total: usize, sum: i32, mvp: i32| {
+    let check_alliance = |trusted: &Vec<i32>, total: usize, sum: f32, mvp: i32| {
         let unknowns = total - trusted.len();
-        (unknowns == 0 && sum != mvp) || (unknowns == 1 && sum > mvp)
+        (unknowns == 0 && sum != mvp as f32) || (unknowns == 1 && sum > mvp as f32)
     };
 
     if check_alliance(&trusted_red, total_red, red_sum, red_mvp) {

@@ -19,7 +19,7 @@ pub struct EditSnow {
     //pub tournament_level: TournamentLevels,
     //pub station: Stations,
     pub snowgrave_scout_id: i32,
-    pub defence: Option<i32>,
+    pub defence: Option<f32>,
     pub comment: Option<String>,
     //Created At no need to import as this will be seen by the server
     //game_type_id polymorfism will be seen by the enum

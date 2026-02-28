@@ -7,13 +7,24 @@ pub struct CheckReturn {
 
 
 
-pub fn check_pass(data_points: Vec<i32>) -> CheckReturn {
+pub fn check_pass(data_points: &[f32]) -> CheckReturn {
     // Pair score with original index
-    let mut indexed: Vec<(usize, i32)> =
-        data_points.into_iter().enumerate().collect();
+    let mut indexed: Vec<(usize, f32)> =
+    data_points
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| (i, v))
+        .collect();
 
     // Sort by score
-    indexed.sort_by_key(|&(_, score)| score);
+    indexed.sort_by(|a, b| {
+        match (a.1.is_nan(), b.1.is_nan()) {
+            (true, true) => std::cmp::Ordering::Equal,
+            (true, false) => std::cmp::Ordering::Greater,
+            (false, true) => std::cmp::Ordering::Less,
+            (false, false) => a.1.partial_cmp(&b.1).unwrap(),
+        }
+    });
 
     let n = indexed.len();
     let mut best_start = 0;
@@ -21,12 +32,12 @@ pub fn check_pass(data_points: Vec<i32>) -> CheckReturn {
     let mut best_len = 0;
 
     let mut start = 0;
-    let mut area = 0;
+    let mut area = 0.0;
 
     for end in 0..n - 1 {
         area += indexed[end + 1].1 - indexed[end].1;
 
-        while area > MAX_AREA_PASS {
+        while area > MAX_AREA_PASS as f32 {
             area -= indexed[start + 1].1 - indexed[start].1;
             start += 1;
         }

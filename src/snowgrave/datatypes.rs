@@ -56,7 +56,7 @@ pub struct ScouterWithScore {
     pub id: i32,
     pub scouter_id: Uuid,
     pub station: Stations,
-    pub total_score: i32,
+    pub total_score: f32,
     pub done: bool,
     pub is_redo: bool,
 }

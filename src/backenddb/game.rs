@@ -59,9 +59,9 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
 pub struct InsertReturn {
     pub game_type: i32,
     pub game_id: i32,
-    pub total_score: i32,
-    pub teleop_score: i32,
-    pub auto_score: i32,
+    pub total_score: f32,
+    pub teleop_score: f32,
+    pub auto_score: f32,
 }
 
 pub struct AvgReturn {
@@ -80,6 +80,7 @@ pub trait YearOp: Send + Sync {
     async fn delete(&self, id: i32, db: &DatabaseConnection) -> Result<(), DbErr>;
     #[allow(dead_code)]
     async fn get(&self, id: i32, db: &DatabaseConnection) -> Result<GamesFullSpecific, DbErr>;
+    fn frontrunner_op(&self, games: Vec<GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr>;
     async fn edit(&self, header: genertic_header::ActiveModel, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr>;
 }
 
@@ -93,7 +94,7 @@ pub struct HeaderInsert {
     pub match_id: i32,
     pub set: i32,
     //Total score is irraiven as it will be computed at server side
-    pub defence: i32,
+    pub defence: f32,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
@@ -413,9 +414,9 @@ pub struct HeaderFull {
     pub is_ab_team: bool,
     pub match_id: i32,
     pub set: i32,
-    pub total_score: i32,
-    pub auto_score: i32,
-    pub teleop_score: i32,
+    pub total_score: f32,
+    pub auto_score: f32,
+    pub teleop_score: f32,
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
@@ -425,7 +426,7 @@ pub struct HeaderFull {
     pub is_marked: bool,
     pub is_mvp: bool,
     pub snowgrave_scout_id: i32,
-    pub defence: i32,
+    pub defence: f32,
 }
 
 pub struct HeaderFullEdit {
@@ -443,7 +444,7 @@ pub struct HeaderFullEdit {
     pub is_pending: Option<bool>,
     pub snowgrave_id: Option<i32>,
     pub is_mvp: Option<bool>,
-    pub defence: Option<i32>,
+    pub defence: Option<f32>,
     pub comment: Option<String>
 }
 
@@ -547,6 +548,12 @@ pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Resul
     let game = game_dispatch(SETTINGS.year);
 
     prim_average_game(game, event_code, db).await
+}
+
+pub async fn frontrunner(games: Vec<GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr> {
+    let game = game_dispatch(SETTINGS.year);
+
+    game.frontrunner_op(games)
 }
 
 #[allow(dead_code)]
