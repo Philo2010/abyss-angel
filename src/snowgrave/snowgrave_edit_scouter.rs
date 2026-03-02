@@ -1,8 +1,9 @@
-use schemars::JsonSchema;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
+use chrono::Local;
+use schemars::{JsonSchema};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit}}, entity::{game_scouts, genertic_header, upcoming_game}, snowgrave::check_complete};
+use crate::{SETTINGS, backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit, game_dispatch}}, entity::{game_scouts, genertic_header, scout_game_midway_insert::{self, ActiveModel}, upcoming_game}, snowgrave::check_complete};
 
 
 
@@ -35,44 +36,50 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     if !snowgrave_scout.is_redo {
         return Err(DbErr::Custom("Please scout normaly!".to_string()));
     }
-    let snowgrave_game = upcoming_game::Entity::find_by_id(snowgrave_scout.game_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
-    let game_data = genertic_header::Entity::find()
-        .filter(genertic_header::Column::SnowgraveScoutId.eq(data.snowgrave_scout_id)).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find game data!".to_string()))?;
+    let game_data: scout_game_midway_insert::Model = scout_game_midway_insert::Entity::find_by_id(snowgrave_scout.game_midway.unwrap()).one(db).await?.unwrap();
 
     //asume done for now
     let mut snowgrave_scout_active: game_scouts::ActiveModel = snowgrave_scout.clone().into();
     snowgrave_scout_active.done = Set(true);
     snowgrave_scout_active.is_redo = Set(false);
     snowgrave_scout_active.update(db).await?;
+
+    //preform the edit
+    let game_funcion= game_dispatch(SETTINGS.year);
+    let res = game_funcion.edit(game_data.game_id, data.game, db).await?;
+    
+
+    let game_insert: scout_game_midway_insert::ActiveModel = ActiveModel {
+        id: NotSet,
+        user: NotSet,
+        team: NotSet,
+        is_ab_team: NotSet,
+        match_id: NotSet,
+        set: NotSet,
+        total_score: Set(res.total_score as i32),
+        teleop_score: Set(res.teleop_score as i32),
+        auto_score: Set(res.auto_score as i32),
+        defence: data.defence.map(|x| x as i32).map(Set).unwrap_or(NotSet),
+        comment: data.comment.map(Set).unwrap_or(NotSet),
+        event_code: NotSet,
+        tournament_level: NotSet,
+        station: NotSet,
+        created_at: Set(Local::now()),
+        game_type_id: Set(res.game_type),
+        game_id: Set(res.game_id),
+    };
+
+    game_insert.update(db).await?;
+    let snowgrave_game = match upcoming_game::Entity::find_by_id(snowgrave_scout.game_id).one(db).await? {
+        Some(a) => a,
+        None => {
+            panic!("INVAID GAME ID!!");
+        },
+    };
     
     //do the update
 
     //All of the header data should be fine so no need to edit it
-    let header = HeaderFullEdit {
-        id: game_data.id,
-        user: None,
-        team: None,
-        is_ab_team: None,
-        match_id: None,
-        set: None,
-        event_code: None,
-        tournament_level: None,
-        station: None,
-        created_at: None,
-        is_marked: Some(false),
-        is_pending: Some(true),
-        snowgrave_id: None,
-        is_mvp: None,
-        defence: data.defence,
-        comment: data.comment
-    };
-    backenddb::game::edit_game(GamesEdit {
-        header,
-        game: data.game
-    }, db).await?;
-
-
-    println!("header ran");
 
     //now time to do the check itself
     let _res = check_complete::check_match(snowgrave_game.id, db).await;

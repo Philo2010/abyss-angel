@@ -1,175 +1,116 @@
 use std::collections::HashMap;
 
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, DbErr, EntityTrait, QueryFilter,
+    ColumnTrait, Condition, DatabaseConnection, DbErr, EntityTrait, ModelTrait, QueryFilter
 };
 use uuid::Uuid;
 
 use crate::{
     entity::{
-        game_scouts,
-        mvp_scouters,
-        upcoming_game,
-        upcoming_team,
-    },
-    snowgrave::datatypes::{
-        GamePartialWithoutId, MvpIds, ScouterWithoutId,
-        ScoutingTeamThinWithoutId, TeamData,
-    },
+        game_scouts, mvp_scouters, sea_orm_active_enums::TournamentLevels, upcoming_game, upcoming_team
+    }, snowgrave::{datatypes::{Game, MvpPair, MvpUpcoming, Team}, db_models_to_snow::{get_mvp, get_mvps}},
 };
+
+pub struct ScouterField {
+    pub event_code: String,
+    pub match_id: i32,
+    pub set: i32,
+    pub tournament_level: TournamentLevels,
+    pub teams: Team,
+    pub mvp: MvpPairScouterField,
+    pub is_redo: bool
+}
+
+
+pub struct MvpPairScouterField {
+    pub red: Option<MvpUpcoming>,
+    pub blue:  Option<MvpUpcoming>
+}
 
 pub async fn get_games_for_scouter(
     scouter: Uuid,
     db: &DatabaseConnection,
-) -> Result<Vec<GamePartialWithoutId>, DbErr> {
+) -> Result<Vec<Game>, DbErr> {
+    //get all the scouting entrys first
+    let scouter_entrys = game_scouts::Entity::find()
+        .filter(game_scouts::Column::ScouterId.eq(scouter))
+        .all(db).await?;
+    let mut scout_final: Vec<ScouterField> = Vec::new();
 
-    // -------------------------
-    // 1. Active scouting entries
-    // -------------------------
-    let scout_entries: Vec<game_scouts::Model> =
-        game_scouts::Entity::find()
-            .filter(game_scouts::Column::ScouterId.eq(scouter))
-            .filter(game_scouts::Column::Done.eq(false))
-            .all(db)
-            .await?;
+    let mut game_cache: HashMap<i32, upcoming_game::Model> = HashMap::new();
+    let mut team_cache: HashMap<i32, upcoming_team::Model> = HashMap::new();
+    
+    for entry in &scouter_entrys {
 
-    // -------------------------
-    // 2. MVPs owned by scouter
-    // -------------------------
-    let mvps: HashMap<i32, mvp_scouters::Model> =
-        mvp_scouters::Entity::find()
-            .filter(mvp_scouters::Column::Scouter.eq(scouter))
-            .filter(mvp_scouters::Column::Data.is_null())
-            .all(db)
-            .await?
-            .into_iter()
-            .map(|m| (m.id, m))
-            .collect();
+        let game = match game_cache.get(&entry.game_id) {
+            Some(a) => {
+                a
+            },
+            None => {
+                let game_model = match upcoming_game::Entity::find_by_id(entry.game_id).one(db).await? {
+                    Some(a) => {
+                        a
+                    },
+                    None => {
+                        panic!("THIS STATE SHOULD NOT HAPPEN, GAME ID SHOULD ALWAYS BE VALID");
+                    },
+                };
+                game_cache.insert(entry.game_id, game_model);
+                game_cache.get(&entry.game_id).unwrap()
+            },
+        };
 
-    let scout_game_ids: Vec<i32> =
-        scout_entries.iter().map(|s| s.game_id).collect();
+        let team = match team_cache.get(&entry.team_id) {
+            Some(a) => {
+                a
+            },
+            None => {
+                let team_model = match upcoming_team::Entity::find_by_id(entry.team_id).one(db).await? {
+                    Some(a) => {
+                        a
+                    },
+                    None => {
+                        panic!("THIS STATE SHOULD NOT HAPPEN, TEAM ID SHOULD ALWAYS BE VALID");
+                    },
+                };
+                team_cache.insert(entry.team_id, team_model);
+                team_cache.get(&entry.team_id).unwrap()
+            },
+        };
 
-    let mvp_ids: Vec<i32> =
-        mvps.keys().copied().collect();
 
-    if scout_game_ids.is_empty() && mvp_ids.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    // -------------------------
-    // 3. Fetch games (OR logic)
-    // -------------------------
-    let mut condition = Condition::any();
-
-    if !scout_game_ids.is_empty() {
-        condition = condition.add(
-            upcoming_game::Column::Id.is_in(scout_game_ids)
-        );
-    }
-
-    if !mvp_ids.is_empty() {
-        condition = condition
-            .add(upcoming_game::Column::MvpIdBlue.is_in(mvp_ids.clone()))
-            .add(upcoming_game::Column::MvpIdRed.is_in(mvp_ids));
-    }
-
-    let games: HashMap<i32, upcoming_game::Model> =
-        upcoming_game::Entity::find()
-            .filter(condition)
-            .all(db)
-            .await?
-            .into_iter()
-            .map(|g| (g.id, g))
-            .collect();
-
-    // -------------------------
-    // 4. Teams (scouting only)
-    // -------------------------
-    let team_ids: Vec<i32> =
-        scout_entries.iter().map(|s| s.team_id).collect();
-
-    let teams: HashMap<i32, upcoming_team::Model> =
-        if team_ids.is_empty() {
-            HashMap::new()
+        let mvp_red: Option<MvpUpcoming>;
+        if let Some(mvp_red_id) = game.mvp_id_red {
+            mvp_red = Some(get_mvp(mvp_red_id, db).await?);
         } else {
-            upcoming_team::Entity::find()
-                .filter(upcoming_team::Column::Id.is_in(team_ids))
-                .all(db)
-                .await?
-                .into_iter()
-                .map(|t| (t.id, t))
-                .collect()
-        };
+            mvp_red = None;
+        }
 
-    // -------------------------
-    // 5. Group scouters by (game, team)
-    // -------------------------
-    let mut scouts_by_game_team: HashMap<(i32, i32), Vec<ScouterWithoutId>> =
-        HashMap::new();
-
-    for scout in scout_entries {
-        scouts_by_game_team
-            .entry((scout.game_id, scout.team_id))
-            .or_default()
-            .push(ScouterWithoutId::from(&scout));
-    }
-
-    // -------------------------
-    // 6. Build response
-    // -------------------------
-    let mut result = Vec::new();
-
-    for game in games.values() {
-
-        let teams_for_game: Vec<ScoutingTeamThinWithoutId> =
-            scouts_by_game_team
-                .iter()
-                .filter(|((gid, _), _)| *gid == game.id)
-                .map(|((_, team_id), scouters)| {
-                    let team = teams
-                        .get(team_id)
-                        .expect("team referenced by scout must exist");
-
-                    ScoutingTeamThinWithoutId {
-                        id: team.id,
-                        station: team.station,
-                        team: TeamData {
-                            is_ab_team: team.is_ab_team,
-                            team: team.team,
-                        },
-                        scouters: scouters.clone(),
-                    }
-                })
-                .collect();
-
-        let mut mvp_blue = None;
-        let mut mvp_red = None;
-
-        if let Some(id) = game.mvp_id_blue
-            && mvps.contains_key(&id) {
-                mvp_blue = Some(id);
-            }
-
-        if let Some(id) = game.mvp_id_red
-            && mvps.contains_key(&id) {
-                mvp_red = Some(id);
-            }
-
-        let mvp = MvpIds {
-            blue: mvp_blue,
+        let mvp_blue: Option<MvpUpcoming>;
+        if let Some(mvp_blue_id) = game.mvp_id_blue {
+            mvp_blue = Some(get_mvp(mvp_blue_id, db).await?);
+        } else {
+            mvp_blue = None;
+        }
+        let mvps = MvpPairScouterField {
             red: mvp_red,
+            blue: mvp_blue
         };
 
-        result.push(GamePartialWithoutId {
-            id: game.id,
+        scout_final.push(ScouterField {
             event_code: game.event_code.clone(),
             match_id: game.match_id,
             set: game.set,
             tournament_level: game.tournament_level,
-            teams: teams_for_game,
-            mvp,
+            teams: Team { 
+                number: team.team,
+                is_ab_team: team.is_ab_team
+            },
+            mvp: mvps,
+            is_redo: entry.is_redo
         });
     }
 
-    Ok(result)
+
+    todo!()
 }

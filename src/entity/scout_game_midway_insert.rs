@@ -1,13 +1,10 @@
-//A table that is used midway before verfifing 
-
+use sea_orm::entity::prelude::*;
 use uuid::Uuid;
 
-use crate::entity::sea_orm_active_enums::TournamentLevels;
-use crate::entity::sea_orm_active_enums::Stations;
-use sea_orm::prelude::DateTimeLocal;
-use sea_orm::entity::prelude::*;
-
-
+use crate::entity::{
+    game_scouts,
+    sea_orm_active_enums::{TournamentLevels, Stations},
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "mid_header")]
@@ -17,7 +14,6 @@ pub struct Model {
     pub user: Uuid,
     pub team: i32,
     pub is_ab_team: bool,
-    pub is_mvp: bool,
     pub match_id: i32,
     pub set: i32,
     pub total_score: i32,
@@ -29,15 +25,30 @@ pub struct Model {
     pub tournament_level: TournamentLevels,
     pub station: Stations,
     pub created_at: DateTimeLocal,
-    pub is_pending: bool,
-    pub is_marked: bool,
-    pub is_dup: bool,
-    pub snowgrave_scout_id: i32,
     pub game_type_id: i32,
-    pub game_id: i32, //not snowgrave
+    pub game_id: i32,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    GameScout,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Self::GameScout => Entity::belongs_to(game_scouts::Entity)
+                .from(Column::Id)
+                .to(game_scouts::Column::GameMidway)
+                .into(),
+        }
+    }
+}
+
+impl Related<game_scouts::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::GameScout.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -1,8 +1,9 @@
+use chrono::Local;
 use schemars::JsonSchema;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_complete::{self, CheckMatchErr}};
+use crate::{SETTINGS, auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, game_dispatch}}, entity::{game_scouts, mvp_data, mvp_scouters, scout_game_midway_insert, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_complete::{self, CheckMatchErr}};
 
 
 #[derive(JsonSchema, Serialize, Deserialize)]
@@ -22,7 +23,7 @@ pub struct InsertSnow {
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
     pub game: GamesInsertsSpecific,
-    pub defence: f32,
+    pub defence: i32,
     pub comment: String,
 }
 
@@ -44,55 +45,37 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
             crate::auth::get_by_user::AuthGetUuidError::DatabaseError(db_err) => {return Err(db_err)},
         },
     };
-    let mut is_mvp = false;
+    let game_funcion = game_dispatch(SETTINGS.year);
 
-    if snowgrave_team.station == Stations::Red1 || snowgrave_team.station == Stations::Red2 || snowgrave_team.station == Stations::Red3 {
-        if let Some(mvp_id) = snowgrave_game.mvp_id_red {
-            let mvp_scouters = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp!".to_string()))?;
-            if let Some(mvp_data_id) = mvp_scouters.data {
-                let mvp_data = mvp_data::Entity::find_by_id(mvp_data_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp data!".to_string()))?;
-                if snowgrave_team.team == mvp_data.mvp_team && snowgrave_team.is_ab_team == mvp_data.mvp_is_ab_team {
-                    is_mvp = true;
-                }
-            }
-        }
-    } else if let Some(mvp_id) = snowgrave_game.mvp_id_blue {
-        let mvp_scouters = mvp_scouters::Entity::find_by_id(mvp_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp!".to_string()))?;
-        if let Some(mvp_data_id) = mvp_scouters.data {
-            let mvp_data = mvp_data::Entity::find_by_id(mvp_data_id).one(db).await?.ok_or(DbErr::RecordNotFound("Could not find mvp data!".to_string()))?;
-            if snowgrave_team.team == mvp_data.mvp_team && snowgrave_team.is_ab_team == mvp_data.mvp_is_ab_team {
-                is_mvp = true;
-            }
-        }
-    }
+    let res = game_funcion.insert(&data.game, db).await?;
     
-
-    let header = HeaderInsert {
-        user: username,
-        team: snowgrave_team.team,
-        is_ab_team: snowgrave_team.is_ab_team,
-        match_id: snowgrave_game.match_id,
-        set: snowgrave_game.set,
-        event_code: snowgrave_game.event_code,
-        tournament_level: snowgrave_game.tournament_level,
-        station: snowgrave_team.station,
-        snowgrave_scout_id: data.snowgrave_scout_id,
-        is_mvp,
-        defence: data.defence,
-        comment: data.comment
+    let mid = scout_game_midway_insert::ActiveModel {
+        id: NotSet,
+        user: Set(snowgrave_scout.scouter_id),
+        team: Set(snowgrave_team.team),
+        is_ab_team: Set(snowgrave_team.is_ab_team),
+        match_id: Set(snowgrave_game.match_id),
+        set: Set(snowgrave_game.set),
+        defence: Set(data.defence),
+        comment: Set(data.comment),
+        event_code: Set(snowgrave_game.event_code),
+        tournament_level: Set(snowgrave_game.tournament_level),
+        station: Set(snowgrave_team.station),
+        created_at: Set(Local::now()),
+        game_type_id: Set(res.game_type),
+        game_id: Set(res.game_id),
+        total_score: Set(res.total_score as i32),
+        teleop_score: Set(res.teleop_score as i32),
+        auto_score: Set(res.auto_score as i32),
     };
-    let insert_stuff = GamesInserts {
-        header,
-        game: data.game,
-    };
-    let _res = backenddb::game::insert_game(&insert_stuff, db).await?; // dont need id 
 
-    let mut scouter_active: game_scouts::ActiveModel = snowgrave_scout.into();
-    scouter_active.done = Set(true);
-    let _res2 = scouter_active.update(db).await?;
+    let game_insert = mid.insert(db).await?;
+    let mut snowgrave_scout_active: game_scouts::ActiveModel = snowgrave_scout.into();
+    snowgrave_scout_active.game_midway = Set(Some(game_insert.id));
+    snowgrave_scout_active.update(db).await?;
 
-    let _ = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(snowgrave_game.id, db).await {
-        return Err(DbErr::Custom(format!("Check failed: {:?}", a)));
+    let res = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(snowgrave_game.id, db).await {
+        return Err(a);
     };
 
     Ok(())

@@ -2,7 +2,7 @@ use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::TeamData}};
+use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::TeamData}};
 
 
 
@@ -58,27 +58,6 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
         .await?.ok_or(DbErr::RecordNotFound("Could not find game!".to_string()))?;
     }
     
-
-    //great now to insert this into the right game
-
-    match genertic_header::Entity::find()
-        .filter(genertic_header::Column::EventCode.eq(game_id.event_code))
-        .filter(genertic_header::Column::MatchId.eq(game_id.match_id))
-        .filter(genertic_header::Column::Set.eq(game_id.set))
-        .filter(genertic_header::Column::TournamentLevel.eq(game_id.tournament_level))
-        .filter(genertic_header::Column::Team.eq(data.mvp_team.team))
-        .filter(genertic_header::Column::IsAbTeam.eq(data.mvp_team.is_ab_team))
-        .one(db).await? {
-            Some(a) => {
-                let mut active: genertic_header::ActiveModel = a.into();
-                active.is_mvp = Set(true);
-                let _res = genertic_header::Entity::update(active).exec(db).await?;
-            },
-            None => {
-                //The data is not here yet, it will be inserted when the scouter inserts there data
-            },
-        };
-
     
     let res = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(game_id.id, db).await {
         return Err(a);

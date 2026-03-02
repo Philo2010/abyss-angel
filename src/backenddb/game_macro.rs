@@ -2,7 +2,7 @@
 macro_rules! define_games {
     ($($name:ident => $($module:ident)::+),* $(,)?) => {
         use serde::Deserialize;
-        #[derive(Serialize, JsonSchema)]
+        #[derive(Serialize, JsonSchema, Clone)]
         pub enum GamesFullSpecific {
             $(
                 $name($($module)::+::Model),
@@ -30,14 +30,8 @@ macro_rules! define_games {
             )*
         }
 
-        pub enum FrontRunnerReturn {
-            $(
-                $name($($module)::+::FrontRunner),
-            )*
-        }
 
-
-        fn game_dispatch(year_id: i32) -> Box<dyn YearOp> {
+        pub fn game_dispatch(year_id: i32) -> Box<dyn YearOp> {
             match year_id {
                 $(
                     $($module)::+::YEAR => {

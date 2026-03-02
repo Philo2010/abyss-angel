@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use schemars::{JsonSchema};
 use sea_orm::{ActiveValue::{NotSet, Set, Unchanged}, ExprTrait, FromQueryResult, IntoSimpleExpr, QuerySelect, entity::prelude::*, sea_query::Alias};
 use serde::{Deserialize, Serialize};
-use crate::{backenddb::{frontrunnner::find_disagreeing_indexes, game::{self, AvgReturn, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFullSpecific, GamesInsertsSpecific, InsertReturn, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
+use crate::{backenddb::{frontrunnner::{average_field, consensus_field, find_disagreeing_indexes}, game::{self, AvgReturn, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFullSpecific, GamesInsertsSpecific, InsertReturn, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
 use std::hash::Hash;
 
 const FUEL_TELEOP: f32 = 1.0;
@@ -21,10 +21,12 @@ const FUEL_AUTO: f32 = 1.0;
     Deserialize,
     JsonSchema,
     Hash,
-Copy
+    Copy,
+    Default
 )]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "climb_state")]
 pub enum ClimbState {
+    #[default]
     #[sea_orm(string_value = "nothing")]
     Nothing,
 
@@ -46,7 +48,7 @@ const STAGE_2_AUTO: i32 = 15;
 const STAGE_3_AUTO: i32 = 15;
 
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, JsonSchema, Default)]
 #[sea_orm(table_name = "rebuilt_game")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -60,11 +62,6 @@ pub struct Model {
     pub climb_end: ClimbState, //X S
     pub climb_auto: ClimbState, // X S
     pub beach_on_bump: bool, //X 
-}
-
-pub struct FrontRunner {
-    crazy: Vec<usize>,
-    avg: ActiveModel
 }
 
 
@@ -143,111 +140,52 @@ impl YearOp for Functions {
         YEAR
     }
 
-    fn frontrunner_op(&self, games: Vec<GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr> {
-        //check right year
-        let models: Vec<Model> = games.into_iter().map(|x| {
-            match x {
-                GamesFullSpecific::RebuiltGame(model) => {
-                    model
-                },
-                _ => {
-                    panic!("Invalid year!");
-                }
-            }
-        }).collect();
+        fn frontrunner_op(
+        &self,
+        games: &Vec<&GamesFullSpecific>,
+    ) -> Result<FrontRunnerReturn, DbErr> {
 
-        //first, we check what values HAVE to agree or else we are fully wack
+        let models: Vec<&Model> = games
+            .iter()
+            .map(|x| match x {
+                GamesFullSpecific::RebuiltGame(model) => model,
+                _ => panic!("Invalid year!"),
+            })
+            .collect();
+
         let mut crazy: HashSet<usize> = HashSet::new();
-        let mut avg: ActiveModel = ActiveModel {..Default::default()};
+        let mut avg = Model::default();
 
+        // Consensus fields
+        avg.defence_main =
+            consensus_field(&models, &mut crazy, |m| m.defence_main)?;
 
-        //check if defence is sane
-        let defences: Vec<bool> = models.iter().map(|x| x.defence_main.clone()).collect();
-        let mode = find_disagreeing_indexes(&defences);
-        if let Some(mode_safe) = mode {
-            crazy.extend(mode_safe.1);
-            avg.defence_main = Set(mode_safe.0)
-        } else {
-            //array is not full, we need to error
-            return Err(DbErr::Custom("[FRONTRUNNER][REBUILT][CHECK] Array is not full!".to_string()));
-        }
+        avg.climb_end =
+            consensus_field(&models, &mut crazy, |m| m.climb_end)?;
 
-        //check if climb_end is the same
-        let climb_ends: Vec<ClimbState> = models.iter().map(|x| x.climb_end.clone()).collect();
-        let mode = find_disagreeing_indexes(&climb_ends);
-        if let Some(mode_safe) = mode {
-            crazy.extend(mode_safe.1);
-            avg.climb_end = Set(mode_safe.0)
-        } else {
-            //array is not full, we need to error
-            return Err(DbErr::Custom("[FRONTRUNNER][REBUILT][CHECK] Array is not full!".to_string()));
-        }
+        avg.climb_auto =
+            consensus_field(&models, &mut crazy, |m| m.climb_auto)?;
 
-        let climb_auto: Vec<ClimbState> = models.iter().map(|x| x.climb_auto.clone()).collect();
-        let mode = find_disagreeing_indexes(&climb_auto);
-        if let Some(mode_safe) = mode {
-            crazy.extend(mode_safe.1);
-            avg.climb_auto = Set(mode_safe.0)
-        } else {
-            //array is not full, we need to error
-            return Err(DbErr::Custom("[FRONTRUNNER][REBUILT][CHECK] Array is not full!".to_string()));
-        }
+        avg.beach_on_bump =
+            consensus_field(&models, &mut crazy, |m| m.beach_on_bump)?;
 
-        let beach_on_bump: Vec<bool> = models.iter().map(|x| x.beach_on_bump.clone()).collect();
-        let mode = find_disagreeing_indexes(&beach_on_bump);
-        if let Some(mode_safe) = mode {
-            crazy.extend(mode_safe.1);
-            avg.beach_on_bump = Set(mode_safe.0)
-        } else {
-            //array is not full, we need to error
-            return Err(DbErr::Custom("[FRONTRUNNER][REBUILT][CHECK] Array is not full!".to_string()));
-        }
+        // Numeric fields
+        avg.fuel_shoot_teleop =
+            average_field(&models, &mut crazy, |m| m.fuel_shoot_teleop)?;
 
+        avg.fuel_pass_teleop =
+            average_field(&models, &mut crazy, |m| m.fuel_pass_teleop)?;
 
-        //check indexes for fuel
-        let fuel_shoot_teleops: Vec<f32> = models.iter().map(|x| x.fuel_shoot_teleop).collect();
-        let fuel_res = check_pass(&fuel_shoot_teleops);
-        crazy.extend(fuel_res.failed);
-        let mut total: f32 = 0.0;
-        for amount in &fuel_res.passed {
-            total += fuel_shoot_teleops[*amount];
-        }
-        avg.fuel_shoot_teleop = Set(total/fuel_res.passed.len() as f32);
+        avg.fuel_shoot_auto =
+            average_field(&models, &mut crazy, |m| m.fuel_shoot_auto)?;
 
-        let fuel_pass_teleops: Vec<f32> = models.iter().map(|x| x.fuel_pass_teleop).collect();
-        let fuel_res = check_pass(&fuel_pass_teleops);
-        crazy.extend(fuel_res.failed);
-        let mut total: f32 = 0.0;
-        for amount in &fuel_res.passed {
-            total += &fuel_pass_teleops[*amount];
-        }
-        avg.fuel_pass_teleop = Set(total/fuel_res.passed.len() as f32);
+        avg.fuel_pass_auto =
+            average_field(&models, &mut crazy, |m| m.fuel_pass_auto)?;
 
-        let fuel_shoot_autos: Vec<f32> = models.iter().map(|x| x.fuel_shoot_auto).collect();
-        let fuel_res = check_pass(&fuel_shoot_autos);
-        crazy.extend(fuel_res.failed);
-        let mut total: f32 = 0.0;
-        for amount in &fuel_res.passed {
-            total += &fuel_shoot_autos[*amount];
-        }
-        avg.fuel_shoot_auto = Set(total/fuel_res.passed.len() as f32);
-
-        let fuel_pass_autos: Vec<f32> = models.iter().map(|x| x.fuel_pass_auto).collect();
-        let fuel_res = check_pass(&fuel_pass_autos);
-        crazy.extend(fuel_res.failed);
-        let mut total: f32 = 0.0;
-        for amount in &fuel_res.passed {
-            total += fuel_pass_autos[*amount];
-        }
-        avg.fuel_pass_auto = Set(total/fuel_res.passed.len() as f32);
-        
-
-        let crazy_fixed: Vec<usize> = crazy.into_iter().collect();
-
-        Ok(FrontRunnerReturn::RebuiltGame(FrontRunner {
-            crazy: crazy_fixed,
-            avg,
-        }))
+        Ok(FrontRunnerReturn {
+            crazy: crazy.into_iter().collect(),
+            avg: GamesFullSpecific::RebuiltGame(avg),
+        })
     }
 
     async fn insert(&self, data: &GamesInsertsSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr> {
@@ -368,18 +306,7 @@ impl YearOp for Functions {
         }
     }
     
-    async fn edit(&self, mut header: genertic_header::ActiveModel, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr> {
-        let game_id = match header.game_id {
-            Set(x) => {
-                x
-            },
-            Unchanged(x) => {
-                x
-            }
-            NotSet => {
-                return Err(DbErr::Custom("Did not init the id tag for the game!".to_string()));
-            }
-        };
+    async fn edit(&self, game_id: i32, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr> {
 
         let game_model = match Entity::find_by_id(game_id).one(db).await? {
             None => {
@@ -402,14 +329,17 @@ impl YearOp for Functions {
                     climb_auto: edit.climb_auto.unwrap_or(game_model.climb_auto),
                     beach_on_bump: edit.beach_on_bump.unwrap_or(game_model.beach_on_bump)
                 };
-                header.auto_score = Set(total_score_auto(&total_score));
-                header.teleop_score = Set(total_score_teleop(&total_score));
-                header.total_score = Set(total_score_auto(&total_score) + total_score_teleop(&total_score));
 
-                let header_data = header.update(db).await?;
+                let returne = InsertReturn {
+                    game_type: self.get_year_id(),
+                    game_id,
+                    total_score: total_score_auto(&total_score) + total_score_teleop(&total_score),
+                    teleop_score: total_score_teleop(&total_score),
+                    auto_score: total_score_auto(&total_score)
+                };
                 let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: todo!() };
                 let game_data = game_data_active.update(db).await?;
-                Ok(())
+                Ok(returne)
             },
             _ => {
                 return Err(DbErr::Custom("Invaild year!".to_string()));

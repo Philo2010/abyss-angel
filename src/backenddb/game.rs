@@ -70,6 +70,11 @@ pub struct AvgReturn {
     pub data: GamesAvgSpecific
 }
 
+pub struct FrontRunnerReturn {
+    pub crazy: Vec<usize>,
+    pub avg: GamesFullSpecific
+}
+
 #[async_trait]
 pub trait YearOp: Send + Sync {
     fn get_year_id(&self) -> i32;
@@ -80,8 +85,8 @@ pub trait YearOp: Send + Sync {
     async fn delete(&self, id: i32, db: &DatabaseConnection) -> Result<(), DbErr>;
     #[allow(dead_code)]
     async fn get(&self, id: i32, db: &DatabaseConnection) -> Result<GamesFullSpecific, DbErr>;
-    fn frontrunner_op(&self, games: Vec<GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr>;
-    async fn edit(&self, header: genertic_header::ActiveModel, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<(), DbErr>;
+    fn frontrunner_op(&self, games: &Vec<&GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr>;
+    async fn edit(&self, game_id: i32, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
 }
 
 
@@ -345,13 +350,6 @@ async fn prim_get_game(model: Box<dyn YearOp>, id: i32, db: &DatabaseConnection)
     })
 }
 
-async fn prim_edit_game(model: Box<dyn YearOp>, edit: GamesEdit, db: &DatabaseConnection) -> Result<(), DbErr> {
-    let game_id = to_full_am(edit.header, db).await?;
-
-    model.edit(game_id, edit.game, db).await?;
-
-    Ok(())
-}
 
 pub struct GamesInserts {
     pub header: HeaderInsert,
@@ -550,7 +548,7 @@ pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Resul
     prim_average_game(game, event_code, db).await
 }
 
-pub async fn frontrunner(games: Vec<GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr> {
+pub async fn frontrunner(games: &Vec<&GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
     game.frontrunner_op(games)
@@ -568,12 +566,6 @@ pub async fn delete_game(id: i32, db: &DatabaseConnection) -> Result<(), DbErr> 
 
     game.delete(id, db).await
 }
-
-pub async fn edit_game(edit: GamesEdit, db: &DatabaseConnection) -> Result<(), DbErr> {
-    let game = game_dispatch(SETTINGS.year);
-
-    prim_edit_game(game, edit, db).await
-} 
 
 
 define_games!(
