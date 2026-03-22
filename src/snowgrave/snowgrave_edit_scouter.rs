@@ -3,7 +3,7 @@ use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{SETTINGS, backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit, game_dispatch}}, entity::{game_scouts, genertic_header, scout_game_midway_insert::{self, ActiveModel}, upcoming_game}, snowgrave::check_complete};
+use crate::{SETTINGS, backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit, game_dispatch}}, entity::{game_scouts, genertic_header, scout_game_midway_insert::{self, ActiveModel}, upcoming_game}, snowgrave::check_system::check};
 
 
 
@@ -82,7 +82,6 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     //All of the header data should be fine so no need to edit it
 
     //now time to do the check itself
-    let _res = check_complete::check_match(snowgrave_game.id, db).await;
-
+    check(game_data.id, db).await?;
     Ok(())
 }

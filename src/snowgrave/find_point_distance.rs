@@ -1,4 +1,4 @@
-const MAX_AREA_PASS: i32 = 70;
+const MAX_AREA_PASS: i32 = 30;
 
 pub struct CheckReturn {
     pub passed: Vec<usize>,

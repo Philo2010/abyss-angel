@@ -15,13 +15,14 @@ use crate::{
 };
 
 //basic types
-#[derive(Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, JsonSchema, Serialize, Deserialize, Debug)]
 pub struct Team {
     pub number: i32,
     pub is_ab_team: bool,
 }
 
 //Primtive Mvp types
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct MvpUpcoming {
     pub id: i32, //upcoming id
     pub name: Uuid,
@@ -34,7 +35,7 @@ pub struct MvpUpcomingFull {
     pub data: MvpData
 }
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct MvpData {
     pub mvp_team: Team,
     pub comment: String,
@@ -44,6 +45,8 @@ pub struct MvpData {
 }
 
 //The base Pair type
+
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct MvpPair {
     pub red: MvpUpcoming,
     pub blue:  MvpUpcoming
@@ -56,7 +59,9 @@ pub struct MvpPairFull {
 
 //Scout type
 
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ScoutMatch {
+    pub id: i32,
     pub name: Uuid,
     pub station: Stations,
     pub done: bool,
@@ -65,7 +70,17 @@ pub struct ScoutMatch {
     pub data: Option<ScoutMatchData>
 }
 
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub struct FailerInfo {
+    pub name: Uuid,
+    pub station: Stations,
+    pub team: Team,
+    pub upcoming_scout_id: i32,
+}
+
 pub struct ScoutMatchFull {
+    pub id: i32,
     pub name: Uuid,
     pub station: Stations,
     pub done: bool,
@@ -74,7 +89,7 @@ pub struct ScoutMatchFull {
     pub data: ScoutMatchData
 }
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct ScoutMatchData {
     pub match_id: i32,
     pub set: i32,
@@ -92,6 +107,7 @@ pub struct ScoutMatchData {
     pub game_type_id: i32,
 }
 
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ScoutGame { 
     pub red_1: Vec<ScoutMatch>,
     pub red_2: Vec<ScoutMatch>,
@@ -112,6 +128,7 @@ pub struct ScoutGameFull {
 
 //Game
 
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct Game {
     pub event_code: String,
     pub match_id: i32,

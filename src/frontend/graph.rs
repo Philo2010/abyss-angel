@@ -9,19 +9,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::backenddb::game::{GamesGraph, graph_game};
 use crate::frontend::ApiResult;
-use crate::snowgrave::datatypes::TeamData;
+use crate::snowgrave::datatypes::Team;
 use crate::auth;
 
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GraphForm {
     event: Option<String>,
-    teams: Vec<TeamData>
+    teams: Vec<Team>
 }
 
 #[derive(Serialize, JsonSchema, Deserialize)]
 pub struct GraphTeam {
     data: Vec<GamesGraph>,
-    team: TeamData,
+    team: Team,
 }
 
 
@@ -33,7 +33,7 @@ pub async fn graph(body: Json<GraphForm>, db: &State<DatabaseConnection>, cookie
     }
     let mut result: Vec<GraphTeam> = Vec::with_capacity(body.teams.len());
     for team in &body.teams {
-        let data = match graph_game(&team.team, &team.is_ab_team, &body.event, db).await {
+        let data = match graph_game(&team.number, &team.is_ab_team, &body.event, db).await {
             Ok(a) => {a},
             Err(a) => {
                 return Json(ApiResult::Error(a.to_string()));

@@ -97,7 +97,7 @@ pub async fn get_scouts(upcoming_team_id: i32, db: &DatabaseConnection) -> Resul
                 created_at: mid_data.created_at,
                 game: game,
                 game_id: mid_data.game_id,
-                game_type_id: mid_data.game_type_id
+                game_type_id: mid_data.game_type_id,
             });
         } else {
             midpoint = None
@@ -113,6 +113,7 @@ pub async fn get_scouts(upcoming_team_id: i32, db: &DatabaseConnection) -> Resul
                 is_ab_team: upcoming_team.is_ab_team,
             },
             data: midpoint,
+            id: scout.id,
         });
     }
 

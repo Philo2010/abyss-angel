@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use schemars::{JsonSchema};
 use sea_orm::{ActiveValue::{NotSet, Set, Unchanged}, ExprTrait, FromQueryResult, IntoSimpleExpr, QuerySelect, entity::prelude::*, sea_query::Alias};
 use serde::{Deserialize, Serialize};
-use crate::{backenddb::{frontrunnner::{average_field, consensus_field, find_disagreeing_indexes}, game::{self, AvgReturn, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFullSpecific, GamesInsertsSpecific, InsertReturn, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
+use crate::{backenddb::{frontrunnner::{average_field, consensus_field, find_disagreeing_indexes}, game::{self, AvgReturn, FrontRunnerGame, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, GamesInserts, GamesInsertsSpecific, HeaderInsert, InsertReturn, Scores, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
 use std::hash::Hash;
 
 const FUEL_TELEOP: f32 = 1.0;
@@ -48,7 +48,7 @@ const STAGE_2_AUTO: i32 = 15;
 const STAGE_3_AUTO: i32 = 15;
 
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, JsonSchema, Default)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, JsonSchema, Default)]
 #[sea_orm(table_name = "rebuilt_game")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -136,25 +136,41 @@ fn total_score_teleop(insert_data: &Insert) -> f32 {
 
 #[async_trait]
 impl YearOp for Functions {
+    fn get_scores(&self, game: &GamesInsertsSpecific) -> Scores {
+        match &game {
+            &GamesInsertsSpecific::RebuiltGame(model) => {
+                let teleop_score = total_score_teleop(&model);
+                let auto_score = total_score_auto(&model);
+                Scores {
+                    total_score: teleop_score + auto_score,
+                    teleop_score,
+                    auto_score
+                }
+            },
+            _ => {
+                panic!("Wrong year!");
+            }
+        }
+    }
+
     fn get_year_id(&self) -> i32 {
         YEAR
     }
-
         fn frontrunner_op(
         &self,
-        games: &Vec<&GamesFullSpecific>,
+        games: &FrontRunnerGame,
     ) -> Result<FrontRunnerReturn, DbErr> {
 
-        let models: Vec<&Model> = games
+        let models: Vec<&Model> = games.games
             .iter()
-            .map(|x| match x {
+            .map(|x| match &x.1 {
                 GamesFullSpecific::RebuiltGame(model) => model,
                 _ => panic!("Invalid year!"),
             })
             .collect();
 
         let mut crazy: HashSet<usize> = HashSet::new();
-        let mut avg = Model::default();
+        let mut avg = Insert::default();
 
         // Consensus fields
         avg.defence_main =
@@ -182,9 +198,56 @@ impl YearOp for Functions {
         avg.fuel_pass_auto =
             average_field(&models, &mut crazy, |m| m.fuel_pass_auto)?;
 
+        let mut users: Vec<Uuid> = Vec::new(); 
+        for user in games.games.iter().enumerate() {
+            if !crazy.contains(&user.0) {
+                users.push(user.1.0.clone());
+            }
+        }
+        let mut sum: f32 = 0.0;
+        let mut amount: i32 = 0;
+        for defence_one in games.defence.iter().enumerate() {
+            if !crazy.contains(&defence_one.0) {
+                sum += defence_one.1;
+                amount += 1;
+            }
+        }
+        let defence = sum / (amount as f32);
+        
+        let comment = games.comment
+            .iter()
+            .enumerate()
+            .filter_map(|(i, c)| {
+                if !crazy.contains(&i) {
+                    Some(c)
+                } else {
+                    None
+                }
+            })
+            .max_by_key(|c| c.len())
+            .cloned()
+            .unwrap_or_default();
+                        
+        let header = HeaderInsert {
+            user: users,
+            team: games.team,
+            is_ab_team: games.is_ab_team,
+            match_id: games.match_id,
+            set: games.set,
+            defence: defence,
+            event_code: games.event_code.clone(),
+            tournament_level: games.tournament_level,
+            station: games.station,
+            is_mvp: games.is_mvp,
+            comment: comment
+        };
+
         Ok(FrontRunnerReturn {
             crazy: crazy.into_iter().collect(),
-            avg: GamesFullSpecific::RebuiltGame(avg),
+            avg: GamesInserts { 
+                header,
+                game: GamesInsertsSpecific::RebuiltGame(avg) 
+            },
         })
     }
 
@@ -350,7 +413,7 @@ impl YearOp for Functions {
 
 
 
-#[derive(Serialize, JsonSchema, Deserialize)]
+#[derive(Serialize, JsonSchema, Deserialize, Default)]
 pub struct Insert {
     pub defence_main: bool,
     pub fuel_shoot_teleop: f32,

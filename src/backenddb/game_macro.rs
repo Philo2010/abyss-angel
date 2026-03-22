@@ -2,7 +2,7 @@
 macro_rules! define_games {
     ($($name:ident => $($module:ident)::+),* $(,)?) => {
         use serde::Deserialize;
-        #[derive(Serialize, JsonSchema, Clone)]
+        #[derive(Serialize, Deserialize, JsonSchema, Clone)]
         pub enum GamesFullSpecific {
             $(
                 $name($($module)::+::Model),

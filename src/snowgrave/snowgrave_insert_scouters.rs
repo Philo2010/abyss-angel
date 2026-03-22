@@ -76,6 +76,7 @@ pub async fn insert_scouters(
                 done: Set(false),
                 station: Set(team.station),
                 is_redo: Set(false),
+                game_midway: Set(None),
             });
         }
 

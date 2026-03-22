@@ -3,13 +3,13 @@ use schemars::JsonSchema;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{entity::{sea_orm_active_enums::Stations, upcoming_team}, frontend::ApiResult, snowgrave::datatypes::TeamData};
+use crate::{entity::{sea_orm_active_enums::Stations, upcoming_team}, frontend::ApiResult, snowgrave::datatypes::Team};
 
 
 #[derive(Serialize, JsonSchema, Deserialize)]
 pub struct TeamWithAlliance {
     is_blue: bool,
-    team: TeamData
+    team: Team
 }
 
 
@@ -31,9 +31,9 @@ pub async fn get_teams_from_game(id_upcoming_game: i32, db: &State<DatabaseConne
         let is_blue: bool;
         is_blue = x.station == Stations::Blue1 || x.station == Stations::Blue2 || x.station == Stations::Blue3;
         TeamWithAlliance { is_blue,
-            team: TeamData {
+            team: Team {
                 is_ab_team: x.is_ab_team,
-                team: x.team
+                number: x.team
     }}
     }).collect();
 

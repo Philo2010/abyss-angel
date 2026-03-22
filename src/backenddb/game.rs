@@ -18,24 +18,16 @@ use std::collections::HashMap;
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 
 async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
-    let username = match auth::get_by_user::get_by_uuid(&model.user, db).await {
-        Ok(a) => a,
-        Err(a) => {
-                match a {
-                    AuthGetUuidError::UserIsNotHere => {
-                        return Err(DbErr::Custom("User was not found".to_string()));
-                    },
-                    AuthGetUuidError::DatabaseError(db_err) => {
-                        return Err(db_err);
-                    },
-                }
-        },
-    };
+    let mut username_str: Vec<String> = Vec::with_capacity(model.user.len());
     
+    for user in &model.user {
+        let user_str =  auth::get_by_user::get_by_uuid(user, db).await.unwrap();
+        username_str.push(user_str);
+    }
 
     Ok(HeaderFull {
         id: model.id,
-        user: username,
+        user: username_str,
         team: model.team,
         is_ab_team: model.is_ab_team,
         match_id: model.match_id,
@@ -45,10 +37,7 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         tournament_level: model.tournament_level,
         station: model.station,
         created_at: model.created_at,
-        is_marked: model.is_marked,
-        is_pending: model.is_pending,
         is_mvp: model.is_mvp,
-        snowgrave_scout_id: model.snowgrave_scout_id,
         defence: model.defence,
         auto_score: model.auto_score,
         comment: model.comment,
@@ -72,7 +61,13 @@ pub struct AvgReturn {
 
 pub struct FrontRunnerReturn {
     pub crazy: Vec<usize>,
-    pub avg: GamesFullSpecific
+    pub avg: GamesInserts
+}
+
+pub struct Scores {
+    pub total_score: f32,
+    pub teleop_score: f32,
+    pub auto_score: f32,
 }
 
 #[async_trait]
@@ -85,7 +80,8 @@ pub trait YearOp: Send + Sync {
     async fn delete(&self, id: i32, db: &DatabaseConnection) -> Result<(), DbErr>;
     #[allow(dead_code)]
     async fn get(&self, id: i32, db: &DatabaseConnection) -> Result<GamesFullSpecific, DbErr>;
-    fn frontrunner_op(&self, games: &Vec<&GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr>;
+    fn frontrunner_op(&self, games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr>;
+    fn get_scores(&self, match_data: &GamesInsertsSpecific) -> Scores;
     async fn edit(&self, game_id: i32, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
 }
 
@@ -93,7 +89,7 @@ pub trait YearOp: Send + Sync {
 //A common header that will be used for Insert data
 pub struct HeaderInsert {
     //Id is given by server
-    pub user: String, //We will get uuid
+    pub user: Vec<Uuid>, //We will get uuid
     pub team: i32,
     pub is_ab_team: bool,
     pub match_id: i32,
@@ -103,7 +99,6 @@ pub struct HeaderInsert {
     pub event_code: String,
     pub tournament_level: TournamentLevels,
     pub station: Stations,
-    pub snowgrave_scout_id: i32,
     pub is_mvp: bool,
     pub comment: String,
     //Created At no need to import as this will be seen by the server
@@ -115,26 +110,12 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
     //Insert game spcific
     let res = model.insert(&data.game, db).await?;
     
-    //Get UUid
-    let a = match crate::auth::get_by_user::get_by_username(&data.header.user, db).await {
-        Ok(a) => a,
-        Err(a) => {
-            match a {
-                AuthGetUuidError::UserIsNotHere => {
-                    return Err(DbErr::Custom("User was not found".to_string()));
-                },
-                AuthGetUuidError::DatabaseError(db_err) => {
-                    return Err(db_err);
-                },
-            }
-        },
-    };
     let created_at: DateTime<Local> = chrono::Local::now();
 
 
     let header_db: genertic_header::ActiveModel = genertic_header::ActiveModel {
         id: NotSet, //Done by db
-        user: Set(a),
+        user: Set(data.header.user.clone()),
         team: Set(data.header.team),
         is_ab_team: Set(data.header.is_ab_team),
         match_id: Set(data.header.match_id),
@@ -147,10 +128,6 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         is_mvp: Set(data.header.is_mvp),
         game_type_id: Set(res.game_type),
         game_id: Set(res.game_id),
-        is_marked: Set(false),
-        is_pending: Set(true),
-        is_dup: Set(true),
-        snowgrave_scout_id: Set(data.header.snowgrave_scout_id),
         teleop_score: Set(res.teleop_score),
         auto_score: Set(res.auto_score),
         defence: Set(data.header.defence),
@@ -208,11 +185,7 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
         game_headers = game_headers.filter(genertic_header::Column::IsMvp.eq(*mvp));
     }
 
-    let res = game_headers
-        .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false))
-        .filter(genertic_header::Column::IsDup.eq(false))
-        .all(db).await?;
+    let res = game_headers.all(db).await?;
     let ids: Vec<i32> = res.iter().map(|a| a.game_id).collect();
 
     let mut header: Vec<HeaderFull> = Vec::with_capacity(res.len());
@@ -254,7 +227,7 @@ pub struct TeamGameUnMergedData {
     pub game_ids: Vec<i32>,
 }
 
-pub struct Scores {
+pub struct Scores_E {
     pub total_score: f64,
     pub auto_score: f64,
     pub teleop_score: f64,
@@ -266,9 +239,6 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
     let select_avg_score: Vec<NormalGenDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
-        .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false))
-        .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
         .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
         .column_as(genertic_header::Column::AutoScore.avg().cast_as(Alias::new("FLOAT8")), "auto_score")
@@ -286,9 +256,6 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
     let ids: Vec<NormalSpcDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
-        .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false))
-        .filter(genertic_header::Column::IsDup.eq(false))
         .select_only()
         .column(genertic_header::Column::GameId) //Not snowgrave
         .column(genertic_header::Column::Team)
@@ -303,8 +270,8 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         })
         .collect();
 
-    let avg_map: HashMap<(i32, bool), Scores> = select_avg_score.into_iter().map(|x|
-        ((x.team, x.is_ab_team), Scores { total_score: x.total_score,
+    let avg_map: HashMap<(i32, bool), Scores_E> = select_avg_score.into_iter().map(|x|
+        ((x.team, x.is_ab_team), Scores_E { total_score: x.total_score,
             auto_score: x.auto_score,
             teleop_score: x.teleop_score,
             defence: x.defence_score,
@@ -407,7 +374,7 @@ pub struct SearchParam {
 #[derive(Serialize, JsonSchema)]
 pub struct HeaderFull {
     pub id: i32,
-    pub user: String,
+    pub user: Vec<String>,
     pub team: i32,
     pub is_ab_team: bool,
     pub match_id: i32,
@@ -420,16 +387,29 @@ pub struct HeaderFull {
     pub station: Stations,
     pub comment: String,
     pub created_at: DateTime<Local>,
-    pub is_pending: bool,
-    pub is_marked: bool,
     pub is_mvp: bool,
-    pub snowgrave_scout_id: i32,
     pub defence: f32,
+}
+
+#[derive()]
+pub struct FrontRunnerGame {
+    pub games: Vec<(Uuid, GamesFullSpecific)>,
+    pub defence: Vec<f32>,
+    pub comment: Vec<String>,
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub match_id: i32,
+    pub set: i32,
+    //Total score is irraiven as it will be computed at server side
+    pub event_code: String,
+    pub tournament_level: TournamentLevels,
+    pub station: Stations,
+    pub is_mvp: bool,
 }
 
 pub struct HeaderFullEdit {
     pub id: i32,
-    pub user: Option<String>,
+    pub user: Option<Vec<Uuid>>,
     pub team: Option<i32>,
     pub is_ab_team: Option<bool>,
     pub match_id: Option<i32>,
@@ -438,35 +418,12 @@ pub struct HeaderFullEdit {
     pub tournament_level: Option<TournamentLevels>,
     pub station: Option<Stations>,
     pub created_at: Option<DateTime<Local>>,
-    pub is_marked: Option<bool>,
-    pub is_pending: Option<bool>,
-    pub snowgrave_id: Option<i32>,
     pub is_mvp: Option<bool>,
     pub defence: Option<f32>,
     pub comment: Option<String>
 }
 
 async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<genertic_header::ActiveModel, DbErr> {
-    let username: Option<Uuid>;
-
-    if let Some(name) = header.user {
-        username = match auth::get_by_user::get_by_username(&name, db).await {
-            Ok(a) => Some(a),
-            Err(a) => {
-                    match a {
-                        AuthGetUuidError::UserIsNotHere => {
-                            return Err(DbErr::Custom("User was not found".to_string()));
-                        },
-                        AuthGetUuidError::DatabaseError(db_err) => {
-                            return Err(db_err);
-                        },
-                    }
-            },
-        };
-    } else {
-        username = None;
-    }
-    
     //get gametype and game id (for later insert into game)
     let game_model = match genertic_header::Entity::find_by_id(header.id).one(db).await? {
         Some(a) => a,
@@ -476,8 +433,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
     };
     
     Ok(genertic_header::ActiveModel {
-        id: Set(header.id),
-        user: username.map(Set).unwrap_or(NotSet),
+        id: NotSet,
         team: header.team.map(Set).unwrap_or(NotSet),
         is_ab_team: header.is_ab_team.map(Set).unwrap_or(NotSet),
         match_id: header.match_id.map(Set).unwrap_or(NotSet),
@@ -487,10 +443,6 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         tournament_level: header.tournament_level.map(Set).unwrap_or(NotSet),
         station: header.station.map(Set).unwrap_or(NotSet),
         created_at: header.created_at.map(Set).unwrap_or(NotSet),
-        is_marked: header.is_marked.map(Set).unwrap_or(NotSet),
-        is_pending: header.is_pending.map(Set).unwrap_or(NotSet),
-        is_dup: NotSet, //We never change this, that is snowgrave's job
-        snowgrave_scout_id: header.snowgrave_id.map(Set).unwrap_or(NotSet),
         is_mvp: header.is_mvp.map(Set).unwrap_or(NotSet),
         game_type_id: Set(game_model.game_type_id),
         game_id: Set(game_model.game_id),
@@ -498,6 +450,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         auto_score: NotSet,
         defence: header.defence.map(Set).unwrap_or(NotSet),
         comment: header.comment.map(Set).unwrap_or(NotSet),
+        user: header.user.map(Set).unwrap_or(NotSet),
     })
 }
 
@@ -515,10 +468,7 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
     let mut command = genertic_header::Entity::find()
         .filter(genertic_header::Column::Team.eq(*team))
         .filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team))
-        .filter(genertic_header::Column::GameTypeId.eq(game.get_year_id()))
-        .filter(genertic_header::Column::IsMarked.eq(false))
-        .filter(genertic_header::Column::IsPending.eq(false))
-        .filter(genertic_header::Column::IsDup.eq(false));
+        .filter(genertic_header::Column::GameTypeId.eq(game.get_year_id()));
     if let Some(e) = event_code {
         command = command.filter(genertic_header::Column::EventCode.eq(e));
     }
@@ -548,7 +498,7 @@ pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Resul
     prim_average_game(game, event_code, db).await
 }
 
-pub async fn frontrunner(games: &Vec<&GamesFullSpecific>) -> Result<FrontRunnerReturn, DbErr> {
+pub async fn frontrunner(games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
     game.frontrunner_op(games)

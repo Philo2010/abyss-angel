@@ -2,15 +2,15 @@ use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::{check_complete::{self, CheckMatchErr}, datatypes::TeamData}};
-
+use crate::{entity::{game_scouts, genertic_header, mvp_data, mvp_scouters, upcoming_game}, snowgrave::datatypes::Team};
+use crate::snowgrave::check_system::check;
 
 
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct MvpInsert {
     pub mvp_id: i32,
-    pub mvp_team: TeamData,
+    pub mvp_team: Team,
     pub comment: String,
     pub total_score: i32,
     pub penalty_score: i32,
@@ -30,7 +30,7 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
     //Insert data into db
     let mvp_insert = mvp_data::ActiveModel {
         id: NotSet,
-        mvp_team: Set(data.mvp_team.team),
+        mvp_team: Set(data.mvp_team.number),
         mvp_is_ab_team: Set(data.mvp_team.is_ab_team),
         comment: Set(data.comment),
         total_score: Set(data.total_score),
@@ -59,9 +59,7 @@ pub async fn insert_mvp_data(data: MvpInsert, db: &DatabaseConnection) -> Result
     }
     
     
-    let res = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(game_id.id, db).await {
-        return Err(a);
-    };
+    check(game_id.id, db).await?;
 
-    Ok(res)
+    Ok(())
 }

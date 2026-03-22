@@ -16,7 +16,8 @@ fn check_fill_scout(scouts: &Vec<ScoutMatch>) -> Result<Vec<ScoutMatchFull>, Fil
                 done: scout.done,
                 is_redo: scout.is_redo,
                 team: scout.team,
-                data: data.clone()
+                data: data.clone(),
+                id: scout.id,
             });
         } else {
             return Err(FilledCheck::NotFilled);

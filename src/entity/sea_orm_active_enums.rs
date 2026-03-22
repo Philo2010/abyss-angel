@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, FromFormField, Serialize, Hash, Copy, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, FromFormField, Serialize, Hash, Copy, Deserialize, JsonSchema, DeriveDisplay)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "stations")]
 pub enum Stations {
     #[sea_orm(string_value = "red1")]

@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-use crate::{SETTINGS, auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, game_dispatch}}, entity::{game_scouts, mvp_data, mvp_scouters, scout_game_midway_insert, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_complete::{self, CheckMatchErr}};
+use crate::{SETTINGS, auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, game_dispatch}}, entity::{game_scouts, mvp_data, mvp_scouters, scout_game_midway_insert, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_system::check};
 
 
 #[derive(JsonSchema, Serialize, Deserialize)]
@@ -74,9 +74,7 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
     snowgrave_scout_active.game_midway = Set(Some(game_insert.id));
     snowgrave_scout_active.update(db).await?;
 
-    let res = if let Err(CheckMatchErr::DbErr(a)) = check_complete::check_match(snowgrave_game.id, db).await {
-        return Err(a);
-    };
+    check(res.game_id, db).await?;
 
     Ok(())
 }
