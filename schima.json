@@ -330,7 +330,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds"
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Game"
                 }
               }
             }
@@ -526,7 +526,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Game"
+                  "$ref": "#/components/schemas/ApiResult_for_Array_of_Game2"
                 }
               }
             }
@@ -796,10 +796,10 @@
           {
             "type": "object",
             "required": [
-              "ExamplePit"
+              "RebuiltPit"
             ],
             "properties": {
-              "ExamplePit": {
+              "RebuiltPit": {
                 "$ref": "#/components/schemas/Edit"
               }
             },
@@ -810,17 +810,99 @@
       "Edit": {
         "type": "object",
         "properties": {
-          "width": {
+          "drivebase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Drivebase"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_paths": {
+            "type": "array",
+            "items": {},
+            "nullable": true
+          },
+          "years_of_driver_experience": {
             "type": "integer",
             "format": "int32",
             "nullable": true
           },
-          "height": {
+          "what_they_are_looking_from_the_tournament": {
+            "type": "string",
+            "nullable": true
+          },
+          "do_they_have_a_scouter": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "how_many_batteries_do_they_have_on_hand": {
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "willing_to_play_defence": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "strategy": {
+            "type": "string",
+            "nullable": true
+          },
+          "can_pass": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "can_shoot": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "climb": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClimbState"
+              }
+            ],
+            "nullable": true
           }
         }
+      },
+      "Drivebase": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Swerve"
+            ],
+            "properties": {
+              "Swerve": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "Other"
+            ],
+            "properties": {
+              "Other": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ClimbState": {
+        "type": "string",
+        "enum": [
+          "Nothing",
+          "Stage1",
+          "Stage2",
+          "Stage3"
+        ]
       },
       "ApiResult_for_PitGetSend": {
         "oneOf": [
@@ -916,10 +998,10 @@
           {
             "type": "object",
             "required": [
-              "ExamplePit"
+              "RebuiltPit"
             ],
             "properties": {
-              "ExamplePit": {
+              "RebuiltPit": {
                 "$ref": "#/components/schemas/Model"
               }
             },
@@ -930,22 +1012,63 @@
       "Model": {
         "type": "object",
         "required": [
-          "height",
+          "auto_paths",
+          "can_pass",
+          "can_shoot",
+          "climb",
+          "do_they_have_a_scouter",
+          "gear_or_drivebase",
+          "how_many_batteries_do_they_have_on_hand",
           "id",
-          "width"
+          "is_swerve",
+          "strategy",
+          "what_they_are_looking_from_the_tournament",
+          "willing_to_play_defence",
+          "years_of_driver_experience"
         ],
         "properties": {
           "id": {
             "type": "integer",
             "format": "int32"
           },
-          "width": {
+          "is_swerve": {
+            "type": "boolean"
+          },
+          "gear_or_drivebase": {
+            "type": "string"
+          },
+          "auto_paths": {
+            "type": "array",
+            "items": {}
+          },
+          "years_of_driver_experience": {
             "type": "integer",
             "format": "int32"
           },
-          "height": {
+          "what_they_are_looking_from_the_tournament": {
+            "type": "string"
+          },
+          "do_they_have_a_scouter": {
+            "type": "boolean"
+          },
+          "how_many_batteries_do_they_have_on_hand": {
             "type": "integer",
             "format": "int32"
+          },
+          "willing_to_play_defence": {
+            "type": "boolean"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "can_pass": {
+            "type": "boolean"
+          },
+          "can_shoot": {
+            "type": "boolean"
+          },
+          "climb": {
+            "$ref": "#/components/schemas/ClimbState"
           }
         }
       },
@@ -990,10 +1113,10 @@
           {
             "type": "object",
             "required": [
-              "ExamplePit"
+              "RebuiltPit"
             ],
             "properties": {
-              "ExamplePit": {
+              "RebuiltPit": {
                 "$ref": "#/components/schemas/Insert"
               }
             },
@@ -1004,17 +1127,54 @@
       "Insert": {
         "type": "object",
         "required": [
-          "height",
-          "width"
+          "auto_paths",
+          "can_pass",
+          "can_shoot",
+          "climb",
+          "do_they_have_a_scouter",
+          "drivebase",
+          "how_many_batteries_do_they_have_on_hand",
+          "strategy",
+          "what_they_are_looking_from_the_tournament",
+          "willing_to_play_defence",
+          "years_of_driver_experience"
         ],
         "properties": {
-          "width": {
+          "drivebase": {
+            "$ref": "#/components/schemas/Drivebase"
+          },
+          "auto_paths": {
+            "type": "array",
+            "items": {}
+          },
+          "years_of_driver_experience": {
             "type": "integer",
             "format": "int32"
           },
-          "height": {
+          "what_they_are_looking_from_the_tournament": {
+            "type": "string"
+          },
+          "do_they_have_a_scouter": {
+            "type": "boolean"
+          },
+          "how_many_batteries_do_they_have_on_hand": {
             "type": "integer",
             "format": "int32"
+          },
+          "willing_to_play_defence": {
+            "type": "boolean"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "can_pass": {
+            "type": "boolean"
+          },
+          "can_shoot": {
+            "type": "boolean"
+          },
+          "climb": {
+            "$ref": "#/components/schemas/ClimbState"
           }
         }
       },
@@ -1421,7 +1581,7 @@
             }
           },
           "team": {
-            "$ref": "#/components/schemas/TeamData"
+            "$ref": "#/components/schemas/Team"
           }
         }
       },
@@ -1457,19 +1617,19 @@
           }
         }
       },
-      "TeamData": {
+      "Team": {
         "type": "object",
         "required": [
           "is_ab_team",
-          "team"
+          "number"
         ],
         "properties": {
-          "is_ab_team": {
-            "type": "boolean"
-          },
-          "team": {
+          "number": {
             "type": "integer",
             "format": "int32"
+          },
+          "is_ab_team": {
+            "type": "boolean"
           }
         }
       },
@@ -1486,7 +1646,7 @@
           "teams": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TeamData"
+              "$ref": "#/components/schemas/Team"
             }
           }
         }
@@ -1559,12 +1719,9 @@
           "event_code",
           "id",
           "is_ab_team",
-          "is_marked",
           "is_mvp",
-          "is_pending",
           "match_id",
           "set",
-          "snowgrave_scout_id",
           "station",
           "team",
           "teleop_score",
@@ -1578,7 +1735,10 @@
             "format": "int32"
           },
           "user": {
-            "type": "string"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "team": {
             "type": "integer",
@@ -1596,16 +1756,16 @@
             "format": "int32"
           },
           "total_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "auto_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "teleop_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "event_code": {
             "type": "string"
@@ -1623,22 +1783,12 @@
             "type": "string",
             "format": "date-time"
           },
-          "is_pending": {
-            "type": "boolean"
-          },
-          "is_marked": {
-            "type": "boolean"
-          },
           "is_mvp": {
             "type": "boolean"
           },
-          "snowgrave_scout_id": {
-            "type": "integer",
-            "format": "int32"
-          },
           "defence": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           }
         }
       },
@@ -1700,20 +1850,20 @@
             "type": "boolean"
           },
           "fuel_shoot_teleop": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_pass_teleop": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_shoot_auto": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_pass_auto": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "climb_end": {
             "$ref": "#/components/schemas/ClimbState"
@@ -1725,15 +1875,6 @@
             "type": "boolean"
           }
         }
-      },
-      "ClimbState": {
-        "type": "string",
-        "enum": [
-          "Nothing",
-          "Stage1",
-          "Stage2",
-          "Stage3"
-        ]
       },
       "SearchParamData": {
         "type": "object",
@@ -1835,7 +1976,7 @@
           }
         }
       },
-      "ApiResult_for_Array_of_Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds": {
+      "ApiResult_for_Array_of_Game": {
         "oneOf": [
           {
             "type": "object",
@@ -1853,7 +1994,7 @@
               "message": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds"
+                  "$ref": "#/components/schemas/Game"
                 }
               }
             }
@@ -1878,22 +2019,17 @@
           }
         ]
       },
-      "Game_for_Array_of_ScoutingTeam_for_ScouterWithoutId_and_MvpIds": {
+      "Game": {
         "type": "object",
         "required": [
           "event_code",
-          "id",
           "match_id",
           "mvp",
+          "scout",
           "set",
-          "teams",
           "tournament_level"
         ],
         "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
           "event_code": {
             "type": "string"
           },
@@ -1908,22 +2044,70 @@
           "tournament_level": {
             "$ref": "#/components/schemas/TournamentLevels"
           },
-          "teams": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScoutingTeam_for_ScouterWithoutId"
-            }
+          "scout": {
+            "$ref": "#/components/schemas/ScoutGame"
           },
           "mvp": {
-            "$ref": "#/components/schemas/MvpIds"
+            "$ref": "#/components/schemas/MvpPair"
           }
         }
       },
-      "ScoutingTeam_for_ScouterWithoutId": {
+      "ScoutGame": {
         "type": "object",
         "required": [
+          "blue_1",
+          "blue_2",
+          "blue_3",
+          "red_1",
+          "red_2",
+          "red_3"
+        ],
+        "properties": {
+          "red_1": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          },
+          "red_2": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          },
+          "red_3": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          },
+          "blue_1": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          },
+          "blue_2": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          },
+          "blue_3": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoutMatch"
+            }
+          }
+        }
+      },
+      "ScoutMatch": {
+        "type": "object",
+        "required": [
+          "done",
           "id",
-          "scouters",
+          "is_redo",
+          "name",
           "station",
           "team"
         ],
@@ -1932,32 +2116,9 @@
             "type": "integer",
             "format": "int32"
           },
-          "station": {
-            "$ref": "#/components/schemas/Stations"
-          },
-          "team": {
-            "$ref": "#/components/schemas/TeamData"
-          },
-          "scouters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScouterWithoutId"
-            }
-          }
-        }
-      },
-      "ScouterWithoutId": {
-        "type": "object",
-        "required": [
-          "done",
-          "id",
-          "is_redo",
-          "station"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
+          "name": {
+            "type": "string",
+            "format": "uuid"
           },
           "station": {
             "$ref": "#/components/schemas/Stations"
@@ -1967,21 +2128,158 @@
           },
           "is_redo": {
             "type": "boolean"
+          },
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ScoutMatchData"
+              }
+            ],
+            "nullable": true
           }
         }
       },
-      "MvpIds": {
+      "ScoutMatchData": {
         "type": "object",
+        "required": [
+          "auto_score",
+          "comment",
+          "created_at",
+          "defence",
+          "event_code",
+          "game",
+          "game_id",
+          "game_type_id",
+          "match_id",
+          "set",
+          "station",
+          "teleop_score",
+          "total_score",
+          "tournament_level"
+        ],
         "properties": {
-          "blue": {
+          "match_id": {
             "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
           },
-          "red": {
+          "set": {
             "type": "integer",
-            "format": "int32",
+            "format": "int32"
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "teleop_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "auto_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "defence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "tournament_level": {
+            "$ref": "#/components/schemas/TournamentLevels"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Stations"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesFullSpecific"
+          },
+          "game_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "game_type_id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MvpPair": {
+        "type": "object",
+        "required": [
+          "blue",
+          "red"
+        ],
+        "properties": {
+          "red": {
+            "$ref": "#/components/schemas/MvpUpcoming"
+          },
+          "blue": {
+            "$ref": "#/components/schemas/MvpUpcoming"
+          }
+        }
+      },
+      "MvpUpcoming": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MvpData"
+              }
+            ],
             "nullable": true
+          }
+        }
+      },
+      "MvpData": {
+        "type": "object",
+        "required": [
+          "comment",
+          "is_blue",
+          "mvp_team",
+          "penalty_score",
+          "total_score"
+        ],
+        "properties": {
+          "mvp_team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "is_blue": {
+            "type": "boolean"
+          },
+          "total_score": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "penalty_score": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -2000,7 +2298,7 @@
             "format": "int32"
           },
           "mvp_team": {
-            "$ref": "#/components/schemas/TeamData"
+            "$ref": "#/components/schemas/Team"
           },
           "comment": {
             "type": "string"
@@ -2038,8 +2336,8 @@
             "format": "int32"
           },
           "defence": {
-            "type": "integer",
-            "format": "int32",
+            "type": "number",
+            "format": "float",
             "nullable": true
           },
           "comment": {
@@ -2075,23 +2373,23 @@
             "nullable": true
           },
           "fuel_shoot_teleop": {
-            "type": "integer",
-            "format": "int32",
+            "type": "number",
+            "format": "float",
             "nullable": true
           },
           "fuel_pass_teleop": {
-            "type": "integer",
-            "format": "int32",
+            "type": "number",
+            "format": "float",
             "nullable": true
           },
           "fuel_shoot_auto": {
-            "type": "integer",
-            "format": "int32",
+            "type": "number",
+            "format": "float",
             "nullable": true
           },
           "fuel_pass_auto": {
-            "type": "integer",
-            "format": "int32",
+            "type": "number",
+            "format": "float",
             "nullable": true
           },
           "climb_end": {
@@ -2174,20 +2472,20 @@
             "type": "boolean"
           },
           "fuel_shoot_teleop": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_pass_teleop": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_shoot_auto": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "fuel_pass_auto": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "climb_end": {
             "$ref": "#/components/schemas/ClimbState"
@@ -2258,7 +2556,7 @@
           }
         }
       },
-      "ApiResult_for_Array_of_Game": {
+      "ApiResult_for_Array_of_Game2": {
         "oneOf": [
           {
             "type": "object",
@@ -2276,7 +2574,7 @@
               "message": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/Game"
+                  "$ref": "#/components/schemas/Game2"
                 }
               }
             }
@@ -2301,7 +2599,7 @@
           }
         ]
       },
-      "Game": {
+      "Game2": {
         "type": "object",
         "required": [
           "event_code",
@@ -2333,7 +2631,7 @@
           "teams": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Team"
+              "$ref": "#/components/schemas/Team2"
             }
           },
           "mvp_blue": {
@@ -2346,7 +2644,7 @@
           }
         }
       },
-      "Team": {
+      "Team2": {
         "type": "object",
         "required": [
           "id",
@@ -2719,7 +3017,7 @@
             "type": "boolean"
           },
           "team": {
-            "$ref": "#/components/schemas/TeamData"
+            "$ref": "#/components/schemas/Team"
           }
         }
       }

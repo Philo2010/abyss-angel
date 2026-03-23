@@ -22,7 +22,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-/* 
+
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -92,7 +92,7 @@ fn main() {
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }
-*/
+
 
 /* 
 #[tokio::main]
@@ -163,7 +163,7 @@ async fn main() -> Result<(), DbErr> {
 }*/
 
 
-
+/* 
 #[launch]
 async fn rocket() -> _ {
 
@@ -255,3 +255,4 @@ async fn rocket() -> _ {
     frontend::pit::assign_pit::assign_pit
     ])
 }
+*/

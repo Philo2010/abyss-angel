@@ -116,5 +116,5 @@ pub async fn pit_edit(data: PitEditSpecific, db: &DatabaseConnection, id: i32) -
 
 
 define_pits!(
-    ExamplePit => crate::pit::entrys::pit_example,
+    RebuiltPit => crate::pit::entrys::pit_rebuilt
 );
