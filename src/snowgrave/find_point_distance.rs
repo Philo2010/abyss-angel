@@ -8,6 +8,13 @@ pub struct CheckReturn {
 
 
 pub fn check_pass(data_points: &[f32]) -> CheckReturn {
+    if data_points.is_empty() {
+        return CheckReturn { passed: vec![], failed: vec![] };
+    }
+    if data_points.len() == 1 {
+        return CheckReturn { passed: vec![0], failed: vec![] };
+    }
+
     // Pair score with original index
     let mut indexed: Vec<(usize, f32)> =
     data_points
@@ -29,7 +36,7 @@ pub fn check_pass(data_points: &[f32]) -> CheckReturn {
     let n = indexed.len();
     let mut best_start = 0;
     let mut best_end = 0;
-    let mut best_len = 0;
+    let mut best_len = 1;
 
     let mut start = 0;
     let mut area = 0.0;
@@ -42,7 +49,7 @@ pub fn check_pass(data_points: &[f32]) -> CheckReturn {
             start += 1;
         }
 
-        let len = end + 1 - start + 1;
+        let len = end + 1 - start;
         if len > best_len {
             best_len = len;
             best_start = start;

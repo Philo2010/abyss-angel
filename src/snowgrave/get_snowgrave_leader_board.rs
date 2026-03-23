@@ -25,7 +25,7 @@ pub async fn get_snowgrave_leader_board(db: &DatabaseConnection) -> Result<Vec<S
         }
     }).collect();
 
-    res.sort_by_key(|x| x.amount_of_warning);
+    res.sort_by(|a, b| b.amount_of_warning.cmp(&a.amount_of_warning));
 
 
     Ok(res)

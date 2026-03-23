@@ -135,8 +135,7 @@ pub async fn check_bind(upcoming_game_id: i32, db: &DatabaseConnection) -> Resul
             };
         },
         super::precheck::PreCheckReturn::Failed(error) => {
-            //TODO: Make punsh function
-            return Ok(CheckBindReturn::Passed(Vec::new(), error.into_iter().collect()));
+            return Ok(CheckBindReturn::Failed(error.into_iter().collect()));
         },
         super::precheck::PreCheckReturn::NotDone => {
             return Ok(CheckBindReturn::NotDone); //No need to error

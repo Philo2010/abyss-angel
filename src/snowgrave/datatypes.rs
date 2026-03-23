@@ -52,6 +52,12 @@ pub struct MvpPair {
     pub blue:  MvpUpcoming
 }
 
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct MvpPairPart {
+    pub red: Option<MvpUpcoming>,
+    pub blue:  Option<MvpUpcoming>
+}
+
 pub struct MvpPairFull {
     pub red: MvpUpcomingFull,
     pub blue:  MvpUpcomingFull
@@ -61,7 +67,7 @@ pub struct MvpPairFull {
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ScoutMatch {
-    pub id: i32,
+    pub id: i32, //of game scout's
     pub name: Uuid,
     pub station: Stations,
     pub done: bool,
@@ -137,6 +143,18 @@ pub struct Game {
     pub scout: ScoutGame,
     pub mvp: MvpPair,
 }
+
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct GamePart {
+    pub event_code: String,
+    pub match_id: i32,
+    pub set: i32,
+    pub tournament_level: TournamentLevels,
+    pub scout: ScoutGame,
+    pub mvp: MvpPairPart,
+}
+
 pub struct GameFull {
     pub event_code: String,
     pub match_id: i32,

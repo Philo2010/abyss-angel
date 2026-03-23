@@ -70,11 +70,12 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
     };
 
     let game_insert = mid.insert(db).await?;
+    let upcoming_game_id = snowgrave_scout.game_id;
     let mut snowgrave_scout_active: game_scouts::ActiveModel = snowgrave_scout.into();
     snowgrave_scout_active.game_midway = Set(Some(game_insert.id));
     snowgrave_scout_active.update(db).await?;
 
-    check(res.game_id, db).await?;
+    check(upcoming_game_id, db).await?;
 
     Ok(())
 }

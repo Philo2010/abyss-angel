@@ -14,12 +14,12 @@ pub async fn check(upcoming_game_id: i32,db: &DatabaseConnection) -> Result<(), 
     match res {
         check_bind::CheckBindReturn::Passed(items, failer_infos) => {
             if !failer_infos.is_empty() {
-                punish(failer_infos, db).await;
+                punish(failer_infos, db).await?;
             }
-            publish(items, db).await;
+            publish(items, db).await?;
         },
         check_bind::CheckBindReturn::Failed(failer_infos) => {
-            punish(failer_infos, db).await;
+            punish(failer_infos, db).await?;
         },
         check_bind::CheckBindReturn::NotDone => {
             //oh well, next time

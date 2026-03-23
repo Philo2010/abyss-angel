@@ -21,10 +21,25 @@ where
         *counts.entry(v).or_insert(0) += 1;
     }
 
-    let mode_ref = counts
-        .into_iter()
-        .max_by_key(|&(_, c)| c)
-        .map(|(v, _)| v)?;
+    let max_count = counts.values().copied().max()?;
+    let tied: Vec<&T> = counts
+        .iter()
+        .filter(|&(_, &c)| c == max_count)
+        .map(|(v, _)| *v)
+        .collect();
+
+    // If there's a tie, no clear consensus — mark all non-excluded as disagreeing
+    if tied.len() > 1 {
+        let all_indexes = data
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !exclude.contains(i))
+            .map(|(i, _)| i)
+            .collect();
+        return Some((tied[0].clone(), all_indexes));
+    }
+
+    let mode_ref = tied[0];
 
     let disagreeing = data
         .iter()

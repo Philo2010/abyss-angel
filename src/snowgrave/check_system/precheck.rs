@@ -25,11 +25,11 @@ async fn check_game(game_data: FrontRunnerGame) -> Result<CheckRet, DbErr> {
     let ratio =  res.crazy.len() as f32/game_data.games.len() as f32;
     let crazy_set: HashSet<usize> = res.crazy.iter().copied().collect();
     if ratio >= RATIO_FALLED {
-        //passed
-        return Ok(CheckRet::Passed(res.avg));
-    } else {
-        //failed
+        //too many outliers, not enough good data
         return Ok(CheckRet::Failed(res.crazy));
+    } else {
+        //enough good data, use the average
+        return Ok(CheckRet::Passed(res.avg));
     }
 }
 

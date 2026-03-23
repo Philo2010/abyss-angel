@@ -82,6 +82,6 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     //All of the header data should be fine so no need to edit it
 
     //now time to do the check itself
-    check(game_data.id, db).await?;
+    check(snowgrave_scout.game_id, db).await?;
     Ok(())
 }

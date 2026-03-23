@@ -27,7 +27,7 @@ pub async fn punish(info: Vec<FailerInfo>, db: &DatabaseConnection) -> Result<()
     game_scouts::Entity::update_many()
     .col_expr(game_scouts::Column::Done, Expr::value(false))
     .col_expr(game_scouts::Column::IsRedo, Expr::value(true))
-    .filter(game_scouts::Column::GameId.is_in(
+    .filter(game_scouts::Column::Id.is_in(
         info.iter().map(|x| x.upcoming_scout_id).collect::<Vec<_>>()
     ))
     .exec(db)
