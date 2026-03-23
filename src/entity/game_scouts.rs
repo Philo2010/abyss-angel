@@ -46,8 +46,8 @@ impl RelationTrait for Relation {
                 .to(upcoming_team::Column::Id)
                 .into(),
 
-            // game_scouts has_one scout_game_midway_insert
-            Self::GameData => Entity::has_one(scout_game_midway_insert::Entity)
+            // game_scouts belongs_to scout_game_midway_insert (game_midway is the FK)
+            Self::GameData => Entity::belongs_to(scout_game_midway_insert::Entity)
                 .from(Column::GameMidway)
                 .to(scout_game_midway_insert::Column::Id)
                 .into(),

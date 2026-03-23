@@ -37,7 +37,7 @@ pub enum Relation {
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
-            Self::GameScout => Entity::belongs_to(game_scouts::Entity)
+            Self::GameScout => Entity::has_one(game_scouts::Entity)
                 .from(Column::Id)
                 .to(game_scouts::Column::GameMidway)
                 .into(),
