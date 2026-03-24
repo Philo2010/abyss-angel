@@ -155,8 +155,11 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
                     },
                 }
             },
-        };
-        game_headers = game_headers.filter(genertic_header::Column::User.eq(a));
+        };    
+        game_headers = game_headers.filter(
+            //todo: make this more proper
+            Expr::cust(format!("'{}' = ANY(\"user\")", a))
+        );
     }
     if let Some(team) = &param.team {
         game_headers = game_headers.filter(genertic_header::Column::Team.eq(*team));
@@ -180,7 +183,7 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
         game_headers = game_headers.filter(genertic_header::Column::TournamentLevel.eq(*tournament_level));
     }
     if let Some(station) = &param.station {
-        game_headers = game_headers.filter(genertic_header::Column::EventCode.eq(*station));
+        game_headers = game_headers.filter(genertic_header::Column::Station.eq(*station));
     }
     if let Some(mvp) = &param.is_mvp {
         game_headers = game_headers.filter(genertic_header::Column::IsMvp.eq(*mvp));
@@ -329,10 +332,10 @@ pub struct GamesInserts {
 #[derive(Serialize, JsonSchema, FromQueryResult, Deserialize)]
 pub struct GamesGraph {
     pub time: DateTime<Local>,
-    pub total_score: i32,
-    pub auto_score: i32,
-    pub teleop_score: i32,
-    pub defence: i32,
+    pub total_score: f32,
+    pub auto_score: f32,
+    pub teleop_score: f32,
+    pub defence: f32,
 }
 
 #[derive(Serialize, JsonSchema)]

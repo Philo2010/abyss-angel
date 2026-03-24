@@ -80,14 +80,19 @@ pub struct Functions;
 
 macro_rules! enum_pct {
     ($column:expr, $variant:expr) => {
-        Expr::col($column)
-            .eq($variant)
-            .into_simple_expr()
-            .cast_as(Alias::new("INT"))
-            .avg()
-            .cast_as(Alias::new("FLOAT8"))
+        Expr::case(
+            Expr::col($column).eq(
+                Expr::val($variant.clone().into_value())
+                    .cast_as(Alias::new("climb_state")) // 👈 key fix
+            ),
+            Expr::val(1)
+        )
+        .finally(Expr::val(0))
+        .avg()
+        .cast_as(Alias::new("FLOAT8"))
     };
 }
+
 
 fn total_score_auto(insert_data: &Insert) -> f32 {
     let fuel_auto = insert_data.fuel_shoot_auto * FUEL_AUTO;
@@ -323,7 +328,8 @@ impl YearOp for Functions {
                 .column_as(Column::FuelPassTeleop.avg().cast_as(Alias::new("FLOAT8")), "fuel_pass_teleop_avg")
                 .column_as(Column::FuelShootAuto.avg().cast_as(Alias::new("FLOAT8")), "fuel_shoot_auto_avg")
                 .column_as(Column::FuelPassAuto.avg().cast_as(Alias::new("FLOAT8")), "fuel_pass_auto_avg")
-                .column_as(Column::BeachOnBump.avg().cast_as(Alias::new("FLOAT8")), "beach_on_bump")
+                .column_as(Expr::col(Column::DefenceMain).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "defence_main_avg")
+                .column_as(Expr::col(Column::BeachOnBump).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "beach_on_bump")
                 .expr_as(enum_pct!(
                     Column::ClimbEnd,
                     ClimbState::Stage1
