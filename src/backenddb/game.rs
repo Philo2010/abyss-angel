@@ -87,6 +87,7 @@ pub trait YearOp: Send + Sync {
 
 
 //A common header that will be used for Insert data
+#[derive(Debug)]
 pub struct HeaderInsert {
     //Id is given by server
     pub user: Vec<Uuid>, //We will get uuid
@@ -318,6 +319,7 @@ async fn prim_get_game(model: Box<dyn YearOp>, id: i32, db: &DatabaseConnection)
 }
 
 
+#[derive(Debug)]
 pub struct GamesInserts {
     pub header: HeaderInsert,
     pub game: GamesInsertsSpecific

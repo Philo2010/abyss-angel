@@ -6,6 +6,7 @@ use crate::{backenddb::game::GamesInserts, snowgrave::{self, check_system::{chec
 
 
 
+#[derive(Debug)]
 pub enum CheckBindReturn {
     Passed(Vec<GamesInserts>, Vec<FailerInfo>),
     Failed(Vec<FailerInfo>),

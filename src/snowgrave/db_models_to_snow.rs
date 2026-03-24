@@ -65,7 +65,9 @@ pub async fn get_scouts(upcoming_team_id: i32, db: &DatabaseConnection) -> Resul
         return Err(DbErr::Custom("Scouts have not been selected yet!".to_string()));
     }
 
-    assert!(scouts.len() >= 6, "Expected at least 6 scouts");
+    if scouts.len() >= 6 {
+        return Err(DbErr::Custom("Expected at least 6 scouts".to_owned())); //a bit weird
+    }
 
     let mut scouts_nice: Vec<ScoutMatch> = Vec::new();
     

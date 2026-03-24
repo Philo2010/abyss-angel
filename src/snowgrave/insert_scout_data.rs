@@ -1,5 +1,5 @@
 use chrono::Local;
-use schemars::JsonSchema;
+use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 
@@ -73,6 +73,7 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
     let upcoming_game_id = snowgrave_scout.game_id;
     let mut snowgrave_scout_active: game_scouts::ActiveModel = snowgrave_scout.into();
     snowgrave_scout_active.game_midway = Set(Some(game_insert.id));
+    snowgrave_scout_active.done = Set(true);
     snowgrave_scout_active.update(db).await?;
 
     check(upcoming_game_id, db).await?;

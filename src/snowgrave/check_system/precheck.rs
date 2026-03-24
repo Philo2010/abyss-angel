@@ -4,7 +4,6 @@ use sea_orm::{DatabaseConnection, DbErr};
 use uuid::Uuid;
 
 use crate::{SETTINGS, backenddb::game::{FrontRunnerGame, FrontRunnerReturn, GamesFull, GamesFullSpecific, GamesInserts, GamesInsertsSpecific, HeaderInsert, frontrunner, game_dispatch, get_game}, entity::sea_orm_active_enums::Stations, snowgrave::{self, check_system::check_if_filled::check_if_filled, datatypes::{FailerInfo, GameFull, MvpPairFull, ScoutMatchFull}}};
-const RATIO_FALLED: f32 = 0.8;
 
 pub struct FinalCheck {
     blue1: ScoutMatchFull,
@@ -24,7 +23,17 @@ async fn check_game(game_data: FrontRunnerGame) -> Result<CheckRet, DbErr> {
     let res = frontrunner(&game_data).await?;
     let ratio =  res.crazy.len() as f32/game_data.games.len() as f32;
     let crazy_set: HashSet<usize> = res.crazy.iter().copied().collect();
-    if ratio >= RATIO_FALLED {
+    eprintln!(
+        "[precheck] team={} station={:?} scouts={} outliers={} ratio={:.2} threshold={:.2} => {}",
+        game_data.team,
+        game_data.station,
+        game_data.games.len(),
+        res.crazy.len(),
+        ratio,
+        super::OUTLIER_FAIL_RATIO,
+        if ratio >= super::OUTLIER_FAIL_RATIO { "FAIL" } else { "PASS" }
+    );
+    if ratio >= super::OUTLIER_FAIL_RATIO {
         //too many outliers, not enough good data
         return Ok(CheckRet::Failed(res.crazy));
     } else {

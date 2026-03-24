@@ -1,6 +1,5 @@
 use crate::{SETTINGS, backenddb::game::game_dispatch, snowgrave::check_system::precheck::PreCheckGame};
 
-const RANGE: f32 = 70.0;
 
 pub struct Range {
     pub start: f32,
@@ -10,8 +9,8 @@ pub struct Range {
 impl Range {
     pub fn new(main_point: f32) -> Range {
         Range {
-            start: main_point - RANGE,
-            end: main_point + RANGE,
+            start: main_point - super::SCORE_RANGE_TOLERANCE,
+            end: main_point + super::SCORE_RANGE_TOLERANCE,
         }
     }
 
@@ -45,6 +44,12 @@ pub fn check_mid(game: &PreCheckGame) -> CheckReturn {
 
     let red_range = Range::new(true_score_red_mvp);
     let blue_range = Range::new(true_score_blue_mvp);
+
+    eprintln!(
+        "[check_mid] red: scout_sum={:.0} mvp={:.0} window=[{:.0},{:.0}] ok={} | blue: scout_sum={:.0} mvp={:.0} window=[{:.0},{:.0}] ok={}",
+        red_total, true_score_red_mvp, red_range.start, red_range.end, red_range.check(red_total),
+        blue_total, true_score_blue_mvp, blue_range.start, blue_range.end, blue_range.check(blue_total),
+    );
 
     if !red_range.check(red_total) {
         if !blue_range.check(blue_total) {

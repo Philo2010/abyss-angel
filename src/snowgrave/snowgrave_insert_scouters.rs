@@ -49,35 +49,54 @@ pub async fn insert_scouters(
             teams.get(&matche.0).unwrap()
         };
 
-        // Delete existing scouters for this team before re-inserting
-        game_scouts::Entity::delete_many()
-            .filter(game_scouts::Column::TeamId.eq(team.id))
-            .exec(&txn)
-            .await?;
+        // Only touch game_scouts if scouters actually changed for this team.
+        // An empty scouter list means this entry exists solely to carry an MVP
+        // change — skip the delete/reinsert so we don't disturb in-progress state.
+        if !matche.1.is_empty() {
+            // Check if any scouts for this team have already submitted data
+            let existing_scouts = game_scouts::Entity::find()
+                .filter(game_scouts::Column::TeamId.eq(team.id))
+                .all(&txn)
+                .await?;
 
-        let mut scouter_check = HashSet::new();
-        for scouter in &matche.1 {
-            let scouter_id = form
-                .player_indexs
-                .get(scouter.index)
-                .ok_or(DbErr::Custom("Invalid index for players".to_string()))?;
-
-            if !scouter_check.insert(*scouter_id) {
-                return Err(DbErr::Custom(
-                    "Cannot have more than one of the same scouter on a team".to_string(),
-                ));
+            let has_submitted = existing_scouts.iter().any(|s| s.game_midway.is_some());
+            if has_submitted {
+                return Err(DbErr::Custom(format!(
+                    "Cannot reassign scouters for team {} — scouts have already submitted data for this game",
+                    team.id
+                )));
             }
 
-            scouters.push(game_scouts::ActiveModel {
-                id: NotSet,
-                game_id: Set(team.game_id),
-                team_id: Set(team.id),
-                scouter_id: Set(*scouter_id),
-                done: Set(false),
-                station: Set(team.station),
-                is_redo: Set(false),
-                game_midway: Set(None),
-            });
+            // Delete existing scouters for this team before re-inserting
+            game_scouts::Entity::delete_many()
+                .filter(game_scouts::Column::TeamId.eq(team.id))
+                .exec(&txn)
+                .await?;
+
+            let mut scouter_check = HashSet::new();
+            for scouter in &matche.1 {
+                let scouter_id = form
+                    .player_indexs
+                    .get(scouter.index)
+                    .ok_or(DbErr::Custom("Invalid index for players".to_string()))?;
+
+                if !scouter_check.insert(*scouter_id) {
+                    return Err(DbErr::Custom(
+                        "Cannot have more than one of the same scouter on a team".to_string(),
+                    ));
+                }
+
+                scouters.push(game_scouts::ActiveModel {
+                    id: NotSet,
+                    game_id: Set(team.game_id),
+                    team_id: Set(team.id),
+                    scouter_id: Set(*scouter_id),
+                    done: Set(false),
+                    station: Set(team.station),
+                    is_redo: Set(false),
+                    game_midway: Set(None),
+                });
+            }
         }
 
         let mvp_red = mvp_scouters::ActiveModel {
@@ -117,11 +136,23 @@ pub async fn insert_scouters(
             .ok_or(DbErr::Custom("Could not find game".to_string()))?;
 
         if let Some(old_red_id) = game.mvp_id_red {
+            let old_red = mvp_scouters::Entity::find_by_id(old_red_id).one(&txn).await?;
+            if let Some(ref m) = old_red {
+                if m.data.is_some() {
+                    return Err(DbErr::Custom("Cannot reassign MVP — red MVP has already submitted data".to_string()));
+                }
+            }
             mvp_scouters::Entity::delete_by_id(old_red_id)
                 .exec(&txn)
                 .await?;
         }
         if let Some(old_blue_id) = game.mvp_id_blue {
+            let old_blue = mvp_scouters::Entity::find_by_id(old_blue_id).one(&txn).await?;
+            if let Some(ref m) = old_blue {
+                if m.data.is_some() {
+                    return Err(DbErr::Custom("Cannot reassign MVP — blue MVP has already submitted data".to_string()));
+                }
+            }
             mvp_scouters::Entity::delete_by_id(old_blue_id)
                 .exec(&txn)
                 .await?;

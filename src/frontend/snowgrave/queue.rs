@@ -6,7 +6,9 @@ use schemars::JsonSchema;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 
-use crate::{auth, frontend::ApiResult, snowgrave::{self, snowgrave_que::Blue2DBErr}};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+use crate::{auth, entity::upcoming_game, frontend::ApiResult, snowgrave::{self, snowgrave_que::Blue2DBErr}};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct QueueInput {
@@ -38,6 +40,16 @@ pub async fn queue(data: Json<QueueInput>, client: &State<Client>, db: &State<Da
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
 
+    let existing = upcoming_game::Entity::find()
+        .filter(upcoming_game::Column::EventCode.eq(&*data.event))
+        .one(db.inner())
+        .await;
+    match existing {
+        Ok(Some(_)) => return Json(ApiResult::Error(format!("Event '{}' is already queued", data.event))),
+        Err(e) => return Json(ApiResult::Error(format!("Database error: {e}"))),
+        Ok(None) => {}
+    }
+
     let tba_games = match snowgrave::blue::pull_from_blue(client, &data.event).await {
         Ok(a) => a,
         Err(a) => {
@@ -64,6 +76,17 @@ pub async fn queue_playoff(data: Json<QueueInput>, client: &State<Client>, db: &
     if !auth::check::check(cookies, db).await {
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
+
+    let existing = upcoming_game::Entity::find()
+        .filter(upcoming_game::Column::EventCode.eq(&*data.event))
+        .one(db.inner())
+        .await;
+    match existing {
+        Ok(Some(_)) => return Json(ApiResult::Error(format!("Event '{}' is already queued", data.event))),
+        Err(e) => return Json(ApiResult::Error(format!("Database error: {e}"))),
+        Ok(None) => {}
+    }
+
     let tba_games = match snowgrave::blue::pull_from_blue(client, &data.event).await {
         Ok(a) => a,
         Err(a) => {

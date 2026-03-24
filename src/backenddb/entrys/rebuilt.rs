@@ -156,7 +156,7 @@ impl YearOp for Functions {
     fn get_year_id(&self) -> i32 {
         YEAR
     }
-        fn frontrunner_op(
+    fn frontrunner_op(
         &self,
         games: &FrontRunnerGame,
     ) -> Result<FrontRunnerReturn, DbErr> {
@@ -174,29 +174,29 @@ impl YearOp for Functions {
 
         // Consensus fields
         avg.defence_main =
-            consensus_field(&models, &mut crazy, |m| m.defence_main)?;
+            consensus_field(&models, &mut crazy, |m| m.defence_main, "defence_main")?;
 
         avg.climb_end =
-            consensus_field(&models, &mut crazy, |m| m.climb_end)?;
+            consensus_field(&models, &mut crazy, |m| m.climb_end, "climb_end")?;
 
         avg.climb_auto =
-            consensus_field(&models, &mut crazy, |m| m.climb_auto)?;
+            consensus_field(&models, &mut crazy, |m| m.climb_auto, "climb_auto")?;
 
         avg.beach_on_bump =
-            consensus_field(&models, &mut crazy, |m| m.beach_on_bump)?;
+            consensus_field(&models, &mut crazy, |m| m.beach_on_bump, "beach_on_bump")?;
 
         // Numeric fields
         avg.fuel_shoot_teleop =
-            average_field(&models, &mut crazy, |m| m.fuel_shoot_teleop)?;
+            average_field(&models, &mut crazy, |m| m.fuel_shoot_teleop, "fuel_shoot_teleop")?;
 
         avg.fuel_pass_teleop =
-            average_field(&models, &mut crazy, |m| m.fuel_pass_teleop)?;
+            average_field(&models, &mut crazy, |m| m.fuel_pass_teleop, "fuel_pass_teleop")?;
 
         avg.fuel_shoot_auto =
-            average_field(&models, &mut crazy, |m| m.fuel_shoot_auto)?;
+            average_field(&models, &mut crazy, |m| m.fuel_shoot_auto, "fuel_shoot_auto")?;
 
         avg.fuel_pass_auto =
-            average_field(&models, &mut crazy, |m| m.fuel_pass_auto)?;
+            average_field(&models, &mut crazy, |m| m.fuel_pass_auto, "fuel_pass_auto")?;
 
         let mut users: Vec<Uuid> = Vec::new(); 
         for user in games.games.iter().enumerate() {
@@ -413,7 +413,7 @@ impl YearOp for Functions {
 
 
 
-#[derive(Serialize, JsonSchema, Deserialize, Default)]
+#[derive(Serialize, JsonSchema, Deserialize, Default, Debug)]
 pub struct Insert {
     pub defence_main: bool,
     pub fuel_shoot_teleop: f32,

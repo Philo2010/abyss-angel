@@ -14,7 +14,11 @@ use crate::{auth::{self, get_by_user::{AuthGetUuidError, get_by_username}}, fron
 #[derive(JsonSchema, Deserialize, Serialize)]
 pub struct SubScoutForm {
     og: String,
-    replacement: String
+    replacement: String,
+    /// When provided, only replace assignments for these game IDs (selective sub).
+    /// When None or empty, replace ALL pending assignments (full sub).
+    #[serde(default)]
+    game_ids: Option<Vec<i32>>,
 }
 
 
@@ -51,7 +55,7 @@ pub async fn sub_scout(body: Json<SubScoutForm>, db: &State<DatabaseConnection>,
         },
     };
 
-    match crate::snowgrave::sub_scout::sub_scout(db, &og_uuid, &replacement_uuid).await {
+    match crate::snowgrave::sub_scout::sub_scout(db, &og_uuid, &replacement_uuid, body.game_ids.as_deref()).await {
         Ok(_) => {
             Json(ApiResult::Success("Done!".to_string()))
         },

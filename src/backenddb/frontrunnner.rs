@@ -55,6 +55,7 @@ pub fn average_field<M, F>(
     models: &[M],
     crazy: &mut HashSet<usize>,
     extractor: F,
+    field_name: &str,
 ) -> Result<f32, DbErr>
 where
     F: Fn(&M) -> f32,
@@ -63,7 +64,11 @@ where
 
     let res = check_pass(&values);
 
-    crazy.extend(res.failed);
+    let before = crazy.len();
+    crazy.extend(res.failed.iter());
+    if crazy.len() != before {
+        eprintln!("[average_field] {field_name}: added {:?} → crazy={:?}", res.failed, crazy);
+    }
 
     if res.passed.is_empty() {
         return Err(DbErr::Custom(
@@ -80,18 +85,27 @@ pub fn consensus_field<M, T, F>(
     models: &[M],
     crazy: &mut HashSet<usize>,
     extractor: F,
-) -> Result<T, DbErr>
+    field_name: &str,
+) -> Option<T>
 where
     T: Eq + Hash + Clone,
     F: Fn(&M) -> T,
 {
     let values: Vec<T> = models.iter().map(|m| extractor(m)).collect();
 
-    let mode = find_disagreeing_indexes(&values, crazy)
-        .ok_or_else(|| {
-            DbErr::Custom("[FRONTRUNNER][CHECK] Array is not full!".to_string())
-        })?;
+    let mode = match find_disagreeing_indexes(&values, crazy) {
+        Some(a) => {
+            a
+        },
+        None => {
+            return None;
+        },
+    };
 
-    crazy.extend(mode.1);
-    Ok(mode.0)
+    let before = crazy.len();
+    crazy.extend(mode.1.iter());
+    if crazy.len() != before {
+        eprintln!("[consensus_field] {field_name}: added {:?} → crazy={:?}", mode.1, crazy);
+    }
+    Some(mode.0)
 }

@@ -17,7 +17,7 @@ pub struct Model {
 
     //Data for MVP -> Will be found when MVP scouts
     #[sea_orm(has_one)]
-    pub data: Option<i32>
+    pub data: Option<i32>,
 }
 
 

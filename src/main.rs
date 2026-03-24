@@ -1,5 +1,5 @@
 #[macro_use] extern crate rocket;
-use rocket::{Config, data::{ByteUnit, Limits}};
+use rocket::{Config, data::{ByteUnit, Limits}, tokio};
 use rocket_okapi::{openapi_get_spec, settings::OpenApiSettings};
 
 use crate::setting::Settings;
@@ -22,7 +22,7 @@ const SETTINGS: crate::setting::Settings = Settings {
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 
-
+/* 
 fn main() {
     let settings = OpenApiSettings::default();
     use crate::frontend::pit::edit::okapi_add_operation_for_edit_pit_;
@@ -92,7 +92,7 @@ fn main() {
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());
 }
-
+*/
 
 /* 
 #[tokio::main]
@@ -162,6 +162,21 @@ async fn main() -> Result<(), DbErr> {
     Ok(())
 }*/
 
+
+#[tokio::main]
+async fn main() {
+    let db_conn = match sea_orm::Database::connect(SETTINGS.db_path).await {
+        Ok(a) => a,
+        Err(a) => {
+            println!("Major issue! We were not able to connect to database, this is very funny as we were able to connect to the database before (or else you would not be seeing this)");
+            println!("Err from Seaorm: {a}");
+            panic!();
+        },
+    };
+    use crate::snowgrave::check_system::check_bind::check_bind;
+    println!("{:?}", check_bind(25, &db_conn).await);
+
+}
 
 /* 
 #[launch]
@@ -236,6 +251,7 @@ async fn rocket() -> _ {
     frontend::search::search,
     auth::login::login,
     auth::create_user::create_user,
+    auth::check_status::check_status,
     auth::create_user::create_user_front,
     frontend::snowgrave::find_games::get_years,
     frontend::snowgrave::mvp_insert::mvp_insert,

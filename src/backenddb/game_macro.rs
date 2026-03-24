@@ -16,7 +16,7 @@ macro_rules! define_games {
             )*
         }
         
-        #[derive(Serialize, Deserialize, JsonSchema)]
+        #[derive(Serialize, Deserialize, JsonSchema, Debug)]
         pub enum GamesInsertsSpecific {
             $(
                 $name($($module)::+::Insert),

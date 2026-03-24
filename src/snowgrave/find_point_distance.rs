@@ -1,4 +1,3 @@
-const MAX_AREA_PASS: i32 = 30;
 
 pub struct CheckReturn {
     pub passed: Vec<usize>,
@@ -8,6 +7,7 @@ pub struct CheckReturn {
 
 
 pub fn check_pass(data_points: &[f32]) -> CheckReturn {
+    eprintln!("[find_point_distance] input scores: {:?} (n={})", data_points, data_points.len());
     if data_points.is_empty() {
         return CheckReturn { passed: vec![], failed: vec![] };
     }
@@ -36,7 +36,7 @@ pub fn check_pass(data_points: &[f32]) -> CheckReturn {
     let n = indexed.len();
     let mut best_start = 0;
     let mut best_end = 0;
-    let mut best_len = 1;
+    let mut best_len = 0;
 
     let mut start = 0;
     let mut area = 0.0;
@@ -44,7 +44,7 @@ pub fn check_pass(data_points: &[f32]) -> CheckReturn {
     for end in 0..n - 1 {
         area += indexed[end + 1].1 - indexed[end].1;
 
-        while area > MAX_AREA_PASS as f32 {
+        while area > crate::snowgrave::check_system::CLUSTER_MAX_SPREAD as f32 {
             area -= indexed[start + 1].1 - indexed[start].1;
             start += 1;
         }
@@ -71,5 +71,7 @@ pub fn check_pass(data_points: &[f32]) -> CheckReturn {
         }
     }
 
+    eprintln!("[find_point_distance] passed indices: {:?} failed indices: {:?} (spread threshold={})",
+        passed, failed, crate::snowgrave::check_system::CLUSTER_MAX_SPREAD);
     CheckReturn { passed, failed }
 }

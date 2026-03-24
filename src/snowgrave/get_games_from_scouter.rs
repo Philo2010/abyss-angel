@@ -51,11 +51,16 @@ pub async fn get_games_for_scouter(
     //get all the scouting entrys first
     let scouter_entrys = game_scouts::Entity::find()
         .filter(game_scouts::Column::ScouterId.eq(scouter))
+        .filter(game_scouts::Column::Done.eq(false))
+        .all(db).await?;
+
+    let mvp_entrys = mvp_scouters::Entity::find()
+        .filter(mvp_scouters::Column::Scouter.eq(scouter))
+        .filter(mvp_scouters::Column::Data.is_null())
         .all(db).await?;
 
     let mut game_cache: HashMap<i32, GamePart> = HashMap::new();
     let mut team_cache: HashMap<i32, upcoming_team::Model> = HashMap::new();
-    let mut mvp_cache: HashMap<i32, MvpPair> = HashMap::new(); //the i32 is the game id
 
     //create the all mightly cashe to be used
     for entry in &scouter_entrys {
@@ -64,21 +69,6 @@ pub async fn get_games_for_scouter(
             let game = upcoming_game::Entity::find_by_id(entry.game_id).one(db).await?
                 .ok_or(DbErr::Custom("Invaild Game Id (should never happen)".to_string()))?;
             //grab mvp
-            let mut mvp: MvpPairPart = MvpPairPart { 
-                red: None, 
-                blue: None
-            };
-
-            if let Some(mvp_red_id) = game.mvp_id_red {
-                let model_red = get_mvp(mvp_red_id, db).await?;
-                mvp.red = Some(model_red);
-            }
-
-            if let Some(mvp_blue_id) = game.mvp_id_blue {
-                let model_blue = get_mvp(mvp_blue_id, db).await?;
-                mvp.blue = Some(model_blue);
-            }
-
             let game_better = GamePart {
                 event_code: game.event_code,
                 match_id: game.match_id,
@@ -92,7 +82,10 @@ pub async fn get_games_for_scouter(
                     blue_2:  Vec::new(),
                     blue_3:  Vec::new()
                 },
-                mvp,
+                mvp: MvpPairPart {
+                    red: None,
+                    blue: None
+                },
             };
 
 
@@ -104,6 +97,81 @@ pub async fn get_games_for_scouter(
             let team = upcoming_team::Entity::find_by_id(entry.team_id).one(db).await?
                 .ok_or(DbErr::Custom("Invaild Game Id (should never happen)".to_string()))?;
             team_cache.insert(team.id,team);
+        }
+    }
+
+    for entry in mvp_entrys {
+        let games = upcoming_game::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(upcoming_game::Column::MvpIdBlue.eq(entry.id))
+                    .add(upcoming_game::Column::MvpIdRed.eq(entry.id))
+            ).all(db).await?;
+        for game in games {
+            if game_cache.contains_key(&game.id) {
+                let game_mut = game_cache.get_mut(&game.id).unwrap();
+                if let Some(mvp_id_blue) = game.mvp_id_blue {
+                    let mvp = mvp_scouters::Entity::find_by_id(mvp_id_blue).one(db).await?.unwrap();
+                    if mvp.scouter == scouter {
+                        game_mut.mvp.blue = Some(MvpUpcoming {
+                            id: mvp.id,
+                            name: mvp.scouter,
+                            data: None, // no need for thats
+                        })
+                    }
+                }
+                if let Some(mvp_id_red) = game.mvp_id_red {
+                    let mvp = mvp_scouters::Entity::find_by_id(mvp_id_red).one(db).await?.unwrap();
+                    if mvp.scouter == scouter {
+                        game_mut.mvp.red = Some(MvpUpcoming {
+                            id: mvp.id,
+                            name: mvp.scouter,
+                            data: None, // no need for thats
+                        })
+                    }
+                }
+            } else {
+                let mut mvp_part = MvpPairPart {
+                    red: None,
+                    blue: None,
+                };
+                if let Some(mvp_id_blue) = game.mvp_id_blue {
+                    let mvp = mvp_scouters::Entity::find_by_id(mvp_id_blue).one(db).await?.unwrap();
+                    if mvp.scouter == scouter {
+                        mvp_part.blue = Some(MvpUpcoming {
+                            id: mvp.id,
+                            name: mvp.scouter,
+                            data: None, // no need for thats
+                        })
+                    }
+                }
+                if let Some(mvp_id_red) = game.mvp_id_red {
+                    let mvp = mvp_scouters::Entity::find_by_id(mvp_id_red).one(db).await?.unwrap();
+                    if mvp.scouter == scouter {
+                        mvp_part.red = Some(MvpUpcoming {
+                            id: mvp.id,
+                            name: mvp.scouter,
+                            data: None, // no need for thats
+                        })
+                    }
+                }
+
+                game_cache.insert(game.id, GamePart {
+                    event_code: game.event_code,
+                    match_id: game.match_id,
+                    set: game.set,
+                    tournament_level: game.tournament_level,
+                    scout: ScoutGame { 
+                        red_1: Vec::new(),
+                        red_2: Vec::new(),
+                        red_3: Vec::new(),
+                        blue_1: Vec::new(),
+                        blue_2: Vec::new(),
+                        blue_3: Vec::new()
+                    },
+                    mvp: mvp_part
+                });
+            }
         }
     }
 
