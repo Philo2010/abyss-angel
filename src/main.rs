@@ -162,7 +162,7 @@ async fn main() -> Result<(), DbErr> {
     Ok(())
 }*/
 
-
+/* 
 #[tokio::main]
 async fn main() {
     let db_conn = match sea_orm::Database::connect(SETTINGS.db_path).await {
@@ -174,11 +174,11 @@ async fn main() {
         },
     };
     use crate::snowgrave::check_system::check_bind::check_bind;
-    println!("{:?}", check_bind(25, &db_conn).await);
+    println!("{:?}", check_bind(3, &db_conn).await);
 
 }
+*/
 
-/* 
 #[launch]
 async fn rocket() -> _ {
 
@@ -271,4 +271,3 @@ async fn rocket() -> _ {
     frontend::pit::assign_pit::assign_pit
     ])
 }
-*/

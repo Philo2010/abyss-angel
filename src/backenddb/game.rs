@@ -61,7 +61,7 @@ pub struct AvgReturn {
 
 pub struct FrontRunnerReturn {
     pub crazy: Vec<usize>,
-    pub avg: GamesInserts
+    pub avg: Option<GamesInserts>
 }
 
 pub struct Scores {

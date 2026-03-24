@@ -36,7 +36,8 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     if !snowgrave_scout.is_redo {
         return Err(DbErr::Custom("Please scout normaly!".to_string()));
     }
-    let game_data: scout_game_midway_insert::Model = scout_game_midway_insert::Entity::find_by_id(snowgrave_scout.game_midway.unwrap()).one(db).await?.unwrap();
+    let midway_id = snowgrave_scout.game_midway.ok_or_else(|| DbErr::Custom("Scout marked for redo but has no midway data — contact admin".to_string()))?;
+    let game_data: scout_game_midway_insert::Model = scout_game_midway_insert::Entity::find_by_id(midway_id).one(db).await?.ok_or_else(|| DbErr::Custom("Midway record not found".to_string()))?;
 
     //asume done for now
     let mut snowgrave_scout_active: game_scouts::ActiveModel = snowgrave_scout.clone().into();
@@ -50,7 +51,7 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
     
 
     let game_insert: scout_game_midway_insert::ActiveModel = ActiveModel {
-        id: NotSet,
+        id: Set(game_data.id),
         user: NotSet,
         team: NotSet,
         is_ab_team: NotSet,

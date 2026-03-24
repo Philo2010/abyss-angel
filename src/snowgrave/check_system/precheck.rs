@@ -38,7 +38,12 @@ async fn check_game(game_data: FrontRunnerGame) -> Result<CheckRet, DbErr> {
         return Ok(CheckRet::Failed(res.crazy));
     } else {
         //enough good data, use the average
-        return Ok(CheckRet::Passed(res.avg));
+        if let Some(res) = res.avg {
+            return Ok(CheckRet::Passed(res));
+        } else {
+            //data was not good engpoih to form 
+            return Ok(CheckRet::Failed(res.crazy));
+        }
     }
 }
 
@@ -119,7 +124,6 @@ pub struct PreCheckGame {
 pub enum PreCheckReturn {
     Passed(PreCheckGame, HashSet<FailerInfo>),
     Failed(HashSet<FailerInfo>),
-    NotDone,
 }
 
 

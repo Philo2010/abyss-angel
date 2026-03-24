@@ -81,6 +81,7 @@ where
     Ok(total / res.passed.len() as f32)
 }
 
+
 pub fn consensus_field<M, T, F>(
     models: &[M],
     crazy: &mut HashSet<usize>,

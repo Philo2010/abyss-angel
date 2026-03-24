@@ -173,17 +173,42 @@ impl YearOp for Functions {
         let mut avg = Insert::default();
 
         // Consensus fields
-        avg.defence_main =
-            consensus_field(&models, &mut crazy, |m| m.defence_main, "defence_main")?;
+        avg.defence_main = match consensus_field(&models, &mut crazy, |m| m.defence_main, "defence_main") {
+            Some(a) => a,
+            None => {
+                //get all crasy
+                crazy.extend(0..models.len() as usize);
 
-        avg.climb_end =
-            consensus_field(&models, &mut crazy, |m| m.climb_end, "climb_end")?;
+                return Ok(FrontRunnerReturn {
+                    crazy: crazy.into_iter().collect(),
+                    avg: None,
+                });
+            },
+        };
 
-        avg.climb_auto =
-            consensus_field(&models, &mut crazy, |m| m.climb_auto, "climb_auto")?;
+        avg.climb_end = match consensus_field(&models, &mut crazy, |m| m.climb_end, "climb_end") {
+            Some(a) => a,
+            None => {
+                crazy.extend(0..models.len());
+                return Ok(FrontRunnerReturn { crazy: crazy.into_iter().collect(), avg: None });
+            },
+        };
 
-        avg.beach_on_bump =
-            consensus_field(&models, &mut crazy, |m| m.beach_on_bump, "beach_on_bump")?;
+        avg.climb_auto = match consensus_field(&models, &mut crazy, |m| m.climb_auto, "climb_auto") {
+            Some(a) => a,
+            None => {
+                crazy.extend(0..models.len());
+                return Ok(FrontRunnerReturn { crazy: crazy.into_iter().collect(), avg: None });
+            },
+        };
+
+        avg.beach_on_bump = match consensus_field(&models, &mut crazy, |m| m.beach_on_bump, "beach_on_bump") {
+            Some(a) => a,
+            None => {
+                crazy.extend(0..models.len());
+                return Ok(FrontRunnerReturn { crazy: crazy.into_iter().collect(), avg: None });
+            },
+        };
 
         // Numeric fields
         avg.fuel_shoot_teleop =
@@ -244,10 +269,10 @@ impl YearOp for Functions {
 
         Ok(FrontRunnerReturn {
             crazy: crazy.into_iter().collect(),
-            avg: GamesInserts { 
+            avg: Some(GamesInserts { 
                 header,
                 game: GamesInsertsSpecific::RebuiltGame(avg) 
-            },
+            }),
         })
     }
 
@@ -400,7 +425,7 @@ impl YearOp for Functions {
                     teleop_score: total_score_teleop(&total_score),
                     auto_score: total_score_auto(&total_score)
                 };
-                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: todo!() };
+                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: Set(total_score.beach_on_bump) };
                 let game_data = game_data_active.update(db).await?;
                 Ok(returne)
             },

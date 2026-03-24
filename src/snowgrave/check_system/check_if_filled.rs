@@ -10,6 +10,9 @@ fn check_fill_scout(scouts: &Vec<ScoutMatch>) -> Result<Vec<ScoutMatchFull>, Fil
     let mut new: Vec<ScoutMatchFull> = Vec::new();
     for scout in scouts {
         if let Some(data) = &scout.data {
+            if !scout.done {
+                return Err(FilledCheck::NotFilled);
+            }
             new.push(ScoutMatchFull {
                 name: scout.name,
                 station: scout.station,
