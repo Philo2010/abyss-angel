@@ -57,11 +57,9 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
                     },
                 };
             let mut scouter_usernames: Vec<String> = Vec::new();
-            let mut team_done = false;
+            let team_done = !scouts.is_empty()
+                && scouts.iter().all(|s| s.done && !s.is_redo);
             for scout in &scouts {
-                if scout.game_midway.is_some() {
-                    team_done = true;
-                }
                 let username = match get_by_uuid(&scout.scouter_id, db).await {
                     Ok(a) => {a},
                     Err(a) => {

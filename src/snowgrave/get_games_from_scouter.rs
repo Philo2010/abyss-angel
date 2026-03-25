@@ -70,6 +70,7 @@ pub async fn get_games_for_scouter(
                 .ok_or(DbErr::Custom("Invaild Game Id (should never happen)".to_string()))?;
             //grab mvp
             let game_better = GamePart {
+                id: game.id,
                 event_code: game.event_code,
                 match_id: game.match_id,
                 set: game.set,
@@ -157,11 +158,12 @@ pub async fn get_games_for_scouter(
                 }
 
                 game_cache.insert(game.id, GamePart {
+                    id: game.id,
                     event_code: game.event_code,
                     match_id: game.match_id,
                     set: game.set,
                     tournament_level: game.tournament_level,
-                    scout: ScoutGame { 
+                    scout: ScoutGame {
                         red_1: Vec::new(),
                         red_2: Vec::new(),
                         red_3: Vec::new(),

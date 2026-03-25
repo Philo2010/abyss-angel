@@ -176,8 +176,9 @@ async fn main() {
     use crate::snowgrave::check_system::check_bind::check_bind;
     println!("{:?}", check_bind(3, &db_conn).await);
 
-}
+} 
 */
+
 
 #[launch]
 async fn rocket() -> _ {

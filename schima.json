@@ -1494,7 +1494,9 @@
         "type": "object",
         "required": [
           "beach_on_bump",
+          "dead_avg",
           "defence_main_avg",
+          "dnf_avg",
           "fuel_pass_auto_avg",
           "fuel_pass_teleop_avg",
           "fuel_shoot_auto_avg",
@@ -1524,6 +1526,14 @@
             "format": "double"
           },
           "fuel_pass_auto_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "dead_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "dnf_avg": {
             "type": "number",
             "format": "double"
           },
@@ -1633,20 +1643,20 @@
             "format": "date-time"
           },
           "total_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "auto_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "teleop_score": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           },
           "defence": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "float"
           }
         }
       },
@@ -1867,7 +1877,9 @@
           "beach_on_bump",
           "climb_auto",
           "climb_end",
+          "dead",
           "defence_main",
+          "dnf",
           "fuel_pass_auto",
           "fuel_pass_teleop",
           "fuel_shoot_auto",
@@ -1905,6 +1917,12 @@
             "$ref": "#/components/schemas/ClimbState"
           },
           "beach_on_bump": {
+            "type": "boolean"
+          },
+          "dead": {
+            "type": "boolean"
+          },
+          "dnf": {
             "type": "boolean"
           }
         }
@@ -2450,6 +2468,14 @@
           "beach_on_bump": {
             "type": "boolean",
             "nullable": true
+          },
+          "dead": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "dnf": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       },
@@ -2500,7 +2526,9 @@
           "beach_on_bump",
           "climb_auto",
           "climb_end",
+          "dead",
           "defence_main",
+          "dnf",
           "fuel_pass_auto",
           "fuel_pass_teleop",
           "fuel_shoot_auto",
@@ -2533,6 +2561,12 @@
             "$ref": "#/components/schemas/ClimbState"
           },
           "beach_on_bump": {
+            "type": "boolean"
+          },
+          "dead": {
+            "type": "boolean"
+          },
+          "dnf": {
             "type": "boolean"
           }
         }
@@ -2686,6 +2720,7 @@
       "Team2": {
         "type": "object",
         "required": [
+          "done",
           "id",
           "is_ab_team",
           "scouters",
@@ -2712,6 +2747,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "done": {
+            "type": "boolean"
           }
         }
       },
@@ -2738,6 +2776,16 @@
           },
           "replacement": {
             "type": "string"
+          },
+          "game_ids": {
+            "description": "When provided, only replace assignments for these game IDs (selective sub). When None or empty, replace ALL pending assignments (full sub).",
+            "default": null,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
           }
         }
       },
@@ -2869,6 +2917,10 @@
           },
           "event_code": {
             "type": "string"
+          },
+          "user": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

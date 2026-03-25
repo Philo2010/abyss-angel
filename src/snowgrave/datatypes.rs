@@ -147,6 +147,7 @@ pub struct Game {
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct GamePart {
+    pub id: i32,
     pub event_code: String,
     pub match_id: i32,
     pub set: i32,
