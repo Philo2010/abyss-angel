@@ -23,7 +23,7 @@ pub struct Model {
     //is the gear if is_swerve is true, is drivebase if false
     pub gear_or_drivebase: String,
     #[sea_orm(column_type = "JsonBinary")]
-    pub auto_paths: Vec<Json>,
+    pub auto_paths: Json,
     pub years_of_driver_experience: i32,
     pub what_they_are_looking_from_the_tournament: String,
     pub do_they_have_a_scouter: bool,
@@ -37,7 +37,7 @@ pub struct Model {
 }
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema)]
-enum Drivebase {
+pub enum Drivebase {
     Swerve(String), //gear
     Other(String) //name of other drivebase
 }
@@ -103,7 +103,7 @@ impl PitScoutStandard for Functions {
                     id: NotSet,
                     is_swerve: Set(is_swerve),
                     gear_or_drivebase: Set(gear_or_drivebase),
-                    auto_paths: Set(data.auto_paths.into_iter().map(|p| serde_json::to_value(p).unwrap()).collect()),
+                    auto_paths: Set(serde_json::to_value(data.auto_paths).unwrap()),
                     years_of_driver_experience: Set(data.years_of_driver_experience),
                     what_they_are_looking_from_the_tournament: Set(data.what_they_are_looking_from_the_tournament),
                     do_they_have_a_scouter: Set(data.do_they_have_a_scouter),
@@ -171,7 +171,7 @@ impl PitScoutStandard for Functions {
             id:Set(id),
             is_swerve: is_swerve,
             gear_or_drivebase: gear_or_drivebase,
-            auto_paths: data_u.auto_paths.map(|paths| Set(paths.into_iter().map(|p| serde_json::to_value(p).unwrap()).collect())).unwrap_or(NotSet),
+            auto_paths: data_u.auto_paths.map(|paths| Set(serde_json::to_value(paths).unwrap())).unwrap_or(NotSet),
             years_of_driver_experience: data_u.years_of_driver_experience.map(Set).unwrap_or(NotSet),
             what_they_are_looking_from_the_tournament: data_u.what_they_are_looking_from_the_tournament.map(Set).unwrap_or(NotSet),
             do_they_have_a_scouter: data_u.do_they_have_a_scouter.map(Set).unwrap_or(NotSet),
