@@ -8,7 +8,7 @@ use sea_orm::{DbErr};
 use serde::Serialize;
 use uuid::Uuid;
 use crate::auth::get_by_user::AuthGetUuidError;
-use crate::entity::genertic_header;
+use crate::entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game};
 use crate::{SETTINGS, auth, backenddb};
 use crate::define_games;
 use itertools::Itertools;
@@ -19,11 +19,42 @@ use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 
 async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
     let mut username_str: Vec<String> = Vec::with_capacity(model.user.len());
-    
+
     for user in &model.user {
         let user_str =  auth::get_by_user::get_by_uuid(user, db).await.unwrap();
         username_str.push(user_str);
     }
+
+    // Fetch the MVP comment for this game from mvp_data
+    let mvp_comment: Option<String> = async {
+        let game = upcoming_game::Entity::find()
+            .filter(upcoming_game::Column::MatchId.eq(model.match_id))
+            .filter(upcoming_game::Column::Set.eq(model.set))
+            .filter(upcoming_game::Column::EventCode.eq(&model.event_code))
+            .filter(upcoming_game::Column::TournamentLevel.eq(model.tournament_level))
+            .one(db)
+            .await
+            .ok()??;
+
+        let mvp_scouter_id = match model.station {
+            Stations::Red1 | Stations::Red2 | Stations::Red3 => game.mvp_id_red?,
+            Stations::Blue1 | Stations::Blue2 | Stations::Blue3 => game.mvp_id_blue?,
+        };
+
+        let scouter = mvp_scouters::Entity::find_by_id(mvp_scouter_id)
+            .one(db)
+            .await
+            .ok()??;
+
+        let data_id = scouter.data?;
+
+        let data = mvp_data::Entity::find_by_id(data_id)
+            .one(db)
+            .await
+            .ok()??;
+
+        Some(data.comment)
+    }.await;
 
     Ok(HeaderFull {
         id: model.id,
@@ -42,6 +73,7 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         auto_score: model.auto_score,
         comment: model.comment,
         teleop_score: model.teleop_score,
+        mvp_comment,
     })
 }
 
@@ -394,6 +426,7 @@ pub struct HeaderFull {
     pub created_at: DateTime<Local>,
     pub is_mvp: bool,
     pub defence: f32,
+    pub mvp_comment: Option<String>,
 }
 
 #[derive()]

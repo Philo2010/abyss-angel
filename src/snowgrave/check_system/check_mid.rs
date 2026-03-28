@@ -8,9 +8,10 @@ pub struct Range {
 
 impl Range {
     pub fn new(main_point: f32) -> Range {
+        let tolerance = main_point * super::SCORE_RANGE_TOLERANCE;
         Range {
-            start: main_point - super::SCORE_RANGE_TOLERANCE,
-            end: main_point + super::SCORE_RANGE_TOLERANCE,
+            start: main_point - tolerance,
+            end: main_point + tolerance,
         }
     }
 

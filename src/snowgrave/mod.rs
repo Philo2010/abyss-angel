@@ -18,3 +18,4 @@ pub mod get_snowgrave_leader_board;
 pub mod find_point_distance;
 pub mod db_models_to_snow;
 pub mod check_system;
+pub mod delete_event;

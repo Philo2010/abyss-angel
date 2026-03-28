@@ -269,6 +269,7 @@ async fn rocket() -> _ {
     frontend::snowgrave::get_all_scouts::get_all_snowgrave,
     setting::setevent::set_event,
     setting::setevent::get_event,
-    frontend::pit::assign_pit::assign_pit
+    frontend::pit::assign_pit::assign_pit,
+    frontend::snowgrave::delete_event::delete_event_route
     ])
 }
