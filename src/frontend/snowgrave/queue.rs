@@ -77,16 +77,6 @@ pub async fn queue_playoff(data: Json<QueueInput>, client: &State<Client>, db: &
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
 
-    let existing = upcoming_game::Entity::find()
-        .filter(upcoming_game::Column::EventCode.eq(&*data.event))
-        .one(db.inner())
-        .await;
-    match existing {
-        Ok(Some(_)) => return Json(ApiResult::Error(format!("Event '{}' is already queued", data.event))),
-        Err(e) => return Json(ApiResult::Error(format!("Database error: {e}"))),
-        Ok(None) => {}
-    }
-
     let tba_games = match snowgrave::blue::pull_from_blue(client, &data.event).await {
         Ok(a) => a,
         Err(a) => {
