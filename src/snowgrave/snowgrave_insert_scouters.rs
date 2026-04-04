@@ -135,36 +135,59 @@ pub async fn insert_scouters(
             .await?
             .ok_or(DbErr::Custom("Could not find game".to_string()))?;
 
-        if let Some(old_red_id) = game.mvp_id_red {
+        let new_red_uuid = *red.scouter.as_ref();
+        let new_blue_uuid = *blue.scouter.as_ref();
+
+        let red_needs_update = if let Some(old_red_id) = game.mvp_id_red {
             let old_red = mvp_scouters::Entity::find_by_id(old_red_id).one(&txn).await?;
             if let Some(ref m) = old_red {
-                if m.data.is_some() {
-                    return Err(DbErr::Custom("Cannot reassign MVP — red MVP has already submitted data".to_string()));
+                if m.scouter != new_red_uuid {
+                    if m.data.is_some() {
+                        return Err(DbErr::Custom("Cannot reassign MVP — red MVP has already submitted data".to_string()));
+                    }
+                    mvp_scouters::Entity::delete_by_id(old_red_id).exec(&txn).await?;
+                    true
+                } else {
+                    false // same scouter, no change needed
                 }
+            } else {
+                true
             }
-            mvp_scouters::Entity::delete_by_id(old_red_id)
-                .exec(&txn)
-                .await?;
-        }
-        if let Some(old_blue_id) = game.mvp_id_blue {
+        } else {
+            true
+        };
+
+        let blue_needs_update = if let Some(old_blue_id) = game.mvp_id_blue {
             let old_blue = mvp_scouters::Entity::find_by_id(old_blue_id).one(&txn).await?;
             if let Some(ref m) = old_blue {
-                if m.data.is_some() {
-                    return Err(DbErr::Custom("Cannot reassign MVP — blue MVP has already submitted data".to_string()));
+                if m.scouter != new_blue_uuid {
+                    if m.data.is_some() {
+                        return Err(DbErr::Custom("Cannot reassign MVP — blue MVP has already submitted data".to_string()));
+                    }
+                    mvp_scouters::Entity::delete_by_id(old_blue_id).exec(&txn).await?;
+                    true
+                } else {
+                    false // same scouter, no change needed
                 }
+            } else {
+                true
             }
-            mvp_scouters::Entity::delete_by_id(old_blue_id)
-                .exec(&txn)
-                .await?;
+        } else {
+            true
+        };
+
+        if red_needs_update || blue_needs_update {
+            let mut game_active: upcoming_game::ActiveModel = game.into();
+            if red_needs_update {
+                let new_red = red.insert(&txn).await?;
+                game_active.mvp_id_red = Set(Some(new_red.id));
+            }
+            if blue_needs_update {
+                let new_blue = blue.insert(&txn).await?;
+                game_active.mvp_id_blue = Set(Some(new_blue.id));
+            }
+            game_active.update(&txn).await?;
         }
-
-        let red = red.insert(&txn).await?;
-        let blue = blue.insert(&txn).await?;
-
-        let mut game_active: upcoming_game::ActiveModel = game.into();
-        game_active.mvp_id_red = Set(Some(red.id));
-        game_active.mvp_id_blue = Set(Some(blue.id));
-        game_active.update(&txn).await?;
     }
 
     txn.commit().await?;
