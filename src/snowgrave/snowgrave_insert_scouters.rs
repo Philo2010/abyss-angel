@@ -59,7 +59,7 @@ pub async fn insert_scouters(
                 .all(&txn)
                 .await?;
 
-            let has_submitted = existing_scouts.iter().any(|s| s.game_midway.is_some());
+            let has_submitted = existing_scouts.iter().any(|s| s.done && !s.is_redo);
             if has_submitted {
                 return Err(DbErr::Custom(format!(
                     "Cannot reassign scouters for team {} — scouts have already submitted data for this game",
