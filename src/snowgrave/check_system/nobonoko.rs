@@ -5,9 +5,9 @@
 //! /use of time constrates h ave not made it like that, so change it in the FUTURE!!!!
 //!TODO, make this a major type
 
-use sea_orm::{DatabaseConnection, DbErr};
+use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, prelude::Expr};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::{entrys::rebuilt::Insert, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, snowgrave::{datatypes::{Game, ScoutGame, ScoutMatch, ScoutMatchData, Team}, db_models_to_snow}};
+use crate::{auth::get_by_user::get_by_uuid, backenddb::{entrys::rebuilt::Insert, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, sea_orm_active_enums::Stations}, snowgrave::{check_system::db_work::publish, datatypes::{Game, ScoutMatch, Team}, db_models_to_snow}};
 pub enum Alliance {
     Red,
     Blue
@@ -62,17 +62,17 @@ async fn check_data_present(part_model: Game, alliance: Alliance, db: &DatabaseC
 
 
 pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnection) -> Result<(), DbErr> {
+    let stations = match &alliance {
+        Alliance::Red => vec![Stations::Red1, Stations::Red2, Stations::Red3],
+        Alliance::Blue => vec![Stations::Blue1, Stations::Blue2, Stations::Blue3],
+    };
+
     //first we need to grab the parisal data
     let part_model = db_models_to_snow::get_game(game_id, db).await?;
     let (scouts, team) = check_data_present(part_model, alliance, db).await?;
     //no need for warnings or anything else just insert them baby!
     let insert_scouts: Vec<GamesInserts> = scouts.into_iter().map(|x| {
-        let is_mvp;
-        if x.team == team {
-            is_mvp = true;
-        } else {
-            is_mvp = false;
-        }
+        let is_mvp = x.team == team;
         let game_data = match &x.data.as_ref().unwrap().game {
             crate::backenddb::game::GamesFullSpecific::RebuiltGame(x) => {
                 GamesInsertsSpecific::RebuiltGame(Insert {
@@ -100,13 +100,22 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 event_code: x.data.as_ref().unwrap().event_code.clone(),
                 tournament_level: x.data.as_ref().unwrap().tournament_level,
                 station: x.data.as_ref().unwrap().station,
-                is_mvp: is_mvp,
+                is_mvp,
                 comment: x.data.unwrap().comment,
             },
             game: game_data,
         }
     }).collect();
 
+    publish(insert_scouts, db).await?;
+
+    game_scouts::Entity::update_many()
+        .col_expr(game_scouts::Column::Done, Expr::value(true))
+        .col_expr(game_scouts::Column::IsRedo, Expr::value(false))
+        .filter(game_scouts::Column::GameId.eq(game_id))
+        .filter(game_scouts::Column::Station.is_in(stations))
+        .exec(db)
+        .await?;
 
     Ok(())
 }
