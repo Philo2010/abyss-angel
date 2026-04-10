@@ -7,7 +7,7 @@
 use sea_orm::{DatabaseConnection, DbErr};
 
 use crate::{auth::get_by_user::get_by_uuid, backenddb::game::{GamesInserts, HeaderInsert}, snowgrave::{datatypes::{Game, ScoutGame, ScoutMatch, Team}, db_models_to_snow}};
-enum Alliance {
+pub enum Alliance {
     Red,
     Blue
 }

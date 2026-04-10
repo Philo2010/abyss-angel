@@ -9,3 +9,5 @@ pub mod insert_scout;
 pub mod get_all_scouts;
 pub mod get_teams_from_game;
 pub mod delete_event;
+pub mod manual_add_match;
+pub mod bypass_check;
