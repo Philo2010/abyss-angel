@@ -1,12 +1,13 @@
 //this file defineds a endpoint to allow for a force submit despite Max's orders
 //I have done this because no, this is really useful, why in hell would i ever get rid of this
 
-
+//!! This is a rebuilt spetfic moduale, it should not be however and should be genetric but beca
+//! /use of time constrates h ave not made it like that, so change it in the FUTURE!!!!
 //!TODO, make this a major type
 
 use sea_orm::{DatabaseConnection, DbErr};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::game::{GamesInserts, HeaderInsert}, snowgrave::{datatypes::{Game, ScoutGame, ScoutMatch, Team}, db_models_to_snow}};
+use crate::{auth::get_by_user::get_by_uuid, backenddb::{entrys::rebuilt::Insert, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, snowgrave::{datatypes::{Game, ScoutGame, ScoutMatch, ScoutMatchData, Team}, db_models_to_snow}};
 pub enum Alliance {
     Red,
     Blue
@@ -32,9 +33,9 @@ async fn check_data_present(part_model: Game, alliance: Alliance, db: &DatabaseC
     match alliance {
         Alliance::Red => {
             //now we check that at least, there is data, we dont care if its done however, since this is a overide of the checking system
-            let red_1 = get_scout(&part_model.scout.blue_1, "Red 1", db).await?;
-            let red_2 = get_scout(&part_model.scout.blue_1, "Red 2", db).await?;
-            let red_3 = get_scout(&part_model.scout.blue_1, "Red 3", db).await?;
+            let red_1 = get_scout(&part_model.scout.red_1, "Red 1", db).await?;
+            let red_2 = get_scout(&part_model.scout.red_2, "Red 2", db).await?;
+            let red_3 = get_scout(&part_model.scout.red_3, "Red 3", db).await?;
             let team;
             if let Some(mvp) = part_model.mvp.red.data {
                 team = mvp.mvp_team;
@@ -46,8 +47,8 @@ async fn check_data_present(part_model: Game, alliance: Alliance, db: &DatabaseC
         Alliance::Blue => {
             //TODO! Allow this to calulate averages, comp is in one day so can't really make this proper
             let blue_1 = get_scout(&part_model.scout.blue_1, "Blue 1", db).await?;
-            let blue_2 = get_scout(&part_model.scout.blue_1, "Blue 2", db).await?;
-            let blue_3 = get_scout(&part_model.scout.blue_1, "Blue 3", db).await?;
+            let blue_2 = get_scout(&part_model.scout.blue_2, "Blue 2", db).await?;
+            let blue_3 = get_scout(&part_model.scout.blue_3, "Blue 3", db).await?;
             let team;
             if let Some(mvp) = part_model.mvp.blue.data {
                 team = mvp.mvp_team;
@@ -72,6 +73,22 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
         } else {
             is_mvp = false;
         }
+        let game_data = match &x.data.as_ref().unwrap().game {
+            crate::backenddb::game::GamesFullSpecific::RebuiltGame(x) => {
+                GamesInsertsSpecific::RebuiltGame(Insert {
+                    defence_main: x.defence_main,
+                    fuel_shoot_teleop: x.fuel_shoot_teleop,
+                    fuel_pass_teleop: x.fuel_pass_teleop,
+                    fuel_shoot_auto: x.fuel_shoot_auto,
+                    fuel_pass_auto: x.fuel_pass_auto,
+                    climb_end: x.climb_end,
+                    climb_auto: x.climb_auto,
+                    beach_on_bump: x.beach_on_bump,
+                    dead: x.dead,
+                    dnf: x.dnf,
+                })
+            }
+        };
         GamesInserts {
             header: HeaderInsert {
                 user: vec![x.name],
@@ -86,7 +103,7 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 is_mvp: is_mvp,
                 comment: x.data.unwrap().comment,
             },
-            game: todo!(),
+            game: game_data,
         }
     }).collect();
 
