@@ -7,6 +7,7 @@ pub mod check_if_filled;
 pub mod check_mid;
 pub mod precheck;
 pub mod db_work;
+pub mod nobonoko;
 
 // ── Check system configuration ────────────────────────────────────────────────
 //

@@ -65,7 +65,7 @@ pub struct MvpPairFull {
 
 //Scout type
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct ScoutMatch {
     pub id: i32, //of game scout's
     pub name: Uuid,

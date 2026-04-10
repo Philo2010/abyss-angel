@@ -3,7 +3,7 @@ use schemars::JsonSchema;
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::get_by_user::get_by_uuid, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::{Stations, TournamentLevels}, upcoming_game, upcoming_team}, frontend::ApiResult};
+use crate::{auth::get_by_user::get_by_uuid, entity::{game_scouts, mvp_scouters, sea_orm_active_enums::{Stations, TournamentLevels}, upcoming_game, upcoming_team}, frontend::ApiResult, setting::setevent::{get_event, get_event_inner}};
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct Game {
@@ -32,8 +32,16 @@ pub struct Team {
 #[rocket_okapi::openapi]
 #[get("/api/snowgrave/all")]
 pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult<Vec<Game>>> {
+    let curr_event = match get_event_inner(db).await {
+        Ok(a) => a,
+        Err(_) => {
+            return Json(ApiResult::Error("Failed to get current event! Have you forgoten to set it?".to_string()));
+        },
+    };
 
-    let games = match upcoming_game::Entity::find().all(db.inner()).await {
+    let games = match upcoming_game::Entity::find()
+        .filter(upcoming_game::Column::EventCode.eq(curr_event))
+    .all(db.inner()).await {
         Ok(a) => a,
         Err(a) => {
             return Json(ApiResult::Error(format!("Db Error: {a}")));
