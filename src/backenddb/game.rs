@@ -8,7 +8,7 @@ use sea_orm::{DbErr};
 use serde::Serialize;
 use uuid::Uuid;
 use crate::auth::get_by_user::AuthGetUuidError;
-use crate::entity::{genertic_header, mvp_data, mvp_scouters, upcoming_game};
+use crate::entity::{genertic_header, mvp_data, mvp_scouters, scout_game_midway_insert, upcoming_game};
 use crate::{SETTINGS, auth, backenddb};
 use crate::define_games;
 use itertools::Itertools;
@@ -74,6 +74,33 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         comment: model.comment,
         teleop_score: model.teleop_score,
         mvp_comment,
+    })
+}
+
+async fn to_full_match_midway(model: scout_game_midway_insert::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
+    let username = match auth::get_by_user::get_by_uuid(&model.user, db).await {
+        Ok(u) => u,
+        Err(_) => model.user.to_string(),
+    };
+
+    Ok(HeaderFull {
+        id: model.id,
+        user: vec![username],
+        team: model.team,
+        is_ab_team: model.is_ab_team,
+        match_id: model.match_id,
+        set: model.set,
+        total_score: model.total_score as f32,
+        auto_score: model.auto_score as f32,
+        teleop_score: model.teleop_score as f32,
+        event_code: model.event_code,
+        tournament_level: model.tournament_level,
+        station: model.station,
+        comment: model.comment,
+        created_at: model.created_at,
+        is_mvp: false,
+        defence: model.defence as f32,
+        mvp_comment: None,
     })
 }
 
@@ -232,9 +259,71 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
 
     let games = mode.get_full_matches(ids, db).await?;
 
-    let merged: Vec<GamesFull> = header.into_iter().zip(games.into_iter())
-        .map(|x | GamesFull {header: x.0, game: x.1} ).collect();
+    let mut merged: Vec<GamesFull> = header.into_iter().zip(games.into_iter())
+        .map(|x| GamesFull {header: x.0, game: x.1}).collect();
 
+    if param.include_midway == Some(true) {
+        let mut mid_query = scout_game_midway_insert::Entity::find()
+            .filter(scout_game_midway_insert::Column::GameTypeId.eq(param.year));
+
+        if let Some(user) = &param.user {
+            let uuid = match crate::auth::get_by_user::get_by_username(user, db).await {
+                Ok(u) => u,
+                Err(AuthGetUuidError::UserIsNotHere) => return Err(DbErr::Custom("User was not found".to_string())),
+                Err(AuthGetUuidError::DatabaseError(e)) => return Err(e),
+            };
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::User.eq(uuid));
+        }
+        if let Some(team) = &param.team {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::Team.eq(*team));
+        }
+        if let Some(is_ab_team) = &param.is_ab_team {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::IsAbTeam.eq(*is_ab_team));
+        }
+        if let Some(match_id) = &param.match_id {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::MatchId.eq(*match_id));
+        }
+        if let Some(set) = &param.set {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::Set.eq(*set));
+        }
+        if let Some(event_code) = &param.event_code {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::EventCode.eq(event_code));
+        }
+        if let Some(tournament_level) = &param.tournament_level {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::TournamentLevel.eq(*tournament_level));
+        }
+        if let Some(station) = &param.station {
+            mid_query = mid_query.filter(scout_game_midway_insert::Column::Station.eq(*station));
+        }
+
+        // Only include midway records that haven't been finalized yet
+        let all_mid = mid_query.all(db).await?;
+        let mid_res: Vec<_> = all_mid
+            .into_iter()
+            .filter(|m| !merged.iter().any(|g|
+                g.header.team == m.team &&
+                g.header.is_ab_team == m.is_ab_team &&
+                g.header.match_id == m.match_id &&
+                g.header.set == m.set &&
+                g.header.event_code == m.event_code &&
+                g.header.tournament_level == m.tournament_level &&
+                g.header.station == m.station
+            ))
+            .collect();
+
+        let mid_game_ids: Vec<i32> = mid_res.iter().map(|m| m.game_id).collect();
+        let mid_games = mode.get_full_matches(mid_game_ids, db).await?;
+
+        let mut mid_headers: Vec<HeaderFull> = Vec::with_capacity(mid_res.len());
+        for mid in mid_res {
+            mid_headers.push(to_full_match_midway(mid, db).await?);
+        }
+
+        let mid_merged: Vec<GamesFull> = mid_headers.into_iter().zip(mid_games.into_iter())
+            .map(|(h, g)| GamesFull { header: h, game: g })
+            .collect();
+        merged.extend(mid_merged);
+    }
 
     Ok(merged)
 }
@@ -249,6 +338,41 @@ struct NormalGenDataAvg {
     pub teleop_score: f64,
     pub defence_score: f64,
     pub mvp_percent: f64,
+    pub record_count: i64,
+}
+
+#[derive(FromQueryResult)]
+struct MidDataAvg {
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub total_score: f64,
+    pub auto_score: f64,
+    pub teleop_score: f64,
+    pub defence_score: f64,
+    pub record_count: i64,
+}
+
+#[derive(FromQueryResult)]
+struct FinalizedMatchKey {
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub match_id: i32,
+    pub set: i32,
+    pub event_code: String,
+    pub tournament_level: TournamentLevels,
+    pub station: Stations,
+}
+
+#[derive(FromQueryResult)]
+struct MidSpcDataAvg {
+    pub team: i32,
+    pub is_ab_team: bool,
+    pub game_id: i32,
+    pub match_id: i32,
+    pub set: i32,
+    pub event_code: String,
+    pub tournament_level: TournamentLevels,
+    pub station: Stations,
 }
 #[derive(FromQueryResult)]
 pub struct NormalSpcDataAvg {
@@ -271,7 +395,7 @@ pub struct Scores_E {
     pub mvp_percent: f64,
 }
 
-async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
+async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_midway: bool, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let select_avg_score: Vec<NormalGenDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
@@ -283,12 +407,13 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .column_as(Expr::col(genertic_header::Column::IsMvp).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")),"mvp_percent")
         .column_as(genertic_header::Column::Team, "team")
         .column_as(genertic_header::Column::IsAbTeam, "is_ab_team")
+        .column_as(Expr::col(genertic_header::Column::Id).count().cast_as(Alias::new("BIGINT")), "record_count")
         .group_by(genertic_header::Column::Team)
         .group_by(genertic_header::Column::IsAbTeam)
         .into_model::<NormalGenDataAvg>()
         .all(db).await?;
-    
-    
+
+
     let ids: Vec<NormalSpcDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
@@ -298,23 +423,146 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
         .column(genertic_header::Column::IsAbTeam)
         .into_model::<NormalSpcDataAvg>().all(db).await?;
 
-    let data: Vec<TeamGameUnMergedData> = ids.into_iter()
+    let mut data: HashMap<(i32, bool), Vec<i32>> = ids.into_iter()
         .into_group_map_by(|record| (record.team, record.is_ab_team))
         .into_iter()
-        .map(|((team, is_ab_team), records)| {
-            TeamGameUnMergedData { team, is_ab_team, game_ids: records.into_iter().map(|r| r.game_id).collect() }
-        })
+        .map(|(key, records)| (key, records.into_iter().map(|r| r.game_id).collect()))
         .collect();
 
-    let avg_map: HashMap<(i32, bool), Scores_E> = select_avg_score.into_iter().map(|x|
-        ((x.team, x.is_ab_team), Scores_E { total_score: x.total_score,
+    let mut gen_count_map: HashMap<(i32, bool), i64> = select_avg_score.iter()
+        .map(|x| ((x.team, x.is_ab_team), x.record_count))
+        .collect();
+
+    let mut avg_map: HashMap<(i32, bool), Scores_E> = select_avg_score.into_iter().map(|x|
+        ((x.team, x.is_ab_team), Scores_E {
+            total_score: x.total_score,
             auto_score: x.auto_score,
             teleop_score: x.teleop_score,
             defence: x.defence_score,
             mvp_percent: x.mvp_percent,
         })).collect();
 
-    let a: Vec<AvgReturn> = model.average_team(data, db).await?;
+    if include_midway {
+        // Fetch finalized (team, match, set, event, level, station) keys to avoid double-counting
+        let finalized_keys: Vec<FinalizedMatchKey> = genertic_header::Entity::find()
+            .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
+            .filter(genertic_header::Column::EventCode.eq(event_code))
+            .select_only()
+            .column(genertic_header::Column::Team)
+            .column(genertic_header::Column::IsAbTeam)
+            .column(genertic_header::Column::MatchId)
+            .column(genertic_header::Column::Set)
+            .column(genertic_header::Column::EventCode)
+            .column(genertic_header::Column::TournamentLevel)
+            .column(genertic_header::Column::Station)
+            .into_model::<FinalizedMatchKey>()
+            .all(db).await?;
+
+        // Fetch per-record midway data with match identity fields for deduplication
+        let all_mid_ids: Vec<MidSpcDataAvg> = scout_game_midway_insert::Entity::find()
+            .filter(scout_game_midway_insert::Column::GameTypeId.eq(model.get_year_id()))
+            .filter(scout_game_midway_insert::Column::EventCode.eq(event_code))
+            .select_only()
+            .column(scout_game_midway_insert::Column::GameId)
+            .column(scout_game_midway_insert::Column::Team)
+            .column(scout_game_midway_insert::Column::IsAbTeam)
+            .column(scout_game_midway_insert::Column::MatchId)
+            .column(scout_game_midway_insert::Column::Set)
+            .column(scout_game_midway_insert::Column::EventCode)
+            .column(scout_game_midway_insert::Column::TournamentLevel)
+            .column(scout_game_midway_insert::Column::Station)
+            .into_model::<MidSpcDataAvg>().all(db).await?;
+
+        // Only include midway records with no finalized counterpart
+        let mid_ids: Vec<MidSpcDataAvg> = all_mid_ids
+            .into_iter()
+            .filter(|m| !finalized_keys.iter().any(|f|
+                f.team == m.team &&
+                f.is_ab_team == m.is_ab_team &&
+                f.match_id == m.match_id &&
+                f.set == m.set &&
+                f.event_code == m.event_code &&
+                f.tournament_level == m.tournament_level &&
+                f.station == m.station
+            ))
+            .collect();
+
+        // Build per-team averages from only the unfinalized midway records.
+        // mid_header stores scores directly so we can aggregate them in-process.
+        let unfinalized_game_ids: std::collections::HashSet<i32> = mid_ids.iter().map(|m| m.game_id).collect();
+        let mid_avg_score: Vec<MidDataAvg> = if unfinalized_game_ids.is_empty() {
+            vec![]
+        } else {
+            let mid_raw: Vec<scout_game_midway_insert::Model> = scout_game_midway_insert::Entity::find()
+                .filter(scout_game_midway_insert::Column::GameTypeId.eq(model.get_year_id()))
+                .filter(scout_game_midway_insert::Column::EventCode.eq(event_code))
+                .all(db).await?;
+
+            let mut team_sums: HashMap<(i32, bool), (f64, f64, f64, f64, i64)> = HashMap::new();
+            for raw in mid_raw {
+                if unfinalized_game_ids.contains(&raw.game_id) {
+                    let entry = team_sums.entry((raw.team, raw.is_ab_team)).or_insert((0.0, 0.0, 0.0, 0.0, 0));
+                    entry.0 += raw.total_score as f64;
+                    entry.1 += raw.auto_score as f64;
+                    entry.2 += raw.teleop_score as f64;
+                    entry.3 += raw.defence as f64;
+                    entry.4 += 1;
+                }
+            }
+            team_sums.into_iter().map(|((team, is_ab_team), (ts, aut, tel, def, cnt))| MidDataAvg {
+                team,
+                is_ab_team,
+                total_score: ts / cnt as f64,
+                auto_score: aut / cnt as f64,
+                teleop_score: tel / cnt as f64,
+                defence_score: def / cnt as f64,
+                record_count: cnt,
+            }).collect()
+        };
+
+        // Merge game_ids from unfinalized midway records into data map
+        for mid_id in mid_ids {
+            data.entry((mid_id.team, mid_id.is_ab_team))
+                .or_insert_with(Vec::new)
+                .push(mid_id.game_id);
+        }
+
+        // Blend midway header-level averages with existing avg_map
+        for mid in mid_avg_score {
+            let key = (mid.team, mid.is_ab_team);
+            let mid_count = mid.record_count as f64;
+            match avg_map.get(&key) {
+                Some(existing) => {
+                    let gen_count = *gen_count_map.get(&key).unwrap_or(&0) as f64;
+                    let total = gen_count + mid_count;
+                    let blended = Scores_E {
+                        total_score: (existing.total_score * gen_count + mid.total_score * mid_count) / total,
+                        auto_score: (existing.auto_score * gen_count + mid.auto_score * mid_count) / total,
+                        teleop_score: (existing.teleop_score * gen_count + mid.teleop_score * mid_count) / total,
+                        defence: (existing.defence * gen_count + mid.defence_score * mid_count) / total,
+                        mvp_percent: existing.mvp_percent,
+                    };
+                    avg_map.insert(key, blended);
+                },
+                None => {
+                    // Team only has midway data
+                    avg_map.insert(key, Scores_E {
+                        total_score: mid.total_score,
+                        auto_score: mid.auto_score,
+                        teleop_score: mid.teleop_score,
+                        defence: mid.defence_score,
+                        mvp_percent: 0.0,
+                    });
+                }
+            }
+        }
+    }
+
+    let data_vec: Vec<TeamGameUnMergedData> = data.into_iter()
+        .map(|((team, is_ab_team), game_ids)| TeamGameUnMergedData { team, is_ab_team, game_ids })
+        .collect();
+
+    let a: Vec<AvgReturn> = model.average_team(data_vec, db).await?;
     let mut done: Vec<TeamAvg> = Vec::with_capacity(a.len());
     for team_avg_data in a {
         let avg = avg_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
@@ -330,7 +578,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, db: &Dat
     }
 
 
-    
+
     Ok(done)
 }
 #[allow(dead_code)]
@@ -406,6 +654,7 @@ pub struct SearchParam {
     pub is_mvp: Option<bool>,
     pub station: Option<Stations>,
     pub year: i32,
+    pub include_midway: Option<bool>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -530,10 +779,10 @@ pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result
     prim_search_game(game, param, db).await
 }
 
-pub async fn average_game(event_code: &String, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
+pub async fn average_game(event_code: &String, include_midway: bool, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
-    prim_average_game(game, event_code, db).await
+    prim_average_game(game, event_code, include_midway, db).await
 }
 
 pub async fn frontrunner(games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr> {

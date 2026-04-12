@@ -5,12 +5,12 @@ use sea_orm::DatabaseConnection;
 use crate::{auth, backenddb::game::{TeamAvg, average_game}, frontend::ApiResult};
 
 #[rocket_okapi::openapi]
-#[get("/api/averages/<event>")]
-pub async fn averages(event: &str, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<Vec<TeamAvg>>> {
+#[get("/api/averages/<event>?<include_midway>")]
+pub async fn averages(event: &str, include_midway: Option<bool>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<Vec<TeamAvg>>> {
     if !auth::check::check(cookies, db).await {
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
-    let res = match average_game(&event.to_string(), db).await {
+    let res = match average_game(&event.to_string(), include_midway.unwrap_or(false), db).await {
         Ok(a) => a,
         Err(a) => {
             return Json(ApiResult::Error(a.to_string()));

@@ -25,12 +25,13 @@ pub struct SearchParamData {
     pub event_code: Option<String>,
     pub tournament_level: Option<TournamentLevels>,
     pub station: Option<Stations>,
-    pub is_mvp: Option<bool>
+    pub is_mvp: Option<bool>,
+    pub include_midway: Option<bool>,
 }
 
 impl From<SearchParamData> for SearchParam {
     fn from(val: SearchParamData) -> Self {
-        SearchParam { 
+        SearchParam {
             user: val.user,
             team: val.team,
             is_ab_team: val.is_ab_team,
@@ -41,7 +42,8 @@ impl From<SearchParamData> for SearchParam {
             tournament_level: val.tournament_level,
             station: val.station,
             year: SETTINGS.year,
-            is_mvp: val.is_mvp
+            is_mvp: val.is_mvp,
+            include_midway: val.include_midway,
         }
     }
 }
