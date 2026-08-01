@@ -10,6 +10,7 @@ use serde::Deserialize;
 use crate::backenddb::game::{SearchParam, search_game};
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 use crate::frontend::ApiResult;
+use crate::snowgrave::datatypes::Team;
 use crate::{SETTINGS, auth};
 
 
@@ -17,8 +18,7 @@ use crate::{SETTINGS, auth};
 pub struct SearchParamData {
     //Id should be done via get
     pub user: Option<String>,
-    pub team: Option<i32>,
-    pub is_ab_team: Option<bool>,
+    pub teams: Option<Vec<Team>>,
     pub match_id: Option<i32>,
     pub set: Option<i32>,
     pub total_score: Option<i32>,
@@ -33,8 +33,7 @@ impl From<SearchParamData> for SearchParam {
     fn from(val: SearchParamData) -> Self {
         SearchParam {
             user: val.user,
-            team: val.team,
-            is_ab_team: val.is_ab_team,
+            teams: val.teams,
             match_id: val.match_id,
             set: val.set,
             total_score: val.total_score,

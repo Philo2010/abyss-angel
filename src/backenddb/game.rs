@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::prelude::Expr;
 use sea_orm::sea_query::Alias;
-use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
+use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
 use sea_orm::sqlx::types::chrono::{self, DateTime, Local};
 use sea_orm::{DbErr};
 use serde::Serialize;
@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
+use crate::snowgrave::datatypes::Team;
 
 async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
     let mut username_str: Vec<String> = Vec::with_capacity(model.user.len());
@@ -220,11 +221,18 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
             Expr::cust(format!("'{}' = ANY(\"user\")", a))
         );
     }
-    if let Some(team) = &param.team {
-        game_headers = game_headers.filter(genertic_header::Column::Team.eq(*team));
-    }
-    if let Some(is_ab_team) = &param.is_ab_team {
-        game_headers = game_headers.filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team));
+    if let Some(teams) = &param.teams {
+        if !teams.is_empty() {
+            let mut cond = Condition::any();
+            for t in teams {
+                cond = cond.add(
+                    Condition::all()
+                        .add(genertic_header::Column::Team.eq(t.number))
+                        .add(genertic_header::Column::IsAbTeam.eq(t.is_ab_team))
+                );
+            }
+            game_headers = game_headers.filter(cond);
+        }
     }
     if let Some(match_id) = &param.match_id {
         game_headers = game_headers.filter(genertic_header::Column::MatchId.eq(*match_id));
@@ -274,11 +282,18 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
             };
             mid_query = mid_query.filter(scout_game_midway_insert::Column::User.eq(uuid));
         }
-        if let Some(team) = &param.team {
-            mid_query = mid_query.filter(scout_game_midway_insert::Column::Team.eq(*team));
-        }
-        if let Some(is_ab_team) = &param.is_ab_team {
-            mid_query = mid_query.filter(scout_game_midway_insert::Column::IsAbTeam.eq(*is_ab_team));
+        if let Some(teams) = &param.teams {
+            if !teams.is_empty() {
+                let mut cond = Condition::any();
+                for t in teams {
+                    cond = cond.add(
+                        Condition::all()
+                            .add(scout_game_midway_insert::Column::Team.eq(t.number))
+                            .add(scout_game_midway_insert::Column::IsAbTeam.eq(t.is_ab_team))
+                    );
+                }
+                mid_query = mid_query.filter(cond);
+            }
         }
         if let Some(match_id) = &param.match_id {
             mid_query = mid_query.filter(scout_game_midway_insert::Column::MatchId.eq(*match_id));
@@ -644,8 +659,7 @@ pub struct GamesEdit {
 pub struct SearchParam {
     //Id should be done via get
     pub user: Option<String>,
-    pub team: Option<i32>,
-    pub is_ab_team: Option<bool>,
+    pub teams: Option<Vec<Team>>,
     pub match_id: Option<i32>,
     pub set: Option<i32>,
     pub total_score: Option<i32>,

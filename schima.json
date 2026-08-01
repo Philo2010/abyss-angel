@@ -196,6 +196,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "include_midway",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            }
           }
         ],
         "responses": {
@@ -783,6 +791,33 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BypassCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/snowgrave/delete_event": {
+      "delete": {
+        "operationId": "delete_event_route",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteEventInput"
               }
             }
           },
@@ -1989,13 +2024,11 @@
             "type": "string",
             "nullable": true
           },
-          "team": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "is_ab_team": {
-            "type": "boolean",
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Team"
+            },
             "nullable": true
           },
           "match_id": {
@@ -2034,6 +2067,10 @@
             "nullable": true
           },
           "is_mvp": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "include_midway": {
             "type": "boolean",
             "nullable": true
           }
@@ -3278,6 +3315,17 @@
           "red",
           "blue"
         ]
+      },
+      "DeleteEventInput": {
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "type": "string"
+          }
+        }
       }
     }
   }
