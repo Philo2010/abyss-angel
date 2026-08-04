@@ -86,6 +86,8 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                     beach_on_bump: x.beach_on_bump,
                     dead: x.dead,
                     dnf: x.dnf,
+                    auto_time: x.auto_time,
+                    dpdg: None,
                 })
             }
         };

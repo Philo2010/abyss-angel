@@ -1555,6 +1555,11 @@
             "type": "number",
             "format": "double"
           },
+          "dpdg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "game": {
             "$ref": "#/components/schemas/GamesAvgSpecific"
           }
@@ -1579,6 +1584,7 @@
       "Avg": {
         "type": "object",
         "required": [
+          "auto_time_avg",
           "beach_on_bump",
           "dead_avg",
           "defence_main_avg",
@@ -1622,6 +1628,15 @@
           "dnf_avg": {
             "type": "number",
             "format": "double"
+          },
+          "auto_time_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "dpdg_avg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "level_1_avg": {
             "type": "number",
@@ -1743,6 +1758,11 @@
           "defence": {
             "type": "number",
             "format": "float"
+          },
+          "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
           }
         }
       },
@@ -1922,6 +1942,11 @@
           "mvp_comment": {
             "type": "string",
             "nullable": true
+          },
+          "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
           }
         }
       },
@@ -1964,6 +1989,7 @@
       "Model2": {
         "type": "object",
         "required": [
+          "auto_time",
           "beach_on_bump",
           "climb_auto",
           "climb_end",
@@ -2014,6 +2040,15 @@
           },
           "dnf": {
             "type": "boolean"
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
           }
         }
       },
@@ -2573,6 +2608,16 @@
           "dnf": {
             "type": "boolean",
             "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
           }
         }
       },
@@ -2620,6 +2665,7 @@
       "Insert2": {
         "type": "object",
         "required": [
+          "auto_time",
           "beach_on_bump",
           "climb_auto",
           "climb_end",
@@ -2665,6 +2711,15 @@
           },
           "dnf": {
             "type": "boolean"
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
           }
         }
       },

@@ -64,6 +64,8 @@ pub struct Model {
     pub beach_on_bump: bool, //X 
     pub dead: bool,
     pub dnf: bool,
+    pub auto_time: f32,
+    pub dpdg: Option<f32>,
 }
 
 
@@ -163,6 +165,17 @@ impl YearOp for Functions {
     fn get_year_id(&self) -> i32 {
         YEAR
     }
+    fn main_defender(&self, game: &GamesInsertsSpecific) -> bool {
+        match game {
+            GamesInsertsSpecific::RebuiltGame(insert) => insert.defence_main,
+            _ => false,
+        }
+    }
+    fn set_dpdg(&self, game: &mut GamesInsertsSpecific, dpdg: Option<f32>) {
+        if let GamesInsertsSpecific::RebuiltGame(insert) = game {
+            insert.dpdg = dpdg;
+        }
+    }
     fn frontrunner_op(
         &self,
         games: &FrontRunnerGame,
@@ -246,6 +259,9 @@ impl YearOp for Functions {
         avg.fuel_pass_auto =
             average_field(&models, &mut crazy, |m| m.fuel_pass_auto, "fuel_pass_auto")?;
 
+        avg.auto_time =
+            average_field(&models, &mut crazy, |m| m.auto_time, "auto_time")?;
+
         let mut users: Vec<Uuid> = Vec::new(); 
         for user in games.games.iter().enumerate() {
             if !crazy.contains(&user.0) {
@@ -314,7 +330,9 @@ impl YearOp for Functions {
                     climb_auto: Set(insert.climb_auto),
                     beach_on_bump: Set(insert.beach_on_bump),
                     dead: Set(insert.dead),
-                    dnf: Set(insert.dnf)
+                    dnf: Set(insert.dnf),
+                    auto_time: Set(insert.auto_time),
+                    dpdg: Set(insert.dpdg),
                 };
                 let res = Entity::insert(active).exec(db).await?;
                 let auto_score = total_score_auto(insert);
@@ -352,6 +370,8 @@ impl YearOp for Functions {
                 .column_as(Expr::col(Column::BeachOnBump).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "beach_on_bump")
                 .column_as(Expr::col(Column::Dead).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dead_avg")
                 .column_as(Expr::col(Column::Dnf).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dnf_avg")
+                .column_as(Column::AutoTime.avg().cast_as(Alias::new("FLOAT8")), "auto_time_avg")
+                .column_as(Column::Dpdg.avg().cast_as(Alias::new("FLOAT8")), "dpdg_avg")
                 .expr_as(enum_pct!(
                     Column::ClimbEnd,
                     ClimbState::Stage1
@@ -446,6 +466,8 @@ impl YearOp for Functions {
                     beach_on_bump: edit.beach_on_bump.unwrap_or(game_model.beach_on_bump),
                     dead: edit.dead.unwrap_or(game_model.dead),
                     dnf: edit.dnf.unwrap_or(game_model.dnf),
+                    auto_time: edit.auto_time.unwrap_or(game_model.auto_time),
+                    dpdg: game_model.dpdg,
                 };
 
                 let returne = InsertReturn {
@@ -455,7 +477,7 @@ impl YearOp for Functions {
                     teleop_score: total_score_teleop(&total_score),
                     auto_score: total_score_auto(&total_score)
                 };
-                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: Set(total_score.beach_on_bump), dead: Set(total_score.dead), dnf: Set(total_score.dnf)};
+                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: Set(total_score.beach_on_bump), dead: Set(total_score.dead), dnf: Set(total_score.dnf), auto_time: Set(total_score.auto_time), dpdg: Set(total_score.dpdg)};
                 let game_data = game_data_active.update(db).await?;
                 Ok(returne)
             },
@@ -480,6 +502,8 @@ pub struct Insert {
     pub beach_on_bump: bool,
     pub dead: bool,
     pub dnf: bool,
+    pub auto_time: f32,
+    pub dpdg: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema, Deserialize)]
@@ -494,6 +518,8 @@ pub struct Edit {
     pub beach_on_bump: Option<bool>,
     pub dead: Option<bool>,
     pub dnf: Option<bool>,
+    pub auto_time: Option<f32>,
+    pub dpdg: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema, FromQueryResult)]
@@ -505,6 +531,8 @@ pub struct Avg {
     pub fuel_pass_auto_avg: f64,
     pub dead_avg: f64,
     pub dnf_avg: f64,
+    pub auto_time_avg: f64,
+    pub dpdg_avg: Option<f64>,
     pub level_1_avg: f64,
     pub level_2_avg: f64,
     pub level_3_avg: f64,

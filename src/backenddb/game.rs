@@ -75,6 +75,7 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         comment: model.comment,
         teleop_score: model.teleop_score,
         mvp_comment,
+        dpdg: None,
     })
 }
 
@@ -102,6 +103,7 @@ async fn to_full_match_midway(model: scout_game_midway_insert::Model, db: &Datab
         is_mvp: false,
         defence: model.defence as f32,
         mvp_comment: None,
+        dpdg: None,
     })
 }
 
@@ -143,6 +145,19 @@ pub trait YearOp: Send + Sync {
     fn frontrunner_op(&self, games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr>;
     fn get_scores(&self, match_data: &GamesInsertsSpecific) -> Scores;
     async fn edit(&self, game_id: i32, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
+    // DPDG is computed during the checking phase (when all opponent data is present)
+    // and stamped into the game-specific insert before it is persisted.
+    fn main_defender(&self, _game: &GamesInsertsSpecific) -> bool {
+        false
+    }
+    fn set_dpdg(&self, _game: &mut GamesInsertsSpecific, _dpdg: Option<f32>) {
+    }
+}
+
+/// Extract the stored DPDG value (if any) from a fully loaded game.
+pub fn dpdg_from_game(game: &GamesFullSpecific) -> Option<f32> {
+    let GamesFullSpecific::RebuiltGame(model) = game;
+    model.dpdg
 }
 
 
@@ -338,6 +353,10 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
             .map(|(h, g)| GamesFull { header: h, game: g })
             .collect();
         merged.extend(mid_merged);
+    }
+
+    for full in merged.iter_mut() {
+        full.header.dpdg = dpdg_from_game(&full.game);
     }
 
     Ok(merged)
@@ -581,6 +600,8 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
     let mut done: Vec<TeamAvg> = Vec::with_capacity(a.len());
     for team_avg_data in a {
         let avg = avg_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
+        let GamesAvgSpecific::RebuiltGame(avg_data) = &team_avg_data.data;
+        let dpdg = avg_data.dpdg_avg;
         done.push(TeamAvg { team: team_avg_data.team,
             is_ab_team: team_avg_data.is_ab_team,
             total_score: avg.total_score,
@@ -589,6 +610,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             defence_score: avg.defence,
             game: team_avg_data.data,
             mvp_percent: avg.mvp_percent,
+            dpdg,
         });
     }
 
@@ -624,8 +646,19 @@ pub struct GamesInserts {
 }
 
 
-#[derive(Serialize, JsonSchema, FromQueryResult, Deserialize)]
+#[derive(Serialize, JsonSchema, Deserialize, Debug)]
 pub struct GamesGraph {
+    pub time: DateTime<Local>,
+    pub total_score: f32,
+    pub auto_score: f32,
+    pub teleop_score: f32,
+    pub defence: f32,
+    pub dpdg: Option<f32>,
+}
+
+#[derive(FromQueryResult)]
+struct GamesGraphRow {
+    pub game_id: i32,
     pub time: DateTime<Local>,
     pub total_score: f32,
     pub auto_score: f32,
@@ -642,6 +675,7 @@ pub struct TeamAvg {
     pub teleop_score: f64,
     pub defence_score: f64,
     pub mvp_percent: f64,
+    pub dpdg: Option<f64>,
     pub game: GamesAvgSpecific
 }
 
@@ -690,6 +724,7 @@ pub struct HeaderFull {
     pub is_mvp: bool,
     pub defence: f32,
     pub mvp_comment: Option<String>,
+    pub dpdg: Option<f32>,
 }
 
 #[derive()]
@@ -773,16 +808,33 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
     if let Some(e) = event_code {
         command = command.filter(genertic_header::Column::EventCode.eq(e));
     }
-    let res: Vec<GamesGraph> = command
+    let rows: Vec<GamesGraphRow> = command
         .select_only()
+        .column(genertic_header::Column::GameId)
         .column_as(genertic_header::Column::CreatedAt, "time")
         .column_as(genertic_header::Column::TotalScore, "total_score")
         .column_as(genertic_header::Column::AutoScore, "auto_score")
         .column_as(genertic_header::Column::TeleopScore, "teleop_score")
         .column_as(genertic_header::Column::Defence, "defence")
-        .into_model::<GamesGraph>()
+        .into_model::<GamesGraphRow>()
         .all(db)
     .await?;
+
+    let game_ids: Vec<i32> = rows.iter().map(|r| r.game_id).collect();
+    let games = game.get_full_matches(game_ids, db).await?;
+    let dpdg_map: HashMap<i32, Option<f32>> = games.into_iter().map(|g| {
+        let GamesFullSpecific::RebuiltGame(model) = &g;
+        (model.id, model.dpdg)
+    }).collect();
+
+    let res: Vec<GamesGraph> = rows.into_iter().map(|r| GamesGraph {
+        time: r.time,
+        total_score: r.total_score,
+        auto_score: r.auto_score,
+        teleop_score: r.teleop_score,
+        defence: r.defence,
+        dpdg: dpdg_map.get(&r.game_id).copied().flatten(),
+    }).collect();
 
     Ok(res)
 }
