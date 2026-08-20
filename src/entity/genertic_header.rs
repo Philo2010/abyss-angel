@@ -26,6 +26,9 @@ pub struct Model {
     pub created_at: DateTimeLocal,
     pub game_type_id: i32,
     pub game_id: i32, //not snowgrave
+    /// Admin-entered prescout data, which is never mixed with real scouting
+    /// data. `NULL` means the row predates this flag, i.e. normal data.
+    pub is_prescout: Option<bool>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -27,6 +27,10 @@ pub struct SearchParamData {
     pub station: Option<Stations>,
     pub is_mvp: Option<bool>,
     pub include_midway: Option<bool>,
+    /// Return prescout rows *and only* prescout rows. Prescout data is never
+    /// mixed with real scouting data, so this replaces the normal results
+    /// rather than adding to them.
+    pub prescout_only: Option<bool>,
 }
 
 impl From<SearchParamData> for SearchParam {
@@ -43,6 +47,7 @@ impl From<SearchParamData> for SearchParam {
             year: SETTINGS.year,
             is_mvp: val.is_mvp,
             include_midway: val.include_midway,
+            prescout_only: val.prescout_only,
         }
     }
 }

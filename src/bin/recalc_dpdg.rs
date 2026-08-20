@@ -33,7 +33,7 @@ use std::collections::HashMap;
 use sea_orm::sea_query::Alias;
 use sea_orm::{ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, QueryFilter, QuerySelect};
 
-use crate::backenddb::game::{GamesFullSpecific, game_dispatch};
+use crate::backenddb::game::{DefenceTarget, GamesFullSpecific, defence_target_from_game, game_dispatch, prescout_filter};
 use crate::entity::{genertic_header, sea_orm_active_enums::{Stations, TournamentLevels}};
 
 const SETTINGS: crate::setting::Settings = crate::setting::Settings {
@@ -85,6 +85,7 @@ async fn team_avg_total_scores(
     let rows: Vec<(f64, i32, bool)> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(year_id))
         .filter(genertic_header::Column::EventCode.eq(event_code))
+        .filter(prescout_filter(false))
         .select_only()
         .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
         .column(genertic_header::Column::Team)
@@ -97,14 +98,6 @@ async fn team_avg_total_scores(
     Ok(rows.into_iter().map(|(score, team, is_ab)| ((team, is_ab), score as f32)).collect())
 }
 
-/// Is this stored game the main defender for its year?
-fn is_main_defender(game: &GamesFullSpecific) -> bool {
-    match game {
-        GamesFullSpecific::RebuiltGame(model) => model.defence_main,
-        #[allow(unreachable_patterns)]
-        _ => false,
-    }
-}
 
 #[rocket::tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -112,9 +105,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let model = game_dispatch(SETTINGS.year);
     let year_id = model.get_year_id();
 
-    // Load every finalized game header for the current year.
+    // Load every finalized game header for the current year. Prescout rows are
+    // excluded: they have no opposing alliance, and letting them into the
+    // grouping below would break the "exactly 6 headers per match" check for
+    // any real match they happen to share a key with.
     let headers = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(year_id))
+        .filter(prescout_filter(false))
         .all(&db)
         .await?;
     println!("loaded {} finalized game headers", headers.len());
@@ -179,10 +176,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let all_ab: Vec<bool> = group.iter().map(|h| h.is_ab_team).collect();
 
         for (i, (header, full)) in group.iter().zip(fulls.iter()).enumerate() {
-            // Mirror stamp_dpdg: only the main defender gets a value.
-            let dpdg = if is_main_defender(full) {
-                let value: f32 = all_station.iter().enumerate()
+            // Mirror stamp_dpdg: only the main defender gets a value, in both
+            // percentage and raw-point form, scoped to whatever it was defending.
+            let (dpdg, dpdg_raw) = if let Some(target) = defence_target_from_game(full) {
+                let opponents = || all_station.iter().enumerate()
                     .filter(|(j, _)| !same_alliance(all_station[*j], all_station[i]))
+                    .filter(|(j, _)| match target {
+                        DefenceTarget::Alliance => true,
+                        DefenceTarget::Bot(bot) => bot.number == all_team[*j] && bot.is_ab_team == all_ab[*j],
+                    });
+
+                let percent: f32 = opponents()
                     .map(|(j, _)| {
                         let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
                         if avg == 0.0 {
@@ -192,13 +196,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     })
                     .sum();
-                Some(value)
+
+                let raw: f32 = opponents()
+                    .map(|(j, _)| {
+                        let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
+                        if avg == 0.0 {
+                            0.0
+                        } else {
+                            avg - all_scores[j]
+                        }
+                    })
+                    .sum();
+
+                if opponents().next().is_none() {
+                    // Targeted bot isn't in this match — the metric is meaningless.
+                    println!("[{}] game_id={} targets a bot outside this match -> DPDG set NULL", key.event_code, header.game_id);
+                    nulled += 1;
+                    (None, None)
+                } else {
+                    (Some(percent), Some(raw))
+                }
             } else {
-                None
+                (None, None)
             };
 
             // Stamp into the game-specific table.
-            match update_dpdg(header.game_id, dpdg, &db).await {
+            match update_dpdg(header.game_id, dpdg, dpdg_raw, &db).await {
                 Ok(_) => {
                     updated += 1;
                 }
@@ -213,10 +236,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Write the DPDG value into the year-specific game row (rebuilt / 2026).
+/// Write the DPDG values into the year-specific game row (rebuilt / 2026).
 async fn update_dpdg(
     game_id: i32,
     dpdg: Option<f32>,
+    dpdg_raw: Option<f32>,
     db: &DatabaseConnection,
 ) -> Result<(), sea_orm::DbErr> {
     use sea_orm::ActiveModelTrait;
@@ -224,6 +248,7 @@ async fn update_dpdg(
         .ok_or_else(|| sea_orm::DbErr::Custom(format!("rebuilt_game row {game_id} not found")))?;
     let mut am = crate::backenddb::entrys::rebuilt::ActiveModel::from(row);
     am.dpdg = Set(dpdg);
+    am.dpdg_raw = Set(dpdg_raw);
     am.update(db).await?;
     Ok(())
 }

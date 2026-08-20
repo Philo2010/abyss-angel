@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::prelude::Expr;
 use sea_orm::sea_query::Alias;
-use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, ExprTrait, FromQueryResult, QueryFilter, QuerySelect};
+use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, ExprTrait, FromJsonQueryResult, FromQueryResult, QueryFilter, QuerySelect};
 use sea_orm::sqlx::types::chrono::{self, DateTime, Local};
 use sea_orm::{DbErr};
 use serde::Serialize;
@@ -17,6 +17,38 @@ use std::collections::HashMap;
 
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 use crate::snowgrave::datatypes::Team;
+
+/// What a main defender spent the match defending.
+///
+/// Only meaningful when the game is flagged as the main defender — it is `Some`
+/// exactly when that flag is set, and `None` otherwise. `Alliance` means the
+/// defence was spread across the whole opposing alliance (the original DPDG
+/// behaviour, summed over all three opponents); `Bot` means a single opposing
+/// robot was targeted, and DPDG is computed against only that robot's score and
+/// event average.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, serde::Deserialize, JsonSchema, FromJsonQueryResult)]
+pub enum DefenceTarget {
+    Alliance,
+    Bot(Team),
+}
+
+/// Prescout rows are admin-entered data for matches that were never queued, and
+/// they must never be mixed with real scouting data — so every read of
+/// `genertic_header` picks a side explicitly.
+///
+/// Note the three states: `NULL` means the row was written before this flag
+/// existed, i.e. normal data. That is why the normal case cannot be expressed as
+/// `.ne(true)` — in SQL `NULL <> true` is `NULL`, which is falsy, and every
+/// pre-existing row would silently disappear from averages.
+pub fn prescout_filter(only_prescout: bool) -> Condition {
+    if only_prescout {
+        Condition::all().add(genertic_header::Column::IsPrescout.eq(true))
+    } else {
+        Condition::any()
+            .add(genertic_header::Column::IsPrescout.is_null())
+            .add(genertic_header::Column::IsPrescout.eq(false))
+    }
+}
 
 async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -> Result<HeaderFull, DbErr> {
     let mut username_str: Vec<String> = Vec::with_capacity(model.user.len());
@@ -76,6 +108,7 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         teleop_score: model.teleop_score,
         mvp_comment,
         dpdg: None,
+        dpdg_raw: None,
     })
 }
 
@@ -104,6 +137,7 @@ async fn to_full_match_midway(model: scout_game_midway_insert::Model, db: &Datab
         defence: model.defence as f32,
         mvp_comment: None,
         dpdg: None,
+        dpdg_raw: None,
     })
 }
 
@@ -150,14 +184,28 @@ pub trait YearOp: Send + Sync {
     fn main_defender(&self, _game: &GamesInsertsSpecific) -> bool {
         false
     }
-    fn set_dpdg(&self, _game: &mut GamesInsertsSpecific, _dpdg: Option<f32>) {
+    fn set_dpdg(&self, _game: &mut GamesInsertsSpecific, _dpdg: Option<f32>, _dpdg_raw: Option<f32>) {
+    }
+    /// What this game's main defender was defending, or `None` if it isn't one.
+    fn defence_target(&self, _game: &GamesInsertsSpecific) -> Option<DefenceTarget> {
+        None
     }
 }
 
-/// Extract the stored DPDG value (if any) from a fully loaded game.
-pub fn dpdg_from_game(game: &GamesFullSpecific) -> Option<f32> {
+/// Extract the stored defence target (if any) from a fully loaded game.
+pub fn defence_target_from_game(game: &GamesFullSpecific) -> Option<DefenceTarget> {
     let GamesFullSpecific::RebuiltGame(model) = game;
-    model.dpdg
+    if !model.defence_main {
+        return None;
+    }
+    Some(model.defence_target.unwrap_or(DefenceTarget::Alliance))
+}
+
+/// Extract the stored DPDG values (if any) from a fully loaded game.
+/// Returns `(percentage, raw points)`.
+pub fn dpdg_from_game(game: &GamesFullSpecific) -> (Option<f32>, Option<f32>) {
+    let GamesFullSpecific::RebuiltGame(model) = game;
+    (model.dpdg, model.dpdg_raw)
 }
 
 
@@ -177,6 +225,8 @@ pub struct HeaderInsert {
     pub station: Stations,
     pub is_mvp: bool,
     pub comment: String,
+    /// Admin-entered prescout data — excluded from every normal calculation.
+    pub is_prescout: bool,
     //Created At no need to import as this will be seen by the server
     //game_type_id polymorfism will be seen by the enum
     //No need for game id as that will be seen by the enum
@@ -208,6 +258,7 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         auto_score: Set(res.auto_score),
         defence: Set(data.header.defence),
         comment: Set(data.header.comment.clone()),
+        is_prescout: Set(Some(data.header.is_prescout)),
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
@@ -215,7 +266,11 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
 
 
 async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &DatabaseConnection) -> Result<Vec<GamesFull>, DbErr> {
-    let mut game_headers = genertic_header::Entity::find().filter(genertic_header::Column::GameTypeId.eq(param.year));
+    let prescout_only = param.prescout_only == Some(true);
+
+    let mut game_headers = genertic_header::Entity::find()
+        .filter(genertic_header::Column::GameTypeId.eq(param.year))
+        .filter(prescout_filter(prescout_only));
 
     if let Some(user) = &param.user {
         let a = match crate::auth::get_by_user::get_by_username(user, db).await {
@@ -285,7 +340,10 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
     let mut merged: Vec<GamesFull> = header.into_iter().zip(games.into_iter())
         .map(|x| GamesFull {header: x.0, game: x.1}).collect();
 
-    if param.include_midway == Some(true) {
+    // Midway rows live in `mid_header` and can never be prescout, so folding
+    // them in during a prescout-only search would be exactly the mixing this
+    // flag exists to prevent.
+    if param.include_midway == Some(true) && !prescout_only {
         let mut mid_query = scout_game_midway_insert::Entity::find()
             .filter(scout_game_midway_insert::Column::GameTypeId.eq(param.year));
 
@@ -356,7 +414,9 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
     }
 
     for full in merged.iter_mut() {
-        full.header.dpdg = dpdg_from_game(&full.game);
+        let (dpdg, dpdg_raw) = dpdg_from_game(&full.game);
+        full.header.dpdg = dpdg;
+        full.header.dpdg_raw = dpdg_raw;
     }
 
     Ok(merged)
@@ -433,6 +493,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
     let select_avg_score: Vec<NormalGenDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
+        .filter(prescout_filter(false))
         .select_only()
         .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
         .column_as(genertic_header::Column::AutoScore.avg().cast_as(Alias::new("FLOAT8")), "auto_score")
@@ -451,6 +512,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
     let ids: Vec<NormalSpcDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
+        .filter(prescout_filter(false))
         .select_only()
         .column(genertic_header::Column::GameId) //Not snowgrave
         .column(genertic_header::Column::Team)
@@ -481,6 +543,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         let finalized_keys: Vec<FinalizedMatchKey> = genertic_header::Entity::find()
             .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
             .filter(genertic_header::Column::EventCode.eq(event_code))
+            .filter(prescout_filter(false))
             .select_only()
             .column(genertic_header::Column::Team)
             .column(genertic_header::Column::IsAbTeam)
@@ -602,6 +665,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         let avg = avg_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
         let GamesAvgSpecific::RebuiltGame(avg_data) = &team_avg_data.data;
         let dpdg = avg_data.dpdg_avg;
+        let dpdg_raw = avg_data.dpdg_raw_avg;
         done.push(TeamAvg { team: team_avg_data.team,
             is_ab_team: team_avg_data.is_ab_team,
             total_score: avg.total_score,
@@ -611,6 +675,7 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             game: team_avg_data.data,
             mvp_percent: avg.mvp_percent,
             dpdg,
+            dpdg_raw,
         });
     }
 
@@ -654,6 +719,7 @@ pub struct GamesGraph {
     pub teleop_score: f32,
     pub defence: f32,
     pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive(FromQueryResult)]
@@ -676,6 +742,7 @@ pub struct TeamAvg {
     pub defence_score: f64,
     pub mvp_percent: f64,
     pub dpdg: Option<f64>,
+    pub dpdg_raw: Option<f64>,
     pub game: GamesAvgSpecific
 }
 
@@ -703,6 +770,10 @@ pub struct SearchParam {
     pub station: Option<Stations>,
     pub year: i32,
     pub include_midway: Option<bool>,
+    /// Return prescout rows *and only* prescout rows. Prescout data is never
+    /// mixed in with real scouting data, so this is exclusive rather than
+    /// additive. Defaults to normal (non-prescout) results.
+    pub prescout_only: Option<bool>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -724,7 +795,10 @@ pub struct HeaderFull {
     pub is_mvp: bool,
     pub defence: f32,
     pub mvp_comment: Option<String>,
+    /// DPDG as a percentage of the opposing teams' event averages.
     pub dpdg: Option<f32>,
+    /// DPDG as a raw point value.
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive()]
@@ -782,6 +856,9 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         is_mvp: header.is_mvp.map(Set).unwrap_or(NotSet),
         game_type_id: Set(game_model.game_type_id),
         game_id: Set(game_model.game_id),
+        // Carried forward from the stored row — an edit never reclassifies a
+        // game between prescout and real scouting data.
+        is_prescout: Set(game_model.is_prescout),
         teleop_score: NotSet,
         auto_score: NotSet,
         defence: header.defence.map(Set).unwrap_or(NotSet),
@@ -804,7 +881,8 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
     let mut command = genertic_header::Entity::find()
         .filter(genertic_header::Column::Team.eq(*team))
         .filter(genertic_header::Column::IsAbTeam.eq(*is_ab_team))
-        .filter(genertic_header::Column::GameTypeId.eq(game.get_year_id()));
+        .filter(genertic_header::Column::GameTypeId.eq(game.get_year_id()))
+        .filter(prescout_filter(false));
     if let Some(e) = event_code {
         command = command.filter(genertic_header::Column::EventCode.eq(e));
     }
@@ -822,9 +900,9 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
 
     let game_ids: Vec<i32> = rows.iter().map(|r| r.game_id).collect();
     let games = game.get_full_matches(game_ids, db).await?;
-    let dpdg_map: HashMap<i32, Option<f32>> = games.into_iter().map(|g| {
+    let dpdg_map: HashMap<i32, (Option<f32>, Option<f32>)> = games.into_iter().map(|g| {
         let GamesFullSpecific::RebuiltGame(model) = &g;
-        (model.id, model.dpdg)
+        (model.id, (model.dpdg, model.dpdg_raw))
     }).collect();
 
     let res: Vec<GamesGraph> = rows.into_iter().map(|r| GamesGraph {
@@ -833,7 +911,8 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
         auto_score: r.auto_score,
         teleop_score: r.teleop_score,
         defence: r.defence,
-        dpdg: dpdg_map.get(&r.game_id).copied().flatten(),
+        dpdg: dpdg_map.get(&r.game_id).and_then(|(pct, _)| *pct),
+        dpdg_raw: dpdg_map.get(&r.game_id).and_then(|(_, raw)| *raw),
     }).collect();
 
     Ok(res)

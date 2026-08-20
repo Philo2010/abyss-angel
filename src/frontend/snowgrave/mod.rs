@@ -11,3 +11,4 @@ pub mod get_teams_from_game;
 pub mod delete_event;
 pub mod manual_add_match;
 pub mod bypass_check;
+pub mod prescout_insert;

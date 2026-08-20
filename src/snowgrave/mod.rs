@@ -20,3 +20,4 @@ pub mod db_models_to_snow;
 pub mod check_system;
 pub mod delete_event;
 pub mod manual_add_match;
+pub mod prescout;

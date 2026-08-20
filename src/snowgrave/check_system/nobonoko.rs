@@ -77,6 +77,7 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
             crate::backenddb::game::GamesFullSpecific::RebuiltGame(x) => {
                 GamesInsertsSpecific::RebuiltGame(Insert {
                     defence_main: x.defence_main,
+                    defence_target: x.defence_target,
                     fuel_shoot_teleop: x.fuel_shoot_teleop,
                     fuel_pass_teleop: x.fuel_pass_teleop,
                     fuel_shoot_auto: x.fuel_shoot_auto,
@@ -88,6 +89,7 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                     dnf: x.dnf,
                     auto_time: x.auto_time,
                     dpdg: None,
+                    dpdg_raw: None,
                 })
             }
         };
@@ -104,6 +106,7 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 station: x.data.as_ref().unwrap().station,
                 is_mvp,
                 comment: x.data.unwrap().comment,
+                is_prescout: false,
             },
             game: game_data,
         }

@@ -836,6 +836,34 @@
           }
         }
       }
+    },
+    "/api/prescout/insert": {
+      "post": {
+        "description": "Store admin-entered prescout data. Unlike the other snowgrave insert routes this one is admin-gated — it writes straight to final storage with no check phase in front of it.",
+        "operationId": "prescout_insert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrescoutInsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1560,6 +1588,11 @@
             "format": "double",
             "nullable": true
           },
+          "dpdg_raw": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "game": {
             "$ref": "#/components/schemas/GamesAvgSpecific"
           }
@@ -1634,6 +1667,11 @@
             "format": "double"
           },
           "dpdg_avg": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "dpdg_raw_avg": {
             "type": "number",
             "format": "double",
             "nullable": true
@@ -1760,6 +1798,11 @@
             "format": "float"
           },
           "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_raw": {
             "type": "number",
             "format": "float",
             "nullable": true
@@ -1944,6 +1987,13 @@
             "nullable": true
           },
           "dpdg": {
+            "description": "DPDG as a percentage of the opposing teams' event averages.",
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_raw": {
+            "description": "DPDG as a raw point value.",
             "type": "number",
             "format": "float",
             "nullable": true
@@ -2010,6 +2060,15 @@
           "defence_main": {
             "type": "boolean"
           },
+          "defence_target": {
+            "description": "What the main defender was defending (whole alliance vs. a single bot). `Some` only when `defence_main` is set.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
           "fuel_shoot_teleop": {
             "type": "number",
             "format": "float"
@@ -2046,11 +2105,41 @@
             "format": "float"
           },
           "dpdg": {
+            "description": "DPDG as a percentage of the opposing teams' event averages.",
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_raw": {
+            "description": "DPDG as a raw point value (opponent event averages minus their scores).",
             "type": "number",
             "format": "float",
             "nullable": true
           }
         }
+      },
+      "DefenceTarget": {
+        "description": "What a main defender spent the match defending.\n\nOnly meaningful when the game is flagged as the main defender — it is `Some` exactly when that flag is set, and `None` otherwise. `Alliance` means the defence was spread across the whole opposing alliance (the original DPDG behaviour, summed over all three opponents); `Bot` means a single opposing robot was targeted, and DPDG is computed against only that robot's score and event average.",
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Alliance"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Bot"
+            ],
+            "properties": {
+              "Bot": {
+                "$ref": "#/components/schemas/Team"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "SearchParamData": {
         "type": "object",
@@ -2106,6 +2195,11 @@
             "nullable": true
           },
           "include_midway": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "prescout_only": {
+            "description": "Return prescout rows *and only* prescout rows. Prescout data is never mixed with real scouting data, so this replaces the normal results rather than adding to them.",
             "type": "boolean",
             "nullable": true
           }
@@ -2561,6 +2655,14 @@
             "type": "boolean",
             "nullable": true
           },
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
           "fuel_shoot_teleop": {
             "type": "number",
             "format": "float",
@@ -2615,6 +2717,11 @@
             "nullable": true
           },
           "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_raw": {
             "type": "number",
             "format": "float",
             "nullable": true
@@ -2681,6 +2788,14 @@
           "defence_main": {
             "type": "boolean"
           },
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
           "fuel_shoot_teleop": {
             "type": "number",
             "format": "float"
@@ -2717,6 +2832,11 @@
             "format": "float"
           },
           "dpdg": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_raw": {
             "type": "number",
             "format": "float",
             "nullable": true
@@ -3379,6 +3499,58 @@
         "properties": {
           "event": {
             "type": "string"
+          }
+        }
+      },
+      "PrescoutInsert": {
+        "type": "object",
+        "required": [
+          "comment",
+          "defence",
+          "event_code",
+          "game",
+          "is_ab_team",
+          "match_id",
+          "set",
+          "station",
+          "team",
+          "tournament_level"
+        ],
+        "properties": {
+          "team": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_ab_team": {
+            "type": "boolean"
+          },
+          "match_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "set": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "tournament_level": {
+            "$ref": "#/components/schemas/TournamentLevels"
+          },
+          "station": {
+            "$ref": "#/components/schemas/Stations"
+          },
+          "defence": {
+            "description": "Defence rating, 0-5, same scale as a normal scout submission.",
+            "type": "number",
+            "format": "float"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "game": {
+            "$ref": "#/components/schemas/GamesInsertsSpecific"
           }
         }
       }

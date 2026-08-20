@@ -63,6 +63,7 @@ fn main() {
     use crate::frontend::snowgrave::manual_add_match::okapi_add_operation_for_manual_add_match_;
     use crate::frontend::snowgrave::bypass_check::okapi_add_operation_for_bypass_check_;
     use crate::frontend::snowgrave::delete_event::okapi_add_operation_for_delete_event_route_;
+    use crate::frontend::snowgrave::prescout_insert::okapi_add_operation_for_prescout_insert_;
 
     let spec = openapi_get_spec![
         settings:
@@ -98,7 +99,8 @@ fn main() {
         get_teams_from_game,
         manual_add_match,
         bypass_check,
-        delete_event_route
+        delete_event_route,
+        prescout_insert
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());

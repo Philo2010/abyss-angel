@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use schemars::{JsonSchema};
 use sea_orm::{ActiveValue::{NotSet, Set, Unchanged}, ExprTrait, FromQueryResult, IntoSimpleExpr, QuerySelect, entity::prelude::*, sea_query::Alias};
 use serde::{Deserialize, Serialize};
-use crate::{backenddb::{frontrunnner::{average_field, consensus_field, find_disagreeing_indexes}, game::{self, AvgReturn, FrontRunnerGame, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, GamesInserts, GamesInsertsSpecific, HeaderInsert, InsertReturn, Scores, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
+use crate::{backenddb::{frontrunnner::{average_field, consensus_field, find_disagreeing_indexes}, game::{self, AvgReturn, FrontRunnerGame, FrontRunnerReturn, GamesAvgSpecific, GamesEditSpecific, GamesFull, GamesFullSpecific, DefenceTarget, GamesInserts, GamesInsertsSpecific, HeaderInsert, InsertReturn, Scores, TeamGameUnMergedData, YearOp}}, entity::genertic_header, frontend::pit::insert::insert, snowgrave::find_point_distance::check_pass};
 use std::hash::Hash;
 
 const FUEL_TELEOP: f32 = 1.0;
@@ -55,6 +55,10 @@ pub struct Model {
     pub id: i32,
 
     pub defence_main: bool, // X S
+    /// What the main defender was defending (whole alliance vs. a single bot).
+    /// `Some` only when `defence_main` is set.
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub defence_target: Option<DefenceTarget>,
     pub fuel_shoot_teleop: f32,
     pub fuel_pass_teleop: f32,
     pub fuel_shoot_auto: f32,
@@ -65,7 +69,10 @@ pub struct Model {
     pub dead: bool,
     pub dnf: bool,
     pub auto_time: f32,
+    /// DPDG as a percentage of the opposing teams' event averages.
     pub dpdg: Option<f32>,
+    /// DPDG as a raw point value (opponent event averages minus their scores).
+    pub dpdg_raw: Option<f32>,
 }
 
 
@@ -97,6 +104,15 @@ macro_rules! enum_pct {
     };
 }
 
+
+/// A defence target only exists for a main defender, and a main defender always
+/// has one — plain alliance-wide defence when the scout named no specific bot.
+fn normalize_target(defence_main: bool, target: Option<DefenceTarget>) -> Option<DefenceTarget> {
+    if !defence_main {
+        return None;
+    }
+    Some(target.unwrap_or(DefenceTarget::Alliance))
+}
 
 fn total_score_auto(insert_data: &Insert) -> f32 {
     let fuel_auto = insert_data.fuel_shoot_auto * FUEL_AUTO;
@@ -171,9 +187,15 @@ impl YearOp for Functions {
             _ => false,
         }
     }
-    fn set_dpdg(&self, game: &mut GamesInsertsSpecific, dpdg: Option<f32>) {
+    fn defence_target(&self, game: &GamesInsertsSpecific) -> Option<DefenceTarget> {
+        match game {
+            GamesInsertsSpecific::RebuiltGame(insert) => normalize_target(insert.defence_main, insert.defence_target),
+        }
+    }
+    fn set_dpdg(&self, game: &mut GamesInsertsSpecific, dpdg: Option<f32>, dpdg_raw: Option<f32>) {
         if let GamesInsertsSpecific::RebuiltGame(insert) = game {
             insert.dpdg = dpdg;
+            insert.dpdg_raw = dpdg_raw;
         }
     }
     fn frontrunner_op(
@@ -203,6 +225,14 @@ impl YearOp for Functions {
                     crazy: crazy.into_iter().collect(),
                     avg: None,
                 });
+            },
+        };
+
+        avg.defence_target = match consensus_field(&models, &mut crazy, |m| normalize_target(m.defence_main, m.defence_target), "defence_target") {
+            Some(a) => a,
+            None => {
+                crazy.extend(0..models.len());
+                return Ok(FrontRunnerReturn { crazy: crazy.into_iter().collect(), avg: None });
             },
         };
 
@@ -303,7 +333,8 @@ impl YearOp for Functions {
             tournament_level: games.tournament_level,
             station: games.station,
             is_mvp: games.is_mvp,
-            comment: comment
+            comment: comment,
+            is_prescout: false,
         };
 
         Ok(FrontRunnerReturn {
@@ -322,6 +353,7 @@ impl YearOp for Functions {
                 let active = ActiveModel {
                     id: NotSet,
                     defence_main: Set(insert.defence_main),
+                    defence_target: Set(normalize_target(insert.defence_main, insert.defence_target)),
                     fuel_shoot_teleop: Set(insert.fuel_shoot_teleop),
                     fuel_pass_teleop: Set(insert.fuel_pass_teleop),
                     fuel_shoot_auto: Set(insert.fuel_shoot_auto),
@@ -333,6 +365,7 @@ impl YearOp for Functions {
                     dnf: Set(insert.dnf),
                     auto_time: Set(insert.auto_time),
                     dpdg: Set(insert.dpdg),
+                    dpdg_raw: Set(insert.dpdg_raw),
                 };
                 let res = Entity::insert(active).exec(db).await?;
                 let auto_score = total_score_auto(insert);
@@ -372,6 +405,7 @@ impl YearOp for Functions {
                 .column_as(Expr::col(Column::Dnf).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dnf_avg")
                 .column_as(Column::AutoTime.avg().cast_as(Alias::new("FLOAT8")), "auto_time_avg")
                 .column_as(Column::Dpdg.avg().cast_as(Alias::new("FLOAT8")), "dpdg_avg")
+                .column_as(Column::DpdgRaw.avg().cast_as(Alias::new("FLOAT8")), "dpdg_raw_avg")
                 .expr_as(enum_pct!(
                     Column::ClimbEnd,
                     ClimbState::Stage1
@@ -455,8 +489,13 @@ impl YearOp for Functions {
 
         match edit {
             GamesEditSpecific::RebuiltGame(edit) => {
+                let defence_main = edit.defence_main.unwrap_or(game_model.defence_main);
                 let total_score = Insert {
-                    defence_main: edit.defence_main.unwrap_or(game_model.defence_main),
+                    defence_main,
+                    defence_target: normalize_target(
+                        defence_main,
+                        edit.defence_target.or(game_model.defence_target),
+                    ),
                     fuel_shoot_teleop: edit.fuel_shoot_teleop.unwrap_or(game_model.fuel_shoot_teleop),
                     fuel_pass_teleop: edit.fuel_pass_teleop.unwrap_or(game_model.fuel_pass_teleop),
                     fuel_shoot_auto: edit.fuel_shoot_auto.unwrap_or(game_model.fuel_shoot_auto),
@@ -468,6 +507,7 @@ impl YearOp for Functions {
                     dnf: edit.dnf.unwrap_or(game_model.dnf),
                     auto_time: edit.auto_time.unwrap_or(game_model.auto_time),
                     dpdg: game_model.dpdg,
+                    dpdg_raw: game_model.dpdg_raw,
                 };
 
                 let returne = InsertReturn {
@@ -477,7 +517,7 @@ impl YearOp for Functions {
                     teleop_score: total_score_teleop(&total_score),
                     auto_score: total_score_auto(&total_score)
                 };
-                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: Set(total_score.beach_on_bump), dead: Set(total_score.dead), dnf: Set(total_score.dnf), auto_time: Set(total_score.auto_time), dpdg: Set(total_score.dpdg)};
+                let game_data_active = ActiveModel {id:Set(game_id),defence_main:Set(total_score.defence_main),defence_target:Set(total_score.defence_target),fuel_shoot_teleop:Set(total_score.fuel_shoot_teleop),fuel_pass_teleop:Set(total_score.fuel_pass_teleop),fuel_shoot_auto:Set(total_score.fuel_shoot_auto),fuel_pass_auto:Set(total_score.fuel_pass_auto),climb_end:Set(total_score.climb_end),climb_auto:Set(total_score.climb_auto), beach_on_bump: Set(total_score.beach_on_bump), dead: Set(total_score.dead), dnf: Set(total_score.dnf), auto_time: Set(total_score.auto_time), dpdg: Set(total_score.dpdg), dpdg_raw: Set(total_score.dpdg_raw)};
                 let game_data = game_data_active.update(db).await?;
                 Ok(returne)
             },
@@ -493,6 +533,7 @@ impl YearOp for Functions {
 #[derive(Serialize, JsonSchema, Deserialize, Default, Debug)]
 pub struct Insert {
     pub defence_main: bool,
+    pub defence_target: Option<DefenceTarget>,
     pub fuel_shoot_teleop: f32,
     pub fuel_pass_teleop: f32,
     pub fuel_shoot_auto: f32,
@@ -504,11 +545,13 @@ pub struct Insert {
     pub dnf: bool,
     pub auto_time: f32,
     pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema, Deserialize)]
 pub struct Edit {
     pub defence_main: Option<bool>,
+    pub defence_target: Option<DefenceTarget>,
     pub fuel_shoot_teleop: Option<f32>,
     pub fuel_pass_teleop: Option<f32>,
     pub fuel_shoot_auto: Option<f32>,
@@ -520,6 +563,7 @@ pub struct Edit {
     pub dnf: Option<bool>,
     pub auto_time: Option<f32>,
     pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema, FromQueryResult)]
@@ -533,6 +577,7 @@ pub struct Avg {
     pub dnf_avg: f64,
     pub auto_time_avg: f64,
     pub dpdg_avg: Option<f64>,
+    pub dpdg_raw_avg: Option<f64>,
     pub level_1_avg: f64,
     pub level_2_avg: f64,
     pub level_3_avg: f64,
