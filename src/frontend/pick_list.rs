@@ -14,7 +14,7 @@ pub struct GetPickListRequest {
 #[rocket_okapi::openapi]
 #[post("/api/pick_list", data = "<data>")]
 pub async fn get_pick_list(data: Json<GetPickListRequest>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<pick_list::get::PickLists>> {
-    if !auth::check::check(cookies, db).await {
+    if !auth::check::check_pick(cookies, db).await {
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
     let res = match pick_list::get::get(db, data.include_midway).await {
@@ -30,7 +30,7 @@ pub async fn get_pick_list(data: Json<GetPickListRequest>, db: &State<DatabaseCo
 #[rocket_okapi::openapi]
 #[post("/api/pick_list/set", data = "<data>")]
 pub async fn set_pick_list(data: Json<pick_list::set::SetPick>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>) -> Json<ApiResult<String>> {
-    if !auth::check::check(cookies, db).await {
+    if !auth::check::check_pick(cookies, db).await {
         return Json(ApiResult::Error("Need to be admin!".to_string()));
     }
 
