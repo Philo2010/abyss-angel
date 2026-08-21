@@ -46,7 +46,7 @@ async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Resu
         .collect();
 
     let dpdgs: Vec<(Option<f32>, Option<f32>)> = all.iter().enumerate().map(|(i, g)| {
-        let target = match model.defence_target(&g.game) {
+        let target = match g.header.defence_target {
             Some(t) => t,
             None => return (None, None),
         };
@@ -95,7 +95,8 @@ async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Resu
         &mut all_six.red1, &mut all_six.red2, &mut all_six.red3,
         &mut all_six.blue1, &mut all_six.blue2, &mut all_six.blue3,
     ].into_iter().zip(dpdgs) {
-        model.set_dpdg(&mut game.game, dpdg, dpdg_raw);
+        game.header.dpdg = dpdg;
+        game.header.dpdg_raw = dpdg_raw;
     }
 
     Ok(())

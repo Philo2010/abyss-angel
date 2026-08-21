@@ -1,6 +1,6 @@
 use sea_orm::DbErr;
 
-use crate::{backenddb::entrys::rebuilt::ActiveModel, snowgrave::find_point_distance::check_pass};
+use crate::snowgrave::find_point_distance::check_pass;
 use std::{collections::{HashMap, HashSet}, hash::Hash};
 
 

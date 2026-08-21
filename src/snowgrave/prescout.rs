@@ -15,9 +15,8 @@ use sea_orm::{DatabaseConnection, DbErr};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::backenddb::game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, game_dispatch, insert_game};
+use crate::backenddb::game::{DefenceTarget, GamesInserts, GamesInsertsSpecific, HeaderInsert, insert_game};
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
-use crate::SETTINGS;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct PrescoutInsert {
@@ -32,18 +31,15 @@ pub struct PrescoutInsert {
     pub defence: f32,
     pub comment: String,
     pub game: GamesInsertsSpecific,
+    pub defence_main: bool,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
 }
 
 /// Store one prescout game. Returns the new header id.
 pub async fn insert_prescout(user: Uuid, data: PrescoutInsert, db: &DatabaseConnection) -> Result<i32, DbErr> {
-    let mut game = data.game;
-
-    // DPDG is the opposing alliance's event averages minus their scores for this
-    // match, so it is meaningless without the other five robots — and nothing
-    // ever recomputes it for a prescout row. Null it out rather than trusting
-    // whatever the client sent in the game payload.
-    game_dispatch(SETTINGS.year).set_dpdg(&mut game, None, None);
-
     let insert = GamesInserts {
         header: HeaderInsert {
             user: vec![user],
@@ -59,8 +55,15 @@ pub async fn insert_prescout(user: Uuid, data: PrescoutInsert, db: &DatabaseConn
             is_mvp: false,
             comment: data.comment,
             is_prescout: true,
+            defence_main: data.defence_main,
+            defence_target: data.defence_target,
+            auto_time: data.auto_time,
+            dead: data.dead,
+            dnf: data.dnf,
+            dpdg: None,
+            dpdg_raw: None,
         },
-        game,
+        game: data.game,
     };
 
     insert_game(&insert, db).await

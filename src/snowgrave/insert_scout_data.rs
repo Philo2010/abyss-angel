@@ -3,28 +3,20 @@ use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, DatabaseConnection, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 
-use crate::{SETTINGS, auth::get_by_user::get_by_uuid, backenddb::{self, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, game_dispatch}}, entity::{game_scouts, mvp_data, mvp_scouters, scout_game_midway_insert, sea_orm_active_enums::Stations, upcoming_game, upcoming_team}, snowgrave::check_system::check};
+use crate::{SETTINGS, auth::get_by_user::get_by_uuid, backenddb::game::{DefenceTarget, GamesInsertsSpecific, game_dispatch}, entity::{game_scouts, scout_game_midway_insert, upcoming_game, upcoming_team}, snowgrave::check_system::check};
 
 
 #[derive(JsonSchema, Serialize, Deserialize)]
 pub struct InsertSnow {
-    //Id is given by server
-    //pub user: String, //We will get uuid
-    //pub team: i32,
-    //pub is_ab_team: bool,
-    //pub match_id: i32,
-    //pub set: i32,
-    //Total score is irraiven as it will be computed at server side
-    //pub event_code: String,
-    //pub tournament_level: TournamentLevels,
-    //pub station: Stations,
     pub snowgrave_scout_id: i32,
-    //Created At no need to import as this will be seen by the server
-    //game_type_id polymorfism will be seen by the enum
-    //No need for game id as that will be seen by the enum
     pub game: GamesInsertsSpecific,
     pub defence: i32,
     pub comment: String,
+    pub defence_main: bool,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
 }
 
 
@@ -67,6 +59,11 @@ pub async fn insert_scout(db: &DatabaseConnection, data: InsertSnow) -> Result<(
         total_score: Set(res.total_score as i32),
         teleop_score: Set(res.teleop_score as i32),
         auto_score: Set(res.auto_score as i32),
+        defence_main: Set(data.defence_main),
+        defence_target: Set(data.defence_target),
+        auto_time: Set(data.auto_time),
+        dead: Set(data.dead),
+        dnf: Set(data.dnf),
     };
 
     let game_insert = mid.insert(db).await?;

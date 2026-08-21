@@ -2,24 +2,18 @@
 //Match = each data entry for each team
 //game = whole thing for a game
 
-use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, prelude::DateTimeLocal};
+use sea_orm::prelude::DateTimeLocal;
 
 use crate::{
-    backenddb::game::GamesFullSpecific, entity::{
-        game_scouts, mvp_data, mvp_scouters, sea_orm_active_enums::{Stations, TournamentLevels}, upcoming_game, upcoming_team
+    backenddb::game::{DefenceTarget, GamesFullSpecific}, entity::{
+        sea_orm_active_enums::{Stations, TournamentLevels},
     }
 };
 
-//basic types
-#[derive(Hash, PartialEq, Eq, Clone, Copy, JsonSchema, Serialize, Deserialize, Debug)]
-pub struct Team {
-    pub number: i32,
-    pub is_ab_team: bool,
-}
+pub use crate::entity::types::Team;
 
 //Primtive Mvp types
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -111,6 +105,11 @@ pub struct ScoutMatchData {
     pub game: GamesFullSpecific,
     pub game_id: i32,
     pub game_type_id: i32,
+    pub defence_main: bool,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]

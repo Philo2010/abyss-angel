@@ -93,13 +93,18 @@ pub async fn get_scouts(upcoming_team_id: i32, db: &DatabaseConnection) -> Resul
                 auto_score: mid_data.auto_score,
                 defence: mid_data.defence,
                 comment: mid_data.comment,
-                event_code: mid_data.event_code, 
+                event_code: mid_data.event_code,
                 tournament_level: mid_data.tournament_level,
                 station: mid_data.station,
                 created_at: mid_data.created_at,
-                game: game,
+                game,
                 game_id: mid_data.game_id,
                 game_type_id: mid_data.game_type_id,
+                defence_main: mid_data.defence_main,
+                defence_target: mid_data.defence_target,
+                auto_time: mid_data.auto_time,
+                dead: mid_data.dead,
+                dnf: mid_data.dnf,
             });
         } else {
             midpoint = None

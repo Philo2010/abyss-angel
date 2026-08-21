@@ -2,6 +2,7 @@
 
 use super::sea_orm_active_enums::Stations;
 use super::sea_orm_active_enums::TournamentLevels;
+use super::types::DefenceTarget;
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
@@ -29,6 +30,14 @@ pub struct Model {
     /// Admin-entered prescout data, which is never mixed with real scouting
     /// data. `NULL` means the row predates this flag, i.e. normal data.
     pub is_prescout: Option<bool>,
+    pub defence_main: bool,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
+    pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

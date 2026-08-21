@@ -3,29 +3,21 @@ use schemars::{JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
-use crate::{SETTINGS, backenddb::{self, game::{GamesEdit, GamesEditSpecific, HeaderFullEdit, game_dispatch}}, entity::{game_scouts, genertic_header, scout_game_midway_insert::{self, ActiveModel}, upcoming_game}, snowgrave::check_system::check};
+use crate::{SETTINGS, backenddb::game::{DefenceTarget, GamesEditSpecific, game_dispatch}, entity::{game_scouts, scout_game_midway_insert::{self, ActiveModel}, upcoming_game}, snowgrave::check_system::check};
 
 
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct EditSnow {
-    //Id is given by server
-    //pub user: String, //We will get uuid
-    //pub team: i32,
-    //pub is_ab_team: bool,
-    //pub match_id: i32,
-    //pub set: i32,
-    //Total score is irraiven as it will be computed at server side
-    //pub event_code: String,
-    //pub tournament_level: TournamentLevels,
-    //pub station: Stations,
     pub snowgrave_scout_id: i32,
     pub defence: Option<f32>,
     pub comment: Option<String>,
-    //Created At no need to import as this will be seen by the server
-    //game_type_id polymorfism will be seen by the enum
-    //No need for game id as that will be seen by the enum
     pub game: GamesEditSpecific,
+    pub defence_main: Option<bool>,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: Option<f32>,
+    pub dead: Option<bool>,
+    pub dnf: Option<bool>,
 }
 
 pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(), DbErr> {
@@ -68,6 +60,11 @@ pub async fn edit_scouter(data: EditSnow, db: &DatabaseConnection) -> Result<(),
         created_at: Set(Local::now()),
         game_type_id: Set(res.game_type),
         game_id: Set(res.game_id),
+        defence_main: data.defence_main.map(Set).unwrap_or(NotSet),
+        defence_target: data.defence_target.map(|dt| Set(Some(dt))).unwrap_or(NotSet),
+        auto_time: data.auto_time.map(Set).unwrap_or(NotSet),
+        dead: data.dead.map(Set).unwrap_or(NotSet),
+        dnf: data.dnf.map(Set).unwrap_or(NotSet),
     };
 
     game_insert.update(db).await?;

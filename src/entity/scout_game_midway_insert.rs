@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::entity::{
     game_scouts,
     sea_orm_active_enums::{TournamentLevels, Stations},
+    types::DefenceTarget,
 };
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
@@ -27,6 +28,12 @@ pub struct Model {
     pub created_at: DateTimeLocal,
     pub game_type_id: i32,
     pub game_id: i32,
+    pub defence_main: bool,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

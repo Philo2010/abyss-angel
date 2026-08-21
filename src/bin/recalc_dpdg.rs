@@ -33,7 +33,7 @@ use std::collections::HashMap;
 use sea_orm::sea_query::Alias;
 use sea_orm::{ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, ExprTrait, QueryFilter, QuerySelect};
 
-use crate::backenddb::game::{DefenceTarget, GamesFullSpecific, defence_target_from_game, game_dispatch, prescout_filter};
+use crate::backenddb::game::{DefenceTarget, prescout_filter};
 use crate::entity::{genertic_header, sea_orm_active_enums::{Stations, TournamentLevels}};
 
 const SETTINGS: crate::setting::Settings = crate::setting::Settings {
@@ -102,8 +102,7 @@ async fn team_avg_total_scores(
 #[rocket::tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = sea_orm::Database::connect(SETTINGS.db_path).await?;
-    let model = game_dispatch(SETTINGS.year);
-    let year_id = model.get_year_id();
+    let year_id = SETTINGS.year;
 
     // Load every finalized game header for the current year. Prescout rows are
     // excluded: they have no opposing alliance, and letting them into the
@@ -153,32 +152,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        // Load each game's scoring/defence data from its year-specific table.
-        let game_ids: Vec<i32> = group.iter().map(|h| h.game_id).collect();
-        let fulls = match model.get_full_matches(game_ids.clone(), &db).await {
-            Ok(f) => f,
-            Err(e) => {
-                println!("[{}] failed loading game data: {}", key.event_code, e);
-                nulled += group.len();
-                continue;
-            }
-        };
-
-        if fulls.len() != group.len() {
-            println!("[{}] could not resolve all full games — DPDG kept NULL", key.event_code);
-            nulled += group.len();
-            continue;
-        }
-
         let all_scores: Vec<f32> = group.iter().map(|h| h.total_score).collect();
         let all_station: Vec<Stations> = group.iter().map(|h| h.station).collect();
         let all_team: Vec<i32> = group.iter().map(|h| h.team).collect();
         let all_ab: Vec<bool> = group.iter().map(|h| h.is_ab_team).collect();
 
-        for (i, (header, full)) in group.iter().zip(fulls.iter()).enumerate() {
+        for (i, header) in group.iter().enumerate() {
             // Mirror stamp_dpdg: only the main defender gets a value, in both
             // percentage and raw-point form, scoped to whatever it was defending.
-            let (dpdg, dpdg_raw) = if let Some(target) = defence_target_from_game(full) {
+            let (dpdg, dpdg_raw) = if let Some(target) = header.defence_target {
                 let opponents = || all_station.iter().enumerate()
                     .filter(|(j, _)| !same_alliance(all_station[*j], all_station[i]))
                     .filter(|(j, _)| match target {
@@ -210,7 +192,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 if opponents().next().is_none() {
                     // Targeted bot isn't in this match — the metric is meaningless.
-                    println!("[{}] game_id={} targets a bot outside this match -> DPDG set NULL", key.event_code, header.game_id);
+                    println!("[{}] header_id={} targets a bot outside this match -> DPDG set NULL", key.event_code, header.id);
                     nulled += 1;
                     (None, None)
                 } else {
@@ -220,13 +202,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 (None, None)
             };
 
-            // Stamp into the game-specific table.
-            match update_dpdg(header.game_id, dpdg, dpdg_raw, &db).await {
+            // Stamp into the generic header row.
+            match update_dpdg(header.id, dpdg, dpdg_raw, &db).await {
                 Ok(_) => {
                     updated += 1;
                 }
                 Err(e) => {
-                    println!("[{}] failed to write dpdg for game_id={} : {}", key.event_code, header.game_id, e);
+                    println!("[{}] failed to write dpdg for header_id={} : {}", key.event_code, header.id, e);
                 }
             }
         }
@@ -236,17 +218,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Write the DPDG values into the year-specific game row (rebuilt / 2026).
+/// Write the DPDG values into the generic header row.
 async fn update_dpdg(
-    game_id: i32,
+    header_id: i32,
     dpdg: Option<f32>,
     dpdg_raw: Option<f32>,
     db: &DatabaseConnection,
 ) -> Result<(), sea_orm::DbErr> {
     use sea_orm::ActiveModelTrait;
-    let row = crate::backenddb::entrys::rebuilt::Entity::find_by_id(game_id).one(db).await?
-        .ok_or_else(|| sea_orm::DbErr::Custom(format!("rebuilt_game row {game_id} not found")))?;
-    let mut am = crate::backenddb::entrys::rebuilt::ActiveModel::from(row);
+    let row = genertic_header::Entity::find_by_id(header_id).one(db).await?
+        .ok_or_else(|| sea_orm::DbErr::Custom(format!("genertic_header row {header_id} not found")))?;
+    let mut am = genertic_header::ActiveModel::from(row);
     am.dpdg = Set(dpdg);
     am.dpdg_raw = Set(dpdg_raw);
     am.update(db).await?;

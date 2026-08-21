@@ -87,7 +87,12 @@ async fn process_position(
         event_code: scouts.first().unwrap().data.event_code.clone(),
         tournament_level: scouts.first().unwrap().data.tournament_level,
         station: scouts.first().unwrap().station,
-        is_mvp: is_mvp
+        is_mvp,
+        defence_mains: scouts.iter().map(|x| x.data.defence_main).collect(),
+        defence_targets: scouts.iter().map(|x| x.data.defence_target).collect(),
+        auto_times: scouts.iter().map(|x| x.data.auto_time).collect(),
+        deads: scouts.iter().map(|x| x.data.dead).collect(),
+        dnfs: scouts.iter().map(|x| x.data.dnf).collect(),
     };
     match check_game(games).await? {
         CheckRet::Passed(result) => Ok(Some(result)),

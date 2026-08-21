@@ -73,23 +73,17 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
     //no need for warnings or anything else just insert them baby!
     let insert_scouts: Vec<GamesInserts> = scouts.into_iter().map(|x| {
         let is_mvp = x.team == team;
-        let game_data = match &x.data.as_ref().unwrap().game {
-            crate::backenddb::game::GamesFullSpecific::RebuiltGame(x) => {
+        let data = x.data.as_ref().unwrap();
+        let game_data = match &data.game {
+            crate::backenddb::game::GamesFullSpecific::RebuiltGame(model) => {
                 GamesInsertsSpecific::RebuiltGame(Insert {
-                    defence_main: x.defence_main,
-                    defence_target: x.defence_target,
-                    fuel_shoot_teleop: x.fuel_shoot_teleop,
-                    fuel_pass_teleop: x.fuel_pass_teleop,
-                    fuel_shoot_auto: x.fuel_shoot_auto,
-                    fuel_pass_auto: x.fuel_pass_auto,
-                    climb_end: x.climb_end,
-                    climb_auto: x.climb_auto,
-                    beach_on_bump: x.beach_on_bump,
-                    dead: x.dead,
-                    dnf: x.dnf,
-                    auto_time: x.auto_time,
-                    dpdg: None,
-                    dpdg_raw: None,
+                    fuel_shoot_teleop: model.fuel_shoot_teleop,
+                    fuel_pass_teleop: model.fuel_pass_teleop,
+                    fuel_shoot_auto: model.fuel_shoot_auto,
+                    fuel_pass_auto: model.fuel_pass_auto,
+                    climb_end: model.climb_end,
+                    climb_auto: model.climb_auto,
+                    beach_on_bump: model.beach_on_bump,
                 })
             }
         };
@@ -98,15 +92,22 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 user: vec![x.name],
                 team: x.team.number,
                 is_ab_team: x.team.is_ab_team,
-                match_id: x.data.as_ref().unwrap().match_id, //unwrap is safe becasue of check_data_present
-                set: x.data.as_ref().unwrap().set,
-                defence: x.data.as_ref().unwrap().defence as f32,
-                event_code: x.data.as_ref().unwrap().event_code.clone(),
-                tournament_level: x.data.as_ref().unwrap().tournament_level,
-                station: x.data.as_ref().unwrap().station,
+                match_id: data.match_id,
+                set: data.set,
+                defence: data.defence as f32,
+                event_code: data.event_code.clone(),
+                tournament_level: data.tournament_level,
+                station: data.station,
                 is_mvp,
-                comment: x.data.unwrap().comment,
+                comment: data.comment.clone(),
                 is_prescout: false,
+                defence_main: data.defence_main,
+                defence_target: data.defence_target,
+                auto_time: data.auto_time,
+                dead: data.dead,
+                dnf: data.dnf,
+                dpdg: None,
+                dpdg_raw: None,
             },
             game: game_data,
         }

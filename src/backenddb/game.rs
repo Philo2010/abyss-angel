@@ -16,20 +16,17 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
-use crate::snowgrave::datatypes::Team;
+use crate::entity::types::Team;
 
-/// What a main defender spent the match defending.
-///
-/// Only meaningful when the game is flagged as the main defender — it is `Some`
-/// exactly when that flag is set, and `None` otherwise. `Alliance` means the
-/// defence was spread across the whole opposing alliance (the original DPDG
-/// behaviour, summed over all three opponents); `Bot` means a single opposing
-/// robot was targeted, and DPDG is computed against only that robot's score and
-/// event average.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, serde::Deserialize, JsonSchema, FromJsonQueryResult)]
-pub enum DefenceTarget {
-    Alliance,
-    Bot(Team),
+pub use crate::entity::types::DefenceTarget;
+
+/// A defence target only exists for a main defender, and a main defender always
+/// has one — plain alliance-wide defence when the scout named no specific bot.
+pub fn normalize_target(defence_main: bool, target: Option<DefenceTarget>) -> Option<DefenceTarget> {
+    if !defence_main {
+        return None;
+    }
+    Some(target.unwrap_or(DefenceTarget::Alliance))
 }
 
 /// Prescout rows are admin-entered data for matches that were never queued, and
@@ -107,8 +104,8 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         comment: model.comment,
         teleop_score: model.teleop_score,
         mvp_comment,
-        dpdg: None,
-        dpdg_raw: None,
+        dpdg: model.dpdg,
+        dpdg_raw: model.dpdg_raw,
     })
 }
 
@@ -179,35 +176,7 @@ pub trait YearOp: Send + Sync {
     fn frontrunner_op(&self, games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr>;
     fn get_scores(&self, match_data: &GamesInsertsSpecific) -> Scores;
     async fn edit(&self, game_id: i32, edit: GamesEditSpecific, db: &DatabaseConnection) -> Result<InsertReturn, DbErr>;
-    // DPDG is computed during the checking phase (when all opponent data is present)
-    // and stamped into the game-specific insert before it is persisted.
-    fn main_defender(&self, _game: &GamesInsertsSpecific) -> bool {
-        false
-    }
-    fn set_dpdg(&self, _game: &mut GamesInsertsSpecific, _dpdg: Option<f32>, _dpdg_raw: Option<f32>) {
-    }
-    /// What this game's main defender was defending, or `None` if it isn't one.
-    fn defence_target(&self, _game: &GamesInsertsSpecific) -> Option<DefenceTarget> {
-        None
-    }
 }
-
-/// Extract the stored defence target (if any) from a fully loaded game.
-pub fn defence_target_from_game(game: &GamesFullSpecific) -> Option<DefenceTarget> {
-    let GamesFullSpecific::RebuiltGame(model) = game;
-    if !model.defence_main {
-        return None;
-    }
-    Some(model.defence_target.unwrap_or(DefenceTarget::Alliance))
-}
-
-/// Extract the stored DPDG values (if any) from a fully loaded game.
-/// Returns `(percentage, raw points)`.
-pub fn dpdg_from_game(game: &GamesFullSpecific) -> (Option<f32>, Option<f32>) {
-    let GamesFullSpecific::RebuiltGame(model) = game;
-    (model.dpdg, model.dpdg_raw)
-}
-
 
 //A common header that will be used for Insert data
 #[derive(Debug)]
@@ -227,9 +196,14 @@ pub struct HeaderInsert {
     pub comment: String,
     /// Admin-entered prescout data — excluded from every normal calculation.
     pub is_prescout: bool,
-    //Created At no need to import as this will be seen by the server
-    //game_type_id polymorfism will be seen by the enum
-    //No need for game id as that will be seen by the enum
+    pub defence_main: bool,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
+    /// Stamped by `stamp_dpdg` in check_bind; `None` until then.
+    pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &DatabaseConnection) -> Result<i32, DbErr> {
@@ -259,6 +233,13 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         defence: Set(data.header.defence),
         comment: Set(data.header.comment.clone()),
         is_prescout: Set(Some(data.header.is_prescout)),
+        defence_main: Set(data.header.defence_main),
+        defence_target: Set(normalize_target(data.header.defence_main, data.header.defence_target)),
+        auto_time: Set(data.header.auto_time),
+        dead: Set(data.header.dead),
+        dnf: Set(data.header.dnf),
+        dpdg: Set(data.header.dpdg),
+        dpdg_raw: Set(data.header.dpdg_raw),
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
@@ -413,12 +394,6 @@ async fn prim_search_game(mode: Box<dyn YearOp>, param: &SearchParam, db: &Datab
         merged.extend(mid_merged);
     }
 
-    for full in merged.iter_mut() {
-        let (dpdg, dpdg_raw) = dpdg_from_game(&full.game);
-        full.header.dpdg = dpdg;
-        full.header.dpdg_raw = dpdg_raw;
-    }
-
     Ok(merged)
 }
 
@@ -433,6 +408,35 @@ struct NormalGenDataAvg {
     pub defence_score: f64,
     pub mvp_percent: f64,
     pub record_count: i64,
+    pub defence_main_avg: f64,
+    pub auto_time_avg: f64,
+    pub dead_avg: f64,
+    pub dnf_avg: f64,
+    pub dpdg_avg: Option<f64>,
+    pub dpdg_raw_avg: Option<f64>,
+}
+
+#[derive(Clone)]
+struct GenAvgExtra {
+    pub defence_main_avg: f64,
+    pub auto_time_avg: f64,
+    pub dead_avg: f64,
+    pub dnf_avg: f64,
+    pub dpdg_avg: Option<f64>,
+    pub dpdg_raw_avg: Option<f64>,
+}
+
+impl Default for GenAvgExtra {
+    fn default() -> Self {
+        GenAvgExtra {
+            defence_main_avg: 0.0,
+            auto_time_avg: 0.0,
+            dead_avg: 0.0,
+            dnf_avg: 0.0,
+            dpdg_avg: None,
+            dpdg_raw_avg: None,
+        }
+    }
 }
 
 #[derive(FromQueryResult)]
@@ -503,6 +507,12 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         .column_as(genertic_header::Column::Team, "team")
         .column_as(genertic_header::Column::IsAbTeam, "is_ab_team")
         .column_as(Expr::col(genertic_header::Column::Id).count().cast_as(Alias::new("BIGINT")), "record_count")
+        .column_as(Expr::col(genertic_header::Column::DefenceMain).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "defence_main_avg")
+        .column_as(genertic_header::Column::AutoTime.avg().cast_as(Alias::new("FLOAT8")), "auto_time_avg")
+        .column_as(Expr::col(genertic_header::Column::Dead).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dead_avg")
+        .column_as(Expr::col(genertic_header::Column::Dnf).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dnf_avg")
+        .column_as(genertic_header::Column::Dpdg.avg().cast_as(Alias::new("FLOAT8")), "dpdg_avg")
+        .column_as(genertic_header::Column::DpdgRaw.avg().cast_as(Alias::new("FLOAT8")), "dpdg_raw_avg")
         .group_by(genertic_header::Column::Team)
         .group_by(genertic_header::Column::IsAbTeam)
         .into_model::<NormalGenDataAvg>()
@@ -523,6 +533,17 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         .into_group_map_by(|record| (record.team, record.is_ab_team))
         .into_iter()
         .map(|(key, records)| (key, records.into_iter().map(|r| r.game_id).collect()))
+        .collect();
+
+    let avg_extra_map: HashMap<(i32, bool), GenAvgExtra> = select_avg_score.iter()
+        .map(|x| ((x.team, x.is_ab_team), GenAvgExtra {
+            defence_main_avg: x.defence_main_avg,
+            auto_time_avg: x.auto_time_avg,
+            dead_avg: x.dead_avg,
+            dnf_avg: x.dnf_avg,
+            dpdg_avg: x.dpdg_avg,
+            dpdg_raw_avg: x.dpdg_raw_avg,
+        }))
         .collect();
 
     let mut gen_count_map: HashMap<(i32, bool), i64> = select_avg_score.iter()
@@ -663,10 +684,9 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
     let mut done: Vec<TeamAvg> = Vec::with_capacity(a.len());
     for team_avg_data in a {
         let avg = avg_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).ok_or(DbErr::AttrNotSet("Could not find avg data".to_string()))?;
-        let GamesAvgSpecific::RebuiltGame(avg_data) = &team_avg_data.data;
-        let dpdg = avg_data.dpdg_avg;
-        let dpdg_raw = avg_data.dpdg_raw_avg;
-        done.push(TeamAvg { team: team_avg_data.team,
+        let extra = avg_extra_map.get(&(team_avg_data.team, team_avg_data.is_ab_team)).cloned().unwrap_or_default();
+        done.push(TeamAvg {
+            team: team_avg_data.team,
             is_ab_team: team_avg_data.is_ab_team,
             total_score: avg.total_score,
             auto_score: avg.auto_score,
@@ -674,8 +694,12 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             defence_score: avg.defence,
             game: team_avg_data.data,
             mvp_percent: avg.mvp_percent,
-            dpdg,
-            dpdg_raw,
+            dpdg: extra.dpdg_avg,
+            dpdg_raw: extra.dpdg_raw_avg,
+            defence_main_avg: extra.defence_main_avg,
+            auto_time_avg: extra.auto_time_avg,
+            dead_avg: extra.dead_avg,
+            dnf_avg: extra.dnf_avg,
         });
     }
 
@@ -724,12 +748,13 @@ pub struct GamesGraph {
 
 #[derive(FromQueryResult)]
 struct GamesGraphRow {
-    pub game_id: i32,
     pub time: DateTime<Local>,
     pub total_score: f32,
     pub auto_score: f32,
     pub teleop_score: f32,
     pub defence: f32,
+    pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -743,6 +768,10 @@ pub struct TeamAvg {
     pub mvp_percent: f64,
     pub dpdg: Option<f64>,
     pub dpdg_raw: Option<f64>,
+    pub defence_main_avg: f64,
+    pub auto_time_avg: f64,
+    pub dead_avg: f64,
+    pub dnf_avg: f64,
     pub game: GamesAvgSpecific
 }
 
@@ -815,6 +844,11 @@ pub struct FrontRunnerGame {
     pub tournament_level: TournamentLevels,
     pub station: Stations,
     pub is_mvp: bool,
+    pub defence_mains: Vec<bool>,
+    pub defence_targets: Vec<Option<DefenceTarget>>,
+    pub auto_times: Vec<f32>,
+    pub deads: Vec<bool>,
+    pub dnfs: Vec<bool>,
 }
 
 pub struct HeaderFullEdit {
@@ -830,7 +864,14 @@ pub struct HeaderFullEdit {
     pub created_at: Option<DateTime<Local>>,
     pub is_mvp: Option<bool>,
     pub defence: Option<f32>,
-    pub comment: Option<String>
+    pub comment: Option<String>,
+    pub defence_main: Option<bool>,
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: Option<f32>,
+    pub dead: Option<bool>,
+    pub dnf: Option<bool>,
+    pub dpdg: Option<f32>,
+    pub dpdg_raw: Option<f32>,
 }
 
 async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<genertic_header::ActiveModel, DbErr> {
@@ -864,6 +905,13 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         defence: header.defence.map(Set).unwrap_or(NotSet),
         comment: header.comment.map(Set).unwrap_or(NotSet),
         user: header.user.map(Set).unwrap_or(NotSet),
+        defence_main: header.defence_main.map(Set).unwrap_or(NotSet),
+        defence_target: header.defence_target.map(|dt| Set(Some(dt))).unwrap_or(NotSet),
+        auto_time: header.auto_time.map(Set).unwrap_or(NotSet),
+        dead: header.dead.map(Set).unwrap_or(NotSet),
+        dnf: header.dnf.map(Set).unwrap_or(NotSet),
+        dpdg: header.dpdg.map(|v| Set(Some(v))).unwrap_or(NotSet),
+        dpdg_raw: header.dpdg_raw.map(|v| Set(Some(v))).unwrap_or(NotSet),
     })
 }
 
@@ -888,34 +936,26 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
     }
     let rows: Vec<GamesGraphRow> = command
         .select_only()
-        .column(genertic_header::Column::GameId)
         .column_as(genertic_header::Column::CreatedAt, "time")
         .column_as(genertic_header::Column::TotalScore, "total_score")
         .column_as(genertic_header::Column::AutoScore, "auto_score")
         .column_as(genertic_header::Column::TeleopScore, "teleop_score")
         .column_as(genertic_header::Column::Defence, "defence")
+        .column_as(genertic_header::Column::Dpdg, "dpdg")
+        .column_as(genertic_header::Column::DpdgRaw, "dpdg_raw")
         .into_model::<GamesGraphRow>()
         .all(db)
-    .await?;
+        .await?;
 
-    let game_ids: Vec<i32> = rows.iter().map(|r| r.game_id).collect();
-    let games = game.get_full_matches(game_ids, db).await?;
-    let dpdg_map: HashMap<i32, (Option<f32>, Option<f32>)> = games.into_iter().map(|g| {
-        let GamesFullSpecific::RebuiltGame(model) = &g;
-        (model.id, (model.dpdg, model.dpdg_raw))
-    }).collect();
-
-    let res: Vec<GamesGraph> = rows.into_iter().map(|r| GamesGraph {
+    Ok(rows.into_iter().map(|r| GamesGraph {
         time: r.time,
         total_score: r.total_score,
         auto_score: r.auto_score,
         teleop_score: r.teleop_score,
         defence: r.defence,
-        dpdg: dpdg_map.get(&r.game_id).and_then(|(pct, _)| *pct),
-        dpdg_raw: dpdg_map.get(&r.game_id).and_then(|(_, raw)| *raw),
-    }).collect();
-
-    Ok(res)
+        dpdg: r.dpdg,
+        dpdg_raw: r.dpdg_raw,
+    }).collect())
 }
 
 pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result<Vec<GamesFull>, DbErr> {
