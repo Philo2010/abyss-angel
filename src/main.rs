@@ -13,6 +13,7 @@ mod entity;
 mod backenddb;
 mod scoutwarn;
 mod snowgrave;
+mod pick_list;
 
 //For now, before i make a setting menu, i will hardcode values
 const SETTINGS: crate::setting::Settings = Settings {
@@ -117,6 +118,8 @@ async fn rocket() -> _ {
     frontend::snowgrave::delete_event::delete_event_route,
     frontend::snowgrave::manual_add_match::manual_add_match,
     frontend::snowgrave::bypass_check::bypass_check,
-    frontend::snowgrave::prescout_insert::prescout_insert
+    frontend::snowgrave::prescout_insert::prescout_insert,
+    frontend::pick_list::get_pick_list,
+    frontend::pick_list::set_pick_list
     ])
 }

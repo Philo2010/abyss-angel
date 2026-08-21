@@ -20,6 +20,8 @@ mod backenddb;
 mod scoutwarn;
 #[path = "../snowgrave/mod.rs"]
 mod snowgrave;
+#[path = "../pick_list/mod.rs"]
+mod pick_list;
 
 const SETTINGS: crate::setting::Settings = crate::setting::Settings {
     year: 2026,

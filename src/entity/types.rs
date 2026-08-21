@@ -1,5 +1,5 @@
 use schemars::JsonSchema;
-use sea_orm::FromJsonQueryResult;
+use sea_orm::{DeriveValueType, FromJsonQueryResult};
 use serde::{Deserialize, Serialize};
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, JsonSchema, Serialize, Deserialize, Debug)]

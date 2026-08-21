@@ -10,6 +10,7 @@ pub mod snowgrave;
 pub mod scoutwarn;
 pub mod get_all_users;
 pub mod reset_password;
+pub mod pick_list;
 
 #[derive(Serialize, JsonSchema)]
 #[serde(tag = "status", content = "message")]

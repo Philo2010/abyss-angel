@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::prelude::Expr;
 use sea_orm::sea_query::Alias;
-use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, ExprTrait, FromJsonQueryResult, FromQueryResult, QueryFilter, QuerySelect};
+use sea_orm::{ColumnTrait, Condition, DatabaseConnection, EntityTrait, ExprTrait, FromJsonQueryResult, FromQueryResult, QueryFilter, QuerySelect, QueryTrait};
 use sea_orm::sqlx::types::chrono::{self, DateTime, Local};
 use sea_orm::{DbErr};
 use serde::Serialize;
@@ -493,11 +493,16 @@ pub struct Scores_E {
     pub mvp_percent: f64,
 }
 
-async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_midway: bool, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
+async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_midway: bool, team_filter: Option<(i32, bool)>, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let select_avg_score: Vec<NormalGenDataAvg> = genertic_header::Entity::find()
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
         .filter(prescout_filter(false))
+        .apply_if(team_filter, |query, (team, is_ab_team)| {
+            query
+                .filter(genertic_header::Column::Team.eq(team))
+                .filter(genertic_header::Column::IsAbTeam.eq(is_ab_team))
+        })
         .select_only()
         .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
         .column_as(genertic_header::Column::AutoScore.avg().cast_as(Alias::new("FLOAT8")), "auto_score")
@@ -523,6 +528,11 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
         .filter(genertic_header::Column::EventCode.eq(event_code))
         .filter(prescout_filter(false))
+        .apply_if(team_filter, |query, (team, is_ab_team)| {
+            query
+                .filter(genertic_header::Column::Team.eq(team))
+                .filter(genertic_header::Column::IsAbTeam.eq(is_ab_team))
+        })
         .select_only()
         .column(genertic_header::Column::GameId) //Not snowgrave
         .column(genertic_header::Column::Team)
@@ -565,6 +575,11 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             .filter(genertic_header::Column::GameTypeId.eq(model.get_year_id()))
             .filter(genertic_header::Column::EventCode.eq(event_code))
             .filter(prescout_filter(false))
+            .apply_if(team_filter, |query, (team, is_ab_team)| {
+                query
+                    .filter(genertic_header::Column::Team.eq(team))
+                    .filter(genertic_header::Column::IsAbTeam.eq(is_ab_team))
+            })
             .select_only()
             .column(genertic_header::Column::Team)
             .column(genertic_header::Column::IsAbTeam)
@@ -580,6 +595,11 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         let all_mid_ids: Vec<MidSpcDataAvg> = scout_game_midway_insert::Entity::find()
             .filter(scout_game_midway_insert::Column::GameTypeId.eq(model.get_year_id()))
             .filter(scout_game_midway_insert::Column::EventCode.eq(event_code))
+            .apply_if(team_filter, |query, (team, is_ab_team)| {
+                query
+                    .filter(scout_game_midway_insert::Column::Team.eq(team))
+                    .filter(scout_game_midway_insert::Column::IsAbTeam.eq(is_ab_team))
+            })
             .select_only()
             .column(scout_game_midway_insert::Column::GameId)
             .column(scout_game_midway_insert::Column::Team)
@@ -614,6 +634,11 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             let mid_raw: Vec<scout_game_midway_insert::Model> = scout_game_midway_insert::Entity::find()
                 .filter(scout_game_midway_insert::Column::GameTypeId.eq(model.get_year_id()))
                 .filter(scout_game_midway_insert::Column::EventCode.eq(event_code))
+                .apply_if(team_filter, |query, (team, is_ab_team)| {
+                    query
+                        .filter(scout_game_midway_insert::Column::Team.eq(team))
+                        .filter(scout_game_midway_insert::Column::IsAbTeam.eq(is_ab_team))
+                })
                 .all(db).await?;
 
             let mut team_sums: HashMap<(i32, bool), (f64, f64, f64, f64, i64)> = HashMap::new();
@@ -967,7 +992,15 @@ pub async fn search_game(param: &SearchParam, db: &DatabaseConnection) -> Result
 pub async fn average_game(event_code: &String, include_midway: bool, db: &DatabaseConnection) -> Result<Vec<TeamAvg>, DbErr> {
     let game = game_dispatch(SETTINGS.year);
 
-    prim_average_game(game, event_code, include_midway, db).await
+    prim_average_game(game, event_code, include_midway, None, db).await
+}
+
+pub async fn average_game_for_team(event_code: &String, team: i32, is_ab_team: bool, include_midway: bool, db: &DatabaseConnection) -> Result<Option<TeamAvg>, DbErr> {
+    let game = game_dispatch(SETTINGS.year);
+
+    let mut result = prim_average_game(game, event_code, include_midway, Some((team, is_ab_team)), db).await?;
+
+    Ok(result.pop())
 }
 
 pub async fn frontrunner(games: &FrontRunnerGame) -> Result<FrontRunnerReturn, DbErr> {

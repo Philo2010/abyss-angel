@@ -839,13 +839,67 @@
     },
     "/api/prescout/insert": {
       "post": {
-        "description": "Store admin-entered prescout data. Unlike the other snowgrave insert routes this one is admin-gated — it writes straight to final storage with no check phase in front of it.",
+        "description": "Store admin-entered prescout data. Unlike the other snowgrave insert routes this one is admin-gated \u2014 it writes straight to final storage with no check phase in front of it.",
         "operationId": "prescout_insert",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PrescoutInsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pick_list": {
+      "post": {
+        "operationId": "get_pick_list",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetPickListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_PickLists"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pick_list/set": {
+      "post": {
+        "operationId": "set_pick_list",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPick"
               }
             }
           },
@@ -2119,7 +2173,7 @@
         }
       },
       "DefenceTarget": {
-        "description": "What a main defender spent the match defending.\n\nOnly meaningful when the game is flagged as the main defender — it is `Some` exactly when that flag is set, and `None` otherwise. `Alliance` means the defence was spread across the whole opposing alliance (the original DPDG behaviour, summed over all three opponents); `Bot` means a single opposing robot was targeted, and DPDG is computed against only that robot's score and event average.",
+        "description": "What a main defender spent the match defending.\n\nOnly meaningful when the game is flagged as the main defender \u2014 it is `Some` exactly when that flag is set, and `None` otherwise. `Alliance` means the defence was spread across the whole opposing alliance (the original DPDG behaviour, summed over all three opponents); `Bot` means a single opposing robot was targeted, and DPDG is computed against only that robot's score and event average.",
         "oneOf": [
           {
             "type": "string",
@@ -3551,6 +3605,125 @@
           },
           "game": {
             "$ref": "#/components/schemas/GamesInsertsSpecific"
+          }
+        }
+      },
+      "PickEntry": {
+        "type": "object",
+        "required": [
+          "team",
+          "team_avg",
+          "is_selected_defence",
+          "is_selected_offence",
+          "is_selected_general"
+        ],
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "team_avg": {
+            "$ref": "#/components/schemas/TeamAvg"
+          },
+          "is_selected_defence": {
+            "type": "boolean"
+          },
+          "is_selected_offence": {
+            "type": "boolean"
+          },
+          "is_selected_general": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PickLists": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PickEntry"
+            }
+          }
+        }
+      },
+      "ApiResult_for_PickLists": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Success"
+                ]
+              },
+              "message": {
+                "$ref": "#/components/schemas/PickLists"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "message",
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "Error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "GetPickListRequest": {
+        "type": "object",
+        "required": [
+          "include_midway"
+        ],
+        "properties": {
+          "include_midway": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SetPick": {
+        "type": "object",
+        "required": [
+          "team",
+          "event_code"
+        ],
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "is_selected_defence": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "is_selected_offence": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "is_selected_general": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       }

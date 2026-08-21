@@ -26,6 +26,8 @@ mod backenddb;
 mod scoutwarn;
 #[path = "../snowgrave/mod.rs"]
 mod snowgrave;
+#[path = "../pick_list/mod.rs"]
+mod pick_list;
 
 use rocket::tokio;
 use std::collections::HashMap;

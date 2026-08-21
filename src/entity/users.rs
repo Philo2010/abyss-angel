@@ -2,6 +2,9 @@
 
 use sea_orm::entity::prelude::*;
 
+
+
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "users")]
 pub struct Model {
@@ -10,6 +13,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub name: String,
     pub is_admin: bool,
+    pub is_pick: bool,
     pub amount_of_warning: i32,
     pub bcrypt_hash: String,
 }
