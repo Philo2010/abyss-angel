@@ -50,8 +50,7 @@ pub async fn insert_scouters(
         };
 
         // Only touch game_scouts if scouters actually changed for this team.
-        // An empty scouter list means this entry exists solely to carry an MVP
-        // change — skip the delete/reinsert so we don't disturb in-progress state.
+        // An empty scouter list means this entry exists solely to carry an MVP.
         if !matche.1.is_empty() {
             // Check if any scouts for this team have already submitted data
             let existing_scouts = game_scouts::Entity::find()

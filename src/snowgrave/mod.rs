@@ -21,3 +21,5 @@ pub mod check_system;
 pub mod delete_event;
 pub mod manual_add_match;
 pub mod prescout;
+pub mod admin_edit_scouter;
+pub mod admin_edit_mvp;

@@ -26,6 +26,7 @@ pub struct Team {
     pub scouters: Vec<String>,
     pub done: bool,
     pub is_inserted: bool,
+    pub is_redo: bool,
 }
 
 
@@ -69,6 +70,7 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
             let team_done = !scouts.is_empty()
                 && scouts.iter().all(|s| s.done && !s.is_redo);
             let is_inserted = scouts.iter().any(|s| s.done || s.is_redo);
+            let team_is_redo = scouts.iter().any(|s| s.is_redo);
             for scout in &scouts {
                 let username = match get_by_uuid(&scout.scouter_id, db).await {
                     Ok(a) => {a},
@@ -93,6 +95,7 @@ pub async fn get_all_snowgrave(db: &State<DatabaseConnection>) -> Json<ApiResult
                 scouters: scouter_usernames,
                 done: team_done,
                 is_inserted,
+                is_redo: team_is_redo,
             });
         }
         
