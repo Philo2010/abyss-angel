@@ -139,7 +139,8 @@ CREATE TABLE IF NOT EXISTS pick_list (
   is_selected_defence boolean NOT NULL,
   is_selected_offence boolean NOT NULL,
   is_selected_general boolean NOT NULL,
-  CONSTRAINT pick_list_item_unique UNIQUE (team, team_is_ab_team, event_code)
+  -- same name the server's schema-sync uses, so it recognises this and adds nothing
+  CONSTRAINT "idx-pick_list-item" UNIQUE (team, team_is_ab_team, event_code)
 );
 "#;
 
