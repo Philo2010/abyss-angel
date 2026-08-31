@@ -29,10 +29,10 @@ pub struct Model {
     pub game_id: i32, //not snowgrave
     /// Admin-entered prescout data, which is never mixed with real scouting
     /// data. `NULL` means the row predates this flag, i.e. normal data.
-    pub is_prescout: Option<bool>,
+    pub is_prescout: bool,
     pub defence_main: bool,
-    #[sea_orm(column_type = "JsonBinary", nullable)]
-    pub defence_target: Option<DefenceTarget>,
+    #[sea_orm(column_type = "JsonBinary")]
+    pub defence_target: DefenceTarget,
     pub auto_time: f32,
     pub dead: bool,
     pub dnf: bool,

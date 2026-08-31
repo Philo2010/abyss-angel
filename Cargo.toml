@@ -16,6 +16,10 @@ path = "src/bin/gen_schema.rs"
 name = "recalc_dpdg"
 path = "src/bin/recalc_dpdg.rs"
 
+[[bin]]
+name = "migrate_e207de6"
+path = "src/bin/migrate_e207de6.rs"
+
 [dependencies]
 rocket = { version = "0.5.1", features = ["json"] }
 sea-orm = { version = "2.0.0-rc", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros", "entity-registry", "schema-sync" ] }

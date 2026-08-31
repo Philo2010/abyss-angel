@@ -15,7 +15,7 @@ use sea_orm::{DatabaseConnection, DbErr};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::backenddb::game::{DefenceTarget, GamesInserts, GamesInsertsSpecific, HeaderInsert, insert_game};
+use crate::backenddb::game::{DefenceTarget, GamesInserts, GamesInsertsSpecific, HeaderInsert, insert_game, normalize_target};
 use crate::entity::sea_orm_active_enums::{Stations, TournamentLevels};
 
 #[derive(Deserialize, JsonSchema)]
@@ -56,7 +56,7 @@ pub async fn insert_prescout(user: Uuid, data: PrescoutInsert, db: &DatabaseConn
             comment: data.comment,
             is_prescout: true,
             defence_main: data.defence_main,
-            defence_target: data.defence_target,
+            defence_target: normalize_target(data.defence_main, data.defence_target),
             auto_time: data.auto_time,
             dead: data.dead,
             dnf: data.dnf,

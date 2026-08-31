@@ -20,13 +20,15 @@ use crate::entity::types::Team;
 
 pub use crate::entity::types::DefenceTarget;
 
-/// A defence target only exists for a main defender, and a main defender always
-/// has one — plain alliance-wide defence when the scout named no specific bot.
-pub fn normalize_target(defence_main: bool, target: Option<DefenceTarget>) -> Option<DefenceTarget> {
+/// Every header row stores a defence target. For a main defender it is the bot
+/// the scout named, or plain alliance-wide defence when they named none; for a
+/// non-defender it is the neutral `Alliance` placeholder, which every consumer
+/// ignores after checking `defence_main`.
+pub fn normalize_target(defence_main: bool, target: Option<DefenceTarget>) -> DefenceTarget {
     if !defence_main {
-        return None;
+        return DefenceTarget::Alliance;
     }
-    Some(target.unwrap_or(DefenceTarget::Alliance))
+    target.unwrap_or(DefenceTarget::Alliance)
 }
 
 /// Prescout rows are admin-entered data for matches that were never queued, and
@@ -197,7 +199,7 @@ pub struct HeaderInsert {
     /// Admin-entered prescout data — excluded from every normal calculation.
     pub is_prescout: bool,
     pub defence_main: bool,
-    pub defence_target: Option<DefenceTarget>,
+    pub defence_target: DefenceTarget,
     pub auto_time: f32,
     pub dead: bool,
     pub dnf: bool,
@@ -232,9 +234,9 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         auto_score: Set(res.auto_score),
         defence: Set(data.header.defence),
         comment: Set(data.header.comment.clone()),
-        is_prescout: Set(Some(data.header.is_prescout)),
+        is_prescout: Set(data.header.is_prescout),
         defence_main: Set(data.header.defence_main),
-        defence_target: Set(normalize_target(data.header.defence_main, data.header.defence_target)),
+        defence_target: Set(data.header.defence_target),
         auto_time: Set(data.header.auto_time),
         dead: Set(data.header.dead),
         dnf: Set(data.header.dnf),
@@ -931,7 +933,7 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         comment: header.comment.map(Set).unwrap_or(NotSet),
         user: header.user.map(Set).unwrap_or(NotSet),
         defence_main: header.defence_main.map(Set).unwrap_or(NotSet),
-        defence_target: header.defence_target.map(|dt| Set(Some(dt))).unwrap_or(NotSet),
+        defence_target: header.defence_target.map(Set).unwrap_or(NotSet),
         auto_time: header.auto_time.map(Set).unwrap_or(NotSet),
         dead: header.dead.map(Set).unwrap_or(NotSet),
         dnf: header.dnf.map(Set).unwrap_or(NotSet),

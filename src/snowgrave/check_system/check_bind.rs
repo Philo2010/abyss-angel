@@ -46,10 +46,11 @@ async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Resu
         .collect();
 
     let dpdgs: Vec<(Option<f32>, Option<f32>)> = all.iter().enumerate().map(|(i, g)| {
-        let target = match g.header.defence_target {
-            Some(t) => t,
-            None => return (None, None),
-        };
+        // DPDG only exists for the main defender; every other row stays NULL.
+        if !g.header.defence_main {
+            return (None, None);
+        }
+        let target = g.header.defence_target;
 
         // Alliance defence counts every opponent; bot defence counts only the
         // targeted robot.

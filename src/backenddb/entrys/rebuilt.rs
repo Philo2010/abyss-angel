@@ -183,11 +183,11 @@ impl YearOp for Functions {
             },
         };
 
-        let normalized_targets: Vec<Option<DefenceTarget>> = games.defence_mains.iter()
+        let normalized_targets: Vec<DefenceTarget> = games.defence_mains.iter()
             .zip(games.defence_targets.iter())
             .map(|(&dm, dt)| game::normalize_target(dm, *dt))
             .collect();
-        let defence_target = match consensus_field(&normalized_targets, &mut crazy, |v: &Option<DefenceTarget>| *v, "defence_target") {
+        let defence_target = match consensus_field(&normalized_targets, &mut crazy, |v: &DefenceTarget| *v, "defence_target") {
             Some(a) => a,
             None => {
                 crazy.extend(0..games.games.len());

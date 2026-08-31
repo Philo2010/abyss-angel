@@ -80,7 +80,7 @@ async fn edit_published_data(
         header_active.defence_main = Set(defence_main);
     }
     if let Some(defence_target) = edit_data.defence_target {
-        header_active.defence_target = Set(Some(defence_target));
+        header_active.defence_target = Set(defence_target);
     }
     if let Some(auto_time) = edit_data.auto_time {
         header_active.auto_time = Set(auto_time);

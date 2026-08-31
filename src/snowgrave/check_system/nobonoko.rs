@@ -7,7 +7,7 @@
 
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, prelude::Expr};
 
-use crate::{auth::get_by_user::get_by_uuid, backenddb::{entrys::rebuilt::Insert, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert}}, entity::{game_scouts, sea_orm_active_enums::Stations}, snowgrave::{check_system::db_work::publish, datatypes::{Game, ScoutMatch, Team}, db_models_to_snow}};
+use crate::{auth::get_by_user::get_by_uuid, backenddb::{entrys::rebuilt::Insert, game::{GamesInserts, GamesInsertsSpecific, HeaderInsert, normalize_target}}, entity::{game_scouts, sea_orm_active_enums::Stations}, snowgrave::{check_system::db_work::publish, datatypes::{Game, ScoutMatch, Team}, db_models_to_snow}};
 pub enum Alliance {
     Red,
     Blue
@@ -102,7 +102,7 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 comment: data.comment.clone(),
                 is_prescout: false,
                 defence_main: data.defence_main,
-                defence_target: data.defence_target,
+                defence_target: normalize_target(data.defence_main, data.defence_target),
                 auto_time: data.auto_time,
                 dead: data.dead,
                 dnf: data.dnf,
