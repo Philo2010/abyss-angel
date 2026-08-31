@@ -66,6 +66,8 @@ fn main() {
     use crate::frontend::snowgrave::bypass_check::okapi_add_operation_for_bypass_check_;
     use crate::frontend::snowgrave::delete_event::okapi_add_operation_for_delete_event_route_;
     use crate::frontend::snowgrave::prescout_insert::okapi_add_operation_for_prescout_insert_;
+    use crate::frontend::pick_list::okapi_add_operation_for_get_pick_list_;
+    use crate::frontend::pick_list::okapi_add_operation_for_set_pick_list_;
 
     let spec = openapi_get_spec![
         settings:
@@ -102,7 +104,9 @@ fn main() {
         manual_add_match,
         bypass_check,
         delete_event_route,
-        prescout_insert
+        prescout_insert,
+        get_pick_list,
+        set_pick_list
     ];
 
     println!("{}", serde_json::to_string_pretty(&spec).unwrap());

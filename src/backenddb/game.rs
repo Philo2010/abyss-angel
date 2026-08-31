@@ -102,6 +102,11 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         created_at: model.created_at,
         is_mvp: model.is_mvp,
         defence: model.defence,
+        defence_main: model.defence_main,
+        defence_target: Some(model.defence_target),
+        auto_time: model.auto_time,
+        dead: model.dead,
+        dnf: model.dnf,
         auto_score: model.auto_score,
         comment: model.comment,
         teleop_score: model.teleop_score,
@@ -134,6 +139,11 @@ async fn to_full_match_midway(model: scout_game_midway_insert::Model, db: &Datab
         created_at: model.created_at,
         is_mvp: false,
         defence: model.defence as f32,
+        defence_main: model.defence_main,
+        defence_target: model.defence_target,
+        auto_time: model.auto_time,
+        dead: model.dead,
+        dnf: model.dnf,
         mvp_comment: None,
         dpdg: None,
         dpdg_raw: None,
@@ -850,6 +860,14 @@ pub struct HeaderFull {
     pub created_at: DateTime<Local>,
     pub is_mvp: bool,
     pub defence: f32,
+    pub defence_main: bool,
+    /// What the main defender was defending. For a finalized game this is always
+    /// present (`Alliance` for a non-defender); `null` only for a midway row that
+    /// hasn't been reconciled yet.
+    pub defence_target: Option<DefenceTarget>,
+    pub auto_time: f32,
+    pub dead: bool,
+    pub dnf: bool,
     pub mvp_comment: Option<String>,
     /// DPDG as a percentage of the opposing teams' event averages.
     pub dpdg: Option<f32>,

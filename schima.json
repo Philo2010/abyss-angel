@@ -839,7 +839,7 @@
     },
     "/api/prescout/insert": {
       "post": {
-        "description": "Store admin-entered prescout data. Unlike the other snowgrave insert routes this one is admin-gated \u2014 it writes straight to final storage with no check phase in front of it.",
+        "description": "Store admin-entered prescout data. Unlike the other snowgrave insert routes this one is admin-gated — it writes straight to final storage with no check phase in front of it.",
         "operationId": "prescout_insert",
         "requestBody": {
           "content": {
@@ -1601,7 +1601,11 @@
         "type": "object",
         "required": [
           "auto_score",
+          "auto_time_avg",
+          "dead_avg",
+          "defence_main_avg",
           "defence_score",
+          "dnf_avg",
           "game",
           "is_ab_team",
           "mvp_percent",
@@ -1647,6 +1651,22 @@
             "format": "double",
             "nullable": true
           },
+          "defence_main_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "auto_time_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "dead_avg": {
+            "type": "number",
+            "format": "double"
+          },
+          "dnf_avg": {
+            "type": "number",
+            "format": "double"
+          },
           "game": {
             "$ref": "#/components/schemas/GamesAvgSpecific"
           }
@@ -1671,11 +1691,7 @@
       "Avg": {
         "type": "object",
         "required": [
-          "auto_time_avg",
           "beach_on_bump",
-          "dead_avg",
-          "defence_main_avg",
-          "dnf_avg",
           "fuel_pass_auto_avg",
           "fuel_pass_teleop_avg",
           "fuel_shoot_auto_avg",
@@ -1688,10 +1704,6 @@
           "level_3_avg_auto"
         ],
         "properties": {
-          "defence_main_avg": {
-            "type": "number",
-            "format": "double"
-          },
           "fuel_shoot_teleop_avg": {
             "type": "number",
             "format": "double"
@@ -1707,28 +1719,6 @@
           "fuel_pass_auto_avg": {
             "type": "number",
             "format": "double"
-          },
-          "dead_avg": {
-            "type": "number",
-            "format": "double"
-          },
-          "dnf_avg": {
-            "type": "number",
-            "format": "double"
-          },
-          "auto_time_avg": {
-            "type": "number",
-            "format": "double"
-          },
-          "dpdg_avg": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "dpdg_raw_avg": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
           },
           "level_1_avg": {
             "type": "number",
@@ -1959,9 +1949,13 @@
         "type": "object",
         "required": [
           "auto_score",
+          "auto_time",
           "comment",
           "created_at",
+          "dead",
           "defence",
+          "defence_main",
+          "dnf",
           "event_code",
           "id",
           "is_ab_team",
@@ -2036,6 +2030,28 @@
             "type": "number",
             "format": "float"
           },
+          "defence_main": {
+            "type": "boolean"
+          },
+          "defence_target": {
+            "description": "What the main defender was defending. For a finalized game this is always present (`Alliance` for a non-defender); `null` only for a midway row that hasn't been reconciled yet.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dead": {
+            "type": "boolean"
+          },
+          "dnf": {
+            "type": "boolean"
+          },
           "mvp_comment": {
             "type": "string",
             "nullable": true
@@ -2074,6 +2090,29 @@
           "Blue3"
         ]
       },
+      "DefenceTarget": {
+        "description": "What a main defender spent the match defending.\n\nOnly meaningful when the game is flagged as the main defender — it is `Some` exactly when that flag is set, and `None` otherwise. `Alliance` means the defence was spread across the whole opposing alliance; `Bot` means a single opposing robot was targeted.",
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "Alliance"
+            ]
+          },
+          {
+            "type": "object",
+            "required": [
+              "Bot"
+            ],
+            "properties": {
+              "Bot": {
+                "$ref": "#/components/schemas/Team"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "GamesFullSpecific": {
         "oneOf": [
           {
@@ -2093,13 +2132,9 @@
       "Model2": {
         "type": "object",
         "required": [
-          "auto_time",
           "beach_on_bump",
           "climb_auto",
           "climb_end",
-          "dead",
-          "defence_main",
-          "dnf",
           "fuel_pass_auto",
           "fuel_pass_teleop",
           "fuel_shoot_auto",
@@ -2110,18 +2145,6 @@
           "id": {
             "type": "integer",
             "format": "int32"
-          },
-          "defence_main": {
-            "type": "boolean"
-          },
-          "defence_target": {
-            "description": "What the main defender was defending (whole alliance vs. a single bot). `Some` only when `defence_main` is set.",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DefenceTarget"
-              }
-            ],
-            "nullable": true
           },
           "fuel_shoot_teleop": {
             "type": "number",
@@ -2147,53 +2170,8 @@
           },
           "beach_on_bump": {
             "type": "boolean"
-          },
-          "dead": {
-            "type": "boolean"
-          },
-          "dnf": {
-            "type": "boolean"
-          },
-          "auto_time": {
-            "type": "number",
-            "format": "float"
-          },
-          "dpdg": {
-            "description": "DPDG as a percentage of the opposing teams' event averages.",
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "dpdg_raw": {
-            "description": "DPDG as a raw point value (opponent event averages minus their scores).",
-            "type": "number",
-            "format": "float",
-            "nullable": true
           }
         }
-      },
-      "DefenceTarget": {
-        "description": "What a main defender spent the match defending.\n\nOnly meaningful when the game is flagged as the main defender \u2014 it is `Some` exactly when that flag is set, and `None` otherwise. `Alliance` means the defence was spread across the whole opposing alliance (the original DPDG behaviour, summed over all three opponents); `Bot` means a single opposing robot was targeted, and DPDG is computed against only that robot's score and event average.",
-        "oneOf": [
-          {
-            "type": "string",
-            "enum": [
-              "Alliance"
-            ]
-          },
-          {
-            "type": "object",
-            "required": [
-              "Bot"
-            ],
-            "properties": {
-              "Bot": {
-                "$ref": "#/components/schemas/Team"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
       },
       "SearchParamData": {
         "type": "object",
@@ -2477,9 +2455,13 @@
         "type": "object",
         "required": [
           "auto_score",
+          "auto_time",
           "comment",
           "created_at",
+          "dead",
           "defence",
+          "defence_main",
+          "dnf",
           "event_code",
           "game",
           "game_id",
@@ -2542,6 +2524,27 @@
           "game_type_id": {
             "type": "integer",
             "format": "int32"
+          },
+          "defence_main": {
+            "type": "boolean"
+          },
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dead": {
+            "type": "boolean"
+          },
+          "dnf": {
+            "type": "boolean"
           }
         }
       },
@@ -2683,6 +2686,31 @@
           },
           "game": {
             "$ref": "#/components/schemas/GamesEditSpecific"
+          },
+          "defence_main": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dead": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "dnf": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       },
@@ -2705,18 +2733,6 @@
       "Edit2": {
         "type": "object",
         "properties": {
-          "defence_main": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "defence_target": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DefenceTarget"
-              }
-            ],
-            "nullable": true
-          },
           "fuel_shoot_teleop": {
             "type": "number",
             "format": "float",
@@ -2756,37 +2772,18 @@
           "beach_on_bump": {
             "type": "boolean",
             "nullable": true
-          },
-          "dead": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "dnf": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "auto_time": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "dpdg": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "dpdg_raw": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
           }
         }
       },
       "InsertSnow": {
         "type": "object",
         "required": [
+          "auto_time",
           "comment",
+          "dead",
           "defence",
+          "defence_main",
+          "dnf",
           "game",
           "snowgrave_scout_id"
         ],
@@ -2804,6 +2801,27 @@
           },
           "comment": {
             "type": "string"
+          },
+          "defence_main": {
+            "type": "boolean"
+          },
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dead": {
+            "type": "boolean"
+          },
+          "dnf": {
+            "type": "boolean"
           }
         }
       },
@@ -2826,30 +2844,15 @@
       "Insert2": {
         "type": "object",
         "required": [
-          "auto_time",
           "beach_on_bump",
           "climb_auto",
           "climb_end",
-          "dead",
-          "defence_main",
-          "dnf",
           "fuel_pass_auto",
           "fuel_pass_teleop",
           "fuel_shoot_auto",
           "fuel_shoot_teleop"
         ],
         "properties": {
-          "defence_main": {
-            "type": "boolean"
-          },
-          "defence_target": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DefenceTarget"
-              }
-            ],
-            "nullable": true
-          },
           "fuel_shoot_teleop": {
             "type": "number",
             "format": "float"
@@ -2874,26 +2877,6 @@
           },
           "beach_on_bump": {
             "type": "boolean"
-          },
-          "dead": {
-            "type": "boolean"
-          },
-          "dnf": {
-            "type": "boolean"
-          },
-          "auto_time": {
-            "type": "number",
-            "format": "float"
-          },
-          "dpdg": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "dpdg_raw": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
           }
         }
       },
@@ -3050,6 +3033,7 @@
           "id",
           "is_ab_team",
           "is_inserted",
+          "is_redo",
           "scouters",
           "station",
           "team"
@@ -3079,6 +3063,9 @@
             "type": "boolean"
           },
           "is_inserted": {
+            "type": "boolean"
+          },
+          "is_redo": {
             "type": "boolean"
           }
         }
@@ -3369,6 +3356,7 @@
         "type": "object",
         "required": [
           "is_admin",
+          "is_pick",
           "password",
           "username"
         ],
@@ -3380,6 +3368,9 @@
             "type": "string"
           },
           "is_admin": {
+            "type": "string"
+          },
+          "is_pick": {
             "type": "string"
           }
         }
@@ -3559,8 +3550,12 @@
       "PrescoutInsert": {
         "type": "object",
         "required": [
+          "auto_time",
           "comment",
+          "dead",
           "defence",
+          "defence_main",
+          "dnf",
           "event_code",
           "game",
           "is_ab_team",
@@ -3605,47 +3600,27 @@
           },
           "game": {
             "$ref": "#/components/schemas/GamesInsertsSpecific"
-          }
-        }
-      },
-      "PickEntry": {
-        "type": "object",
-        "required": [
-          "team",
-          "team_avg",
-          "is_selected_defence",
-          "is_selected_offence",
-          "is_selected_general"
-        ],
-        "properties": {
-          "team": {
-            "$ref": "#/components/schemas/Team"
           },
-          "team_avg": {
-            "$ref": "#/components/schemas/TeamAvg"
-          },
-          "is_selected_defence": {
+          "defence_main": {
             "type": "boolean"
           },
-          "is_selected_offence": {
+          "defence_target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DefenceTarget"
+              }
+            ],
+            "nullable": true
+          },
+          "auto_time": {
+            "type": "number",
+            "format": "float"
+          },
+          "dead": {
             "type": "boolean"
           },
-          "is_selected_general": {
+          "dnf": {
             "type": "boolean"
-          }
-        }
-      },
-      "PickLists": {
-        "type": "object",
-        "required": [
-          "results"
-        ],
-        "properties": {
-          "results": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PickEntry"
-            }
           }
         }
       },
@@ -3689,6 +3664,47 @@
           }
         ]
       },
+      "PickLists": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PickEntry"
+            }
+          }
+        }
+      },
+      "PickEntry": {
+        "type": "object",
+        "required": [
+          "is_selected_defence",
+          "is_selected_general",
+          "is_selected_offence",
+          "team",
+          "team_avg"
+        ],
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "team_avg": {
+            "$ref": "#/components/schemas/TeamAvg"
+          },
+          "is_selected_defence": {
+            "type": "boolean"
+          },
+          "is_selected_offence": {
+            "type": "boolean"
+          },
+          "is_selected_general": {
+            "type": "boolean"
+          }
+        }
+      },
       "GetPickListRequest": {
         "type": "object",
         "required": [
@@ -3703,8 +3719,8 @@
       "SetPick": {
         "type": "object",
         "required": [
-          "team",
-          "event_code"
+          "event_code",
+          "team"
         ],
         "properties": {
           "team": {
