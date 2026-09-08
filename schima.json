@@ -3702,6 +3702,18 @@
           },
           "is_selected_general": {
             "type": "boolean"
+          },
+          "order_defence": {
+            "type": "integer",
+            "nullable": true
+          },
+          "order_offence": {
+            "type": "integer",
+            "nullable": true
+          },
+          "order_general": {
+            "type": "integer",
+            "nullable": true
           }
         }
       },
@@ -3739,6 +3751,18 @@
           },
           "is_selected_general": {
             "type": "boolean",
+            "nullable": true
+          },
+          "order_defence": {
+            "type": "integer",
+            "nullable": true
+          },
+          "order_offence": {
+            "type": "integer",
+            "nullable": true
+          },
+          "order_general": {
+            "type": "integer",
             "nullable": true
           }
         }

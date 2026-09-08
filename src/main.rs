@@ -120,6 +120,7 @@ async fn rocket() -> _ {
     frontend::snowgrave::bypass_check::bypass_check,
     frontend::snowgrave::prescout_insert::prescout_insert,
     frontend::pick_list::get_pick_list,
-    frontend::pick_list::set_pick_list
+    frontend::pick_list::set_pick_list,
+    frontend::pick_list::reorder_pick_list
     ])
 }

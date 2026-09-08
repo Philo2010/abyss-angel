@@ -14,6 +14,9 @@ pub struct Model {
     pub is_selected_defence: bool,
     pub is_selected_offence: bool,
     pub is_selected_general: bool,
+    pub order_defence: Option<i32>,
+    pub order_offence: Option<i32>,
+    pub order_general: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
