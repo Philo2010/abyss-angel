@@ -177,41 +177,45 @@ pub async fn run(
             let (dpdg, dpdg_raw) = if !header.defence_main {
                 (None, None)
             } else {
-                let opponents = || all_station.iter().enumerate()
+                let opp: Vec<usize> = all_station.iter().enumerate()
                     .filter(|(j, _)| !same_alliance(all_station[*j], all_station[i]))
                     .filter(|(j, _)| match header.defence_target {
                         DefenceTarget::Alliance => true,
                         DefenceTarget::Bot(bot) => bot.number == all_team[*j] && bot.is_ab_team == all_ab[*j],
-                    });
-
-                let percent: f32 = opponents()
-                    .map(|(j, _)| {
-                        let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
-                        if avg == 0.0 {
-                            0.0
-                        } else {
-                            (avg - all_scores[j]) / avg * 100.0
-                        }
                     })
-                    .sum();
+                    .map(|(j, _)| j)
+                    .collect();
 
-                let raw: f32 = opponents()
-                    .map(|(j, _)| {
-                        let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
-                        if avg == 0.0 {
-                            0.0
-                        } else {
-                            avg - all_scores[j]
-                        }
-                    })
-                    .sum();
-
-                if opponents().next().is_none() {
+                if opp.is_empty() {
                     // Targeted bot isn't in this match — the metric is meaningless.
                     println!("[{}] header_id={} targets a bot outside this match -> DPDG set NULL", key.event_code, header.id);
                     nulled += 1;
                     (None, None)
                 } else {
+                    let n = opp.len() as f32;
+
+                    let percent: f32 = opp.iter()
+                        .map(|&j| {
+                            let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
+                            if avg == 0.0 {
+                                0.0
+                            } else {
+                                (avg - all_scores[j]) / avg * 100.0
+                            }
+                        })
+                        .sum::<f32>() / n;
+
+                    let raw: f32 = opp.iter()
+                        .map(|&j| {
+                            let avg = team_avg.get(&(all_team[j], all_ab[j])).copied().unwrap_or(0.0);
+                            if avg == 0.0 {
+                                0.0
+                            } else {
+                                avg - all_scores[j]
+                            }
+                        })
+                        .sum::<f32>() / n;
+
                     (Some(percent), Some(raw))
                 }
             };

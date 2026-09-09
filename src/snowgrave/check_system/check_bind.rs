@@ -54,40 +54,43 @@ async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Resu
 
         // Alliance defence counts every opponent; bot defence counts only the
         // targeted robot.
-        let opponents = || all_info.iter().enumerate()
+        let opp: Vec<usize> = all_info.iter().enumerate()
             .filter(|(_, (station, _, _))| !same_alliance(*station, all_info[i].0))
             .filter(|(_, (_, team, is_ab_team))| match target {
                 DefenceTarget::Alliance => true,
                 DefenceTarget::Bot(bot) => bot.number == *team && bot.is_ab_team == *is_ab_team,
-            });
+            })
+            .map(|(j, _)| j)
+            .collect();
 
         // A targeted bot that isn't actually in this match leaves DPDG unset
         // rather than silently reporting zero defensive impact.
-        if opponents().next().is_none() {
+        if opp.is_empty() {
             return (None, None);
         }
+        let n = opp.len() as f32;
 
-        let percent: f32 = opponents()
-            .map(|(j, (_, team, is_ab_team))| {
-                let avg = team_avg.get(&(*team, *is_ab_team)).copied().unwrap_or(0.0);
+        let percent: f32 = opp.iter()
+            .map(|&j| {
+                let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
                 if avg == 0.0 {
                     0.0
                 } else {
                     (avg - all_scores[j]) / avg * 100.0
                 }
             })
-            .sum();
+            .sum::<f32>() / n;
 
-        let raw: f32 = opponents()
-            .map(|(j, (_, team, is_ab_team))| {
-                let avg = team_avg.get(&(*team, *is_ab_team)).copied().unwrap_or(0.0);
+        let raw: f32 = opp.iter()
+            .map(|&j| {
+                let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
                 if avg == 0.0 {
                     0.0
                 } else {
                     avg - all_scores[j]
                 }
             })
-            .sum();
+            .sum::<f32>() / n;
 
         (Some(percent), Some(raw))
     }).collect();
