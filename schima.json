@@ -918,6 +918,33 @@
           }
         }
       }
+    },
+    "/api/pick_list/reorder": {
+      "post": {
+        "operationId": "reorder_pick_list",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPick"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResult_for_String"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1641,12 +1668,22 @@
             "type": "number",
             "format": "double"
           },
-          "dpdg": {
+          "dpdg_team": {
             "type": "number",
             "format": "double",
             "nullable": true
           },
-          "dpdg_raw": {
+          "dpdg_team_raw": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "dpdg_alliance": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "dpdg_alliance_raw": {
             "type": "number",
             "format": "double",
             "nullable": true
@@ -1841,12 +1878,22 @@
             "type": "number",
             "format": "float"
           },
-          "dpdg": {
+          "dpdg_team": {
             "type": "number",
             "format": "float",
             "nullable": true
           },
-          "dpdg_raw": {
+          "dpdg_team_raw": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_alliance": {
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_alliance_raw": {
             "type": "number",
             "format": "float",
             "nullable": true
@@ -2056,14 +2103,26 @@
             "type": "string",
             "nullable": true
           },
-          "dpdg": {
-            "description": "DPDG as a percentage of the opposing teams' event averages.",
+          "dpdg_team": {
+            "description": "DPDG against a single targeted bot, as a percentage of its event average.",
             "type": "number",
             "format": "float",
             "nullable": true
           },
-          "dpdg_raw": {
-            "description": "DPDG as a raw point value.",
+          "dpdg_team_raw": {
+            "description": "DPDG against a single targeted bot, as a raw point difference.",
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_alliance": {
+            "description": "DPDG averaged over the whole opposing alliance, as a percentage.",
+            "type": "number",
+            "format": "float",
+            "nullable": true
+          },
+          "dpdg_alliance_raw": {
+            "description": "DPDG averaged over the whole opposing alliance, as a raw point difference.",
             "type": "number",
             "format": "float",
             "nullable": true
@@ -3684,6 +3743,9 @@
           "is_selected_defence",
           "is_selected_general",
           "is_selected_offence",
+          "order_defence",
+          "order_general",
+          "order_offence",
           "team",
           "team_avg"
         ],
@@ -3705,15 +3767,15 @@
           },
           "order_defence": {
             "type": "integer",
-            "nullable": true
+            "format": "int32"
           },
           "order_offence": {
             "type": "integer",
-            "nullable": true
+            "format": "int32"
           },
           "order_general": {
             "type": "integer",
-            "nullable": true
+            "format": "int32"
           }
         }
       },
@@ -3752,20 +3814,46 @@
           "is_selected_general": {
             "type": "boolean",
             "nullable": true
-          },
-          "order_defence": {
-            "type": "integer",
-            "nullable": true
-          },
-          "order_offence": {
-            "type": "integer",
-            "nullable": true
-          },
-          "order_general": {
-            "type": "integer",
-            "nullable": true
           }
         }
+      },
+      "ReorderPick": {
+        "type": "object",
+        "required": [
+          "category",
+          "direction",
+          "event_code",
+          "team"
+        ],
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "event_code": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/Direction"
+          }
+        }
+      },
+      "Category": {
+        "type": "string",
+        "enum": [
+          "Defence",
+          "Offence",
+          "General"
+        ]
+      },
+      "Direction": {
+        "type": "string",
+        "enum": [
+          "Up",
+          "Down"
+        ]
       }
     }
   }

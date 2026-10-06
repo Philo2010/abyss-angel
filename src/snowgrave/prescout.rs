@@ -60,8 +60,10 @@ pub async fn insert_prescout(user: Uuid, data: PrescoutInsert, db: &DatabaseConn
             auto_time: data.auto_time,
             dead: data.dead,
             dnf: data.dnf,
-            dpdg: None,
-            dpdg_raw: None,
+            dpdg_team: None,
+            dpdg_team_raw: None,
+            dpdg_alliance: None,
+            dpdg_alliance_raw: None,
         },
         game: data.game,
     };

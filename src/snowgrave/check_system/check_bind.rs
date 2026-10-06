@@ -27,9 +27,10 @@ async fn team_avg_total_scores(event_code: &str, year_id: i32, db: &DatabaseConn
 
 /// DPDG is only created for the main defender and equals the opposing teams'
 /// event averages minus their total scores for this match. Two forms are stamped:
-/// `dpdg` as a percentage of each opponent's event average, and `dpdg_raw` as the
-/// plain point difference. Which opponents count depends on the defence target —
-/// `Alliance` sums all three, `Bot` uses only that one robot's score and average.
+/// a percentage and a plain point difference. The value is split by defence
+/// target: a `Bot` target is scored against that one robot (the *team* metric),
+/// an `Alliance` target is averaged over all three opponents (the *alliance*
+/// metric). Exactly one side is populated per row; the other stays `None`.
 /// Computed here, during the checking phase, since that's the only time all
 /// opponent data is present.
 async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Result<(), DbErr> {
@@ -45,62 +46,69 @@ async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Resu
         .map(|g| (g.header.station, g.header.team, g.header.is_ab_team))
         .collect();
 
-    let dpdgs: Vec<(Option<f32>, Option<f32>)> = all.iter().enumerate().map(|(i, g)| {
-        // DPDG only exists for the main defender; every other row stays NULL.
-        if !g.header.defence_main {
-            return (None, None);
-        }
-        let target = g.header.defence_target;
+    // Per defender: (team_percent, team_raw, alliance_percent, alliance_raw).
+    let dpdgs: Vec<(Option<f32>, Option<f32>, Option<f32>, Option<f32>)> =
+        all.iter().enumerate().map(|(i, g)| {
+            // DPDG only exists for the main defender; every other row stays NULL.
+            if !g.header.defence_main {
+                return (None, None, None, None);
+            }
+            let target = g.header.defence_target;
 
-        // Alliance defence counts every opponent; bot defence counts only the
-        // targeted robot.
-        let opp: Vec<usize> = all_info.iter().enumerate()
-            .filter(|(_, (station, _, _))| !same_alliance(*station, all_info[i].0))
-            .filter(|(_, (_, team, is_ab_team))| match target {
-                DefenceTarget::Alliance => true,
-                DefenceTarget::Bot(bot) => bot.number == *team && bot.is_ab_team == *is_ab_team,
-            })
-            .map(|(j, _)| j)
-            .collect();
+            // Alliance defence counts every opponent; bot defence counts only the
+            // targeted robot.
+            let opp: Vec<usize> = all_info.iter().enumerate()
+                .filter(|(_, (station, _, _))| !same_alliance(*station, all_info[i].0))
+                .filter(|(_, (_, team, is_ab_team))| match target {
+                    DefenceTarget::Alliance => true,
+                    DefenceTarget::Bot(bot) => bot.number == *team && bot.is_ab_team == *is_ab_team,
+                })
+                .map(|(j, _)| j)
+                .collect();
 
-        // A targeted bot that isn't actually in this match leaves DPDG unset
-        // rather than silently reporting zero defensive impact.
-        if opp.is_empty() {
-            return (None, None);
-        }
-        let n = opp.len() as f32;
+            // A targeted bot that isn't actually in this match leaves DPDG unset
+            // rather than silently reporting zero defensive impact.
+            if opp.is_empty() {
+                return (None, None, None, None);
+            }
+            let n = opp.len() as f32;
 
-        let percent: f32 = opp.iter()
-            .map(|&j| {
-                let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
-                if avg == 0.0 {
-                    0.0
-                } else {
-                    (avg - all_scores[j]) / avg * 100.0
-                }
-            })
-            .sum::<f32>() / n;
+            let percent: f32 = opp.iter()
+                .map(|&j| {
+                    let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
+                    if avg == 0.0 {
+                        0.0
+                    } else {
+                        (avg - all_scores[j]) / avg * 100.0
+                    }
+                })
+                .sum::<f32>() / n;
 
-        let raw: f32 = opp.iter()
-            .map(|&j| {
-                let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
-                if avg == 0.0 {
-                    0.0
-                } else {
-                    avg - all_scores[j]
-                }
-            })
-            .sum::<f32>() / n;
+            let raw: f32 = opp.iter()
+                .map(|&j| {
+                    let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
+                    if avg == 0.0 {
+                        0.0
+                    } else {
+                        avg - all_scores[j]
+                    }
+                })
+                .sum::<f32>() / n;
 
-        (Some(percent), Some(raw))
-    }).collect();
+            match target {
+                DefenceTarget::Alliance => (None, None, Some(percent), Some(raw)),
+                DefenceTarget::Bot(_) => (Some(percent), Some(raw), None, None),
+            }
+        }).collect();
 
-    for (game, (dpdg, dpdg_raw)) in [
+    for (game, (team, team_raw, alliance, alliance_raw)) in [
         &mut all_six.red1, &mut all_six.red2, &mut all_six.red3,
         &mut all_six.blue1, &mut all_six.blue2, &mut all_six.blue3,
     ].into_iter().zip(dpdgs) {
-        game.header.dpdg = dpdg;
-        game.header.dpdg_raw = dpdg_raw;
+        game.header.dpdg_team = team;
+        game.header.dpdg_team_raw = team_raw;
+        game.header.dpdg_alliance = alliance;
+        game.header.dpdg_alliance_raw = alliance_raw;
     }
 
     Ok(())
@@ -228,6 +236,7 @@ pub async fn check_bind(upcoming_game_id: i32, db: &DatabaseConnection) -> Resul
                         error.insert(uuid);
                     }
 
+                    //we still calulate the value if we missed  
                     stamp_dpdg(&mut pre_check_game, db).await?;
 
                     let games = vec![pre_check_game.red1, pre_check_game.red2, pre_check_game.red3];

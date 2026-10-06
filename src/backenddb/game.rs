@@ -111,8 +111,10 @@ async fn to_full_match(model: genertic_header::Model, db: &DatabaseConnection) -
         comment: model.comment,
         teleop_score: model.teleop_score,
         mvp_comment,
-        dpdg: model.dpdg,
-        dpdg_raw: model.dpdg_raw,
+        dpdg_team: model.dpdg_team,
+        dpdg_team_raw: model.dpdg_team_raw,
+        dpdg_alliance: model.dpdg_alliance,
+        dpdg_alliance_raw: model.dpdg_alliance_raw,
     })
 }
 
@@ -145,8 +147,10 @@ async fn to_full_match_midway(model: scout_game_midway_insert::Model, db: &Datab
         dead: model.dead,
         dnf: model.dnf,
         mvp_comment: None,
-        dpdg: None,
-        dpdg_raw: None,
+        dpdg_team: None,
+        dpdg_team_raw: None,
+        dpdg_alliance: None,
+        dpdg_alliance_raw: None,
     })
 }
 
@@ -214,8 +218,12 @@ pub struct HeaderInsert {
     pub dead: bool,
     pub dnf: bool,
     /// Stamped by `stamp_dpdg` in check_bind; `None` until then.
-    pub dpdg: Option<f32>,
-    pub dpdg_raw: Option<f32>,
+    /// DPDG against a single targeted bot, as a percentage and raw points.
+    pub dpdg_team: Option<f32>,
+    pub dpdg_team_raw: Option<f32>,
+    /// DPDG against the whole opposing alliance, as a percentage and raw points.
+    pub dpdg_alliance: Option<f32>,
+    pub dpdg_alliance_raw: Option<f32>,
 }
 
 async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &DatabaseConnection) -> Result<i32, DbErr> {
@@ -250,8 +258,10 @@ async fn prim_insert_game(data: &GamesInserts, model: Box<dyn YearOp>, db: &Data
         auto_time: Set(data.header.auto_time),
         dead: Set(data.header.dead),
         dnf: Set(data.header.dnf),
-        dpdg: Set(data.header.dpdg),
-        dpdg_raw: Set(data.header.dpdg_raw),
+        dpdg_team: Set(data.header.dpdg_team),
+        dpdg_team_raw: Set(data.header.dpdg_team_raw),
+        dpdg_alliance: Set(data.header.dpdg_alliance),
+        dpdg_alliance_raw: Set(data.header.dpdg_alliance_raw),
     };
     Ok(genertic_header::Entity::insert(header_db).exec(db).await?.last_insert_id)
 }
@@ -424,8 +434,10 @@ struct NormalGenDataAvg {
     pub auto_time_avg: f64,
     pub dead_avg: f64,
     pub dnf_avg: f64,
-    pub dpdg_avg: Option<f64>,
-    pub dpdg_raw_avg: Option<f64>,
+    pub dpdg_team_avg: Option<f64>,
+    pub dpdg_team_raw_avg: Option<f64>,
+    pub dpdg_alliance_avg: Option<f64>,
+    pub dpdg_alliance_raw_avg: Option<f64>,
 }
 
 #[derive(Clone)]
@@ -434,8 +446,10 @@ struct GenAvgExtra {
     pub auto_time_avg: f64,
     pub dead_avg: f64,
     pub dnf_avg: f64,
-    pub dpdg_avg: Option<f64>,
-    pub dpdg_raw_avg: Option<f64>,
+    pub dpdg_team_avg: Option<f64>,
+    pub dpdg_team_raw_avg: Option<f64>,
+    pub dpdg_alliance_avg: Option<f64>,
+    pub dpdg_alliance_raw_avg: Option<f64>,
 }
 
 impl Default for GenAvgExtra {
@@ -445,8 +459,10 @@ impl Default for GenAvgExtra {
             auto_time_avg: 0.0,
             dead_avg: 0.0,
             dnf_avg: 0.0,
-            dpdg_avg: None,
-            dpdg_raw_avg: None,
+            dpdg_team_avg: None,
+            dpdg_team_raw_avg: None,
+            dpdg_alliance_avg: None,
+            dpdg_alliance_raw_avg: None,
         }
     }
 }
@@ -528,8 +544,10 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
         .column_as(genertic_header::Column::AutoTime.avg().cast_as(Alias::new("FLOAT8")), "auto_time_avg")
         .column_as(Expr::col(genertic_header::Column::Dead).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dead_avg")
         .column_as(Expr::col(genertic_header::Column::Dnf).cast_as(Alias::new("int")).avg().cast_as(Alias::new("FLOAT8")), "dnf_avg")
-        .column_as(genertic_header::Column::Dpdg.avg().cast_as(Alias::new("FLOAT8")), "dpdg_avg")
-        .column_as(genertic_header::Column::DpdgRaw.avg().cast_as(Alias::new("FLOAT8")), "dpdg_raw_avg")
+        .column_as(genertic_header::Column::DpdgTeam.avg().cast_as(Alias::new("FLOAT8")), "dpdg_team_avg")
+        .column_as(genertic_header::Column::DpdgTeamRaw.avg().cast_as(Alias::new("FLOAT8")), "dpdg_team_raw_avg")
+        .column_as(genertic_header::Column::DpdgAlliance.avg().cast_as(Alias::new("FLOAT8")), "dpdg_alliance_avg")
+        .column_as(genertic_header::Column::DpdgAllianceRaw.avg().cast_as(Alias::new("FLOAT8")), "dpdg_alliance_raw_avg")
         .group_by(genertic_header::Column::Team)
         .group_by(genertic_header::Column::IsAbTeam)
         .into_model::<NormalGenDataAvg>()
@@ -563,8 +581,10 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             auto_time_avg: x.auto_time_avg,
             dead_avg: x.dead_avg,
             dnf_avg: x.dnf_avg,
-            dpdg_avg: x.dpdg_avg,
-            dpdg_raw_avg: x.dpdg_raw_avg,
+            dpdg_team_avg: x.dpdg_team_avg,
+            dpdg_team_raw_avg: x.dpdg_team_raw_avg,
+            dpdg_alliance_avg: x.dpdg_alliance_avg,
+            dpdg_alliance_raw_avg: x.dpdg_alliance_raw_avg,
         }))
         .collect();
 
@@ -731,8 +751,10 @@ async fn prim_average_game(model: Box<dyn YearOp>, event_code: &String, include_
             defence_score: avg.defence,
             game: team_avg_data.data,
             mvp_percent: avg.mvp_percent,
-            dpdg: extra.dpdg_avg,
-            dpdg_raw: extra.dpdg_raw_avg,
+            dpdg_team: extra.dpdg_team_avg,
+            dpdg_team_raw: extra.dpdg_team_raw_avg,
+            dpdg_alliance: extra.dpdg_alliance_avg,
+            dpdg_alliance_raw: extra.dpdg_alliance_raw_avg,
             defence_main_avg: extra.defence_main_avg,
             auto_time_avg: extra.auto_time_avg,
             dead_avg: extra.dead_avg,
@@ -779,8 +801,10 @@ pub struct GamesGraph {
     pub auto_score: f32,
     pub teleop_score: f32,
     pub defence: f32,
-    pub dpdg: Option<f32>,
-    pub dpdg_raw: Option<f32>,
+    pub dpdg_team: Option<f32>,
+    pub dpdg_team_raw: Option<f32>,
+    pub dpdg_alliance: Option<f32>,
+    pub dpdg_alliance_raw: Option<f32>,
 }
 
 #[derive(FromQueryResult)]
@@ -790,8 +814,10 @@ struct GamesGraphRow {
     pub auto_score: f32,
     pub teleop_score: f32,
     pub defence: f32,
-    pub dpdg: Option<f32>,
-    pub dpdg_raw: Option<f32>,
+    pub dpdg_team: Option<f32>,
+    pub dpdg_team_raw: Option<f32>,
+    pub dpdg_alliance: Option<f32>,
+    pub dpdg_alliance_raw: Option<f32>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -803,8 +829,10 @@ pub struct TeamAvg {
     pub teleop_score: f64,
     pub defence_score: f64,
     pub mvp_percent: f64,
-    pub dpdg: Option<f64>,
-    pub dpdg_raw: Option<f64>,
+    pub dpdg_team: Option<f64>,
+    pub dpdg_team_raw: Option<f64>,
+    pub dpdg_alliance: Option<f64>,
+    pub dpdg_alliance_raw: Option<f64>,
     pub defence_main_avg: f64,
     pub auto_time_avg: f64,
     pub dead_avg: f64,
@@ -869,10 +897,14 @@ pub struct HeaderFull {
     pub dead: bool,
     pub dnf: bool,
     pub mvp_comment: Option<String>,
-    /// DPDG as a percentage of the opposing teams' event averages.
-    pub dpdg: Option<f32>,
-    /// DPDG as a raw point value.
-    pub dpdg_raw: Option<f32>,
+    /// DPDG against a single targeted bot, as a percentage of its event average.
+    pub dpdg_team: Option<f32>,
+    /// DPDG against a single targeted bot, as a raw point difference.
+    pub dpdg_team_raw: Option<f32>,
+    /// DPDG averaged over the whole opposing alliance, as a percentage.
+    pub dpdg_alliance: Option<f32>,
+    /// DPDG averaged over the whole opposing alliance, as a raw point difference.
+    pub dpdg_alliance_raw: Option<f32>,
 }
 
 #[derive()]
@@ -915,8 +947,6 @@ pub struct HeaderFullEdit {
     pub auto_time: Option<f32>,
     pub dead: Option<bool>,
     pub dnf: Option<bool>,
-    pub dpdg: Option<f32>,
-    pub dpdg_raw: Option<f32>,
 }
 
 async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<genertic_header::ActiveModel, DbErr> {
@@ -955,8 +985,12 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         auto_time: header.auto_time.map(Set).unwrap_or(NotSet),
         dead: header.dead.map(Set).unwrap_or(NotSet),
         dnf: header.dnf.map(Set).unwrap_or(NotSet),
-        dpdg: header.dpdg.map(|v| Set(Some(v))).unwrap_or(NotSet),
-        dpdg_raw: header.dpdg_raw.map(|v| Set(Some(v))).unwrap_or(NotSet),
+        // DPDG is server-computed only (stamp_dpdg / recalc_dpdg); this client
+        // edit path never touches it.
+        dpdg_team: NotSet,
+        dpdg_team_raw: NotSet,
+        dpdg_alliance: NotSet,
+        dpdg_alliance_raw: NotSet,
     })
 }
 
@@ -986,8 +1020,10 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
         .column_as(genertic_header::Column::AutoScore, "auto_score")
         .column_as(genertic_header::Column::TeleopScore, "teleop_score")
         .column_as(genertic_header::Column::Defence, "defence")
-        .column_as(genertic_header::Column::Dpdg, "dpdg")
-        .column_as(genertic_header::Column::DpdgRaw, "dpdg_raw")
+        .column_as(genertic_header::Column::DpdgTeam, "dpdg_team")
+        .column_as(genertic_header::Column::DpdgTeamRaw, "dpdg_team_raw")
+        .column_as(genertic_header::Column::DpdgAlliance, "dpdg_alliance")
+        .column_as(genertic_header::Column::DpdgAllianceRaw, "dpdg_alliance_raw")
         .into_model::<GamesGraphRow>()
         .all(db)
         .await?;
@@ -998,8 +1034,10 @@ pub async fn graph_game(team: &i32, is_ab_team: &bool, event_code: &Option<Strin
         auto_score: r.auto_score,
         teleop_score: r.teleop_score,
         defence: r.defence,
-        dpdg: r.dpdg,
-        dpdg_raw: r.dpdg_raw,
+        dpdg_team: r.dpdg_team,
+        dpdg_team_raw: r.dpdg_team_raw,
+        dpdg_alliance: r.dpdg_alliance,
+        dpdg_alliance_raw: r.dpdg_alliance_raw,
     }).collect())
 }
 

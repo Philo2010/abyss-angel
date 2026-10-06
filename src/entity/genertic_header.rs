@@ -36,8 +36,16 @@ pub struct Model {
     pub auto_time: f32,
     pub dead: bool,
     pub dnf: bool,
-    pub dpdg: Option<f32>,
-    pub dpdg_raw: Option<f32>,
+    /// DPDG impact on a single targeted opposing robot (a `Bot` defence target),
+    /// as a percentage of that robot's event average.
+    pub dpdg_team: Option<f32>,
+    /// Same as [`Self::dpdg_team`] but as a raw point difference.
+    pub dpdg_team_raw: Option<f32>,
+    /// DPDG impact averaged over the whole opposing alliance (an `Alliance`
+    /// defence target), as a percentage of each robot's event average.
+    pub dpdg_alliance: Option<f32>,
+    /// Same as [`Self::dpdg_alliance`] but as a raw point difference.
+    pub dpdg_alliance_raw: Option<f32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

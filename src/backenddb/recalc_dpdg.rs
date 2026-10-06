@@ -5,11 +5,16 @@
 //! the same calculation for every stored game at once by grouping the finalized
 //! game headers back up into matches.
 //!
-//! A row's `dpdg` / `dpdg_raw` is `NULL` **iff the game was not the main
+//! A row's DPDG columns are `NULL` **iff the game was not the main
 //! defender** (`defence_main = false`). For a main defender the value is written,
 //! except when this pass cannot assemble a complete six-robot match for the row
 //! (fewer than six headers share the match key, the team averages fail, or a
 //! `Bot` target is not actually in the match) — those are left `NULL` too.
+//!
+//! The value is split by defence target: a `Bot` target writes the two *team*
+//! columns (`dpdg_team` / `dpdg_team_raw`); an `Alliance` target writes the two
+//! *alliance* columns (`dpdg_alliance` / `dpdg_alliance_raw`). Exactly one side
+//! is populated per row.
 
 use std::collections::{HashMap, HashSet};
 
@@ -91,21 +96,25 @@ async fn team_avg_total_scores(
 /// Write the DPDG values into one generic header row.
 async fn update_dpdg(
     header_id: i32,
-    dpdg: Option<f32>,
-    dpdg_raw: Option<f32>,
+    dpdg_team: Option<f32>,
+    dpdg_team_raw: Option<f32>,
+    dpdg_alliance: Option<f32>,
+    dpdg_alliance_raw: Option<f32>,
     db: &DatabaseConnection,
 ) -> Result<(), sea_orm::DbErr> {
     use sea_orm::ActiveModelTrait;
     let row = genertic_header::Entity::find_by_id(header_id).one(db).await?
         .ok_or_else(|| sea_orm::DbErr::Custom(format!("genertic_header row {header_id} not found")))?;
     let mut am = genertic_header::ActiveModel::from(row);
-    am.dpdg = Set(dpdg);
-    am.dpdg_raw = Set(dpdg_raw);
+    am.dpdg_team = Set(dpdg_team);
+    am.dpdg_team_raw = Set(dpdg_team_raw);
+    am.dpdg_alliance = Set(dpdg_alliance);
+    am.dpdg_alliance_raw = Set(dpdg_alliance_raw);
     am.update(db).await?;
     Ok(())
 }
 
-/// Recompute and store `dpdg` / `dpdg_raw` for every finalized game of `year_id`.
+/// Recompute and store the split DPDG values for every finalized game of `year_id`.
 ///
 /// Returns `(updated, nulled)`: how many header rows were written, and how many
 /// individual rows were left / set `NULL` because their match could not be scored.
@@ -172,10 +181,11 @@ pub async fn run(
         let all_ab: Vec<bool> = group.iter().map(|h| h.is_ab_team).collect();
 
         for (i, header) in group.iter().enumerate() {
-            // Mirror stamp_dpdg: only the main defender gets a value, in both
-            // percentage and raw-point form, scoped to whatever it was defending.
-            let (dpdg, dpdg_raw) = if !header.defence_main {
-                (None, None)
+            // Mirror stamp_dpdg: only the main defender gets a value. The value
+            // goes into the team columns for a `Bot` target and the alliance
+            // columns for an `Alliance` target; the other side stays NULL.
+            let (dpdg_team, dpdg_team_raw, dpdg_alliance, dpdg_alliance_raw) = if !header.defence_main {
+                (None, None, None, None)
             } else {
                 let opp: Vec<usize> = all_station.iter().enumerate()
                     .filter(|(j, _)| !same_alliance(all_station[*j], all_station[i]))
@@ -190,7 +200,7 @@ pub async fn run(
                     // Targeted bot isn't in this match — the metric is meaningless.
                     println!("[{}] header_id={} targets a bot outside this match -> DPDG set NULL", key.event_code, header.id);
                     nulled += 1;
-                    (None, None)
+                    (None, None, None, None)
                 } else {
                     let n = opp.len() as f32;
 
@@ -216,11 +226,14 @@ pub async fn run(
                         })
                         .sum::<f32>() / n;
 
-                    (Some(percent), Some(raw))
+                    match header.defence_target {
+                        DefenceTarget::Alliance => (None, None, Some(percent), Some(raw)),
+                        DefenceTarget::Bot(_) => (Some(percent), Some(raw), None, None),
+                    }
                 }
             };
 
-            match update_dpdg(header.id, dpdg, dpdg_raw, db).await {
+            match update_dpdg(header.id, dpdg_team, dpdg_team_raw, dpdg_alliance, dpdg_alliance_raw, db).await {
                 Ok(_) => updated += 1,
                 Err(e) => println!("[{}] failed to write dpdg for header_id={} : {}", key.event_code, header.id, e),
             }

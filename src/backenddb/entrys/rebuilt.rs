@@ -299,8 +299,10 @@ impl YearOp for Functions {
             auto_time,
             dead,
             dnf,
-            dpdg: None,
-            dpdg_raw: None,
+            dpdg_team: None,
+            dpdg_team_raw: None,
+            dpdg_alliance: None,
+            dpdg_alliance_raw: None,
         };
 
         Ok(FrontRunnerReturn {

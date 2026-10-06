@@ -9,6 +9,7 @@ pub struct ReorderPick {
     pub event_code: String,
     pub category: Category,
     pub direction: Direction,
+    pub count: u32,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -49,12 +50,16 @@ pub async fn reorder(data: ReorderPick, db: &DatabaseConnection) -> Result<(), D
     }).ok_or(DbErr::Custom("Team not found in pick list".to_string()))?;
 
     let new_pos = match data.direction {
-        Direction::Up if target_pos > 0 => target_pos - 1,
-        Direction::Down if target_pos < pairs.len() - 1 => target_pos + 1,
-        _ => return Ok(()),
+        Direction::Up => target_pos.saturating_sub(data.count as usize),
+        Direction::Down => target_pos.saturating_add(data.count as usize).min(pairs.len() - 1),
     };
 
-    pairs.swap(target_pos, new_pos);
+    if new_pos == target_pos {
+        return Ok(());
+    }
+
+    let item = pairs.remove(target_pos);
+    pairs.insert(new_pos, item);
 
     for (idx, (team_id, _)) in pairs.iter().enumerate() {
         let model = all_teams.iter().find(|t| t.id == *team_id).unwrap();

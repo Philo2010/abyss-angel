@@ -14,7 +14,7 @@ pub struct PathPoint {
 pub type Stroke = Vec<PathPoint>;
 pub type AutoPath = Vec<Stroke>;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, JsonSchema)]
 #[sea_orm(table_name = "pit_rebuilt")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -32,7 +32,9 @@ pub struct Model {
     pub strategy: String,
     pub can_pass: bool,
     pub can_shoot: bool,
-    pub climb: ClimbState
+    pub climb: ClimbState,
+    pub bps: f32,
+    pub ball_capasity: f32,
 
 }
 
@@ -54,7 +56,9 @@ pub struct Insert {
     pub strategy: String,
     pub can_pass: bool,
     pub can_shoot: bool,
-    pub climb: ClimbState
+    pub climb: ClimbState,
+    pub bps: f32,
+    pub ball_capasity: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, JsonSchema)]
@@ -69,7 +73,9 @@ pub struct Edit {
     pub strategy: Option<String>,
     pub can_pass: Option<bool>,
     pub can_shoot: Option<bool>,
-    pub climb: Option<ClimbState>
+    pub climb: Option<ClimbState>,
+    pub bps: Option<f32>,
+    pub ball_capasity: Option<f32>,
 }
 
 pub struct Functions;
@@ -112,7 +118,9 @@ impl PitScoutStandard for Functions {
                     strategy: Set(data.strategy),
                     can_pass: Set(data.can_pass),
                     can_shoot: Set(data.can_shoot),
-                    climb: Set(data.climb)
+                    climb: Set(data.climb),
+                    bps: Set(data.bps),
+                    ball_capasity: Set(data.ball_capasity)
                 };
                 let res = crate::pit::entrys::pit_rebuilt::Entity::insert(active).exec(db).await?.last_insert_id;
                 return Ok(res);
@@ -180,7 +188,9 @@ impl PitScoutStandard for Functions {
             strategy: data_u.strategy.map(Set).unwrap_or(NotSet),
             can_pass: data_u.can_pass.map(Set).unwrap_or(NotSet),
             can_shoot: data_u.can_shoot.map(Set).unwrap_or(NotSet),
-            climb: data_u.climb.map(Set).unwrap_or(NotSet)
+            climb: data_u.climb.map(Set).unwrap_or(NotSet),
+            bps: data_u.bps.map(Set).unwrap_or(NotSet),
+            ball_capasity: data_u.ball_capasity.map(Set).unwrap_or(NotSet)
         };
         let _res = Entity::update(active).exec(db).await?;
 

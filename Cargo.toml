@@ -24,6 +24,10 @@ path = "src/bin/migrate_e207de6.rs"
 name = "migrate_7410465"
 path = "src/bin/migrate_7410465.rs"
 
+[[bin]]
+name = "migrate_dpdg_split"
+path = "src/bin/migrate_dpdg_split.rs"
+
 [dependencies]
 rocket = { version = "0.5.1", features = ["json"] }
 sea-orm = { version = "2.0.0-rc", features = [ "sqlx-postgres", "runtime-tokio-native-tls", "macros", "entity-registry", "schema-sync" ] }

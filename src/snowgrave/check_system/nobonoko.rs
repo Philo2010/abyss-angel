@@ -106,8 +106,10 @@ pub async fn bypass_check(game_id: i32, alliance: Alliance, db: &DatabaseConnect
                 auto_time: data.auto_time,
                 dead: data.dead,
                 dnf: data.dnf,
-                dpdg: None,
-                dpdg_raw: None,
+                dpdg_team: None,
+                dpdg_team_raw: None,
+                dpdg_alliance: None,
+                dpdg_alliance_raw: None,
             },
             game: game_data,
         }
