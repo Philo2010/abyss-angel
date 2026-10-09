@@ -1,8 +1,9 @@
 use std::any;
+use std::collections::HashSet;
 
 use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter, QuerySelect, prelude::Expr};
 
-use crate::{backenddb::game::{GamesInserts, insert_game}, entity::game_scouts, scoutwarn::send_warning::{SendWarning, send_warning}, snowgrave::{check_system::check_bind::CheckBindReturn, datatypes::FailerInfo}};
+use crate::{SETTINGS, backenddb::game::{GamesInserts, insert_game}, entity::game_scouts, scoutwarn::send_warning::{SendWarning, send_warning}, snowgrave::{check_system::check_bind::CheckBindReturn, datatypes::FailerInfo}};
 
 
 
@@ -13,8 +14,19 @@ pub enum CheckBindReturnSafe {
 
 pub async fn publish(data: Vec<GamesInserts>, db: &DatabaseConnection) -> Result<(), DbErr> {
 
+    // Collect the events being finalized, then once every new row is in,
+    // refresh DPDG for each from the latest event averages. This supersedes the
+    // frozen per-match stamp so all of an event's rows stay consistent; the
+    // scan is limited to the event(s) written here. Only changed rows are
+    // written (guarded inside the refresh).
+    let mut events: HashSet<String> = HashSet::new();
     for game in data {
+        events.insert(game.header.event_code.clone());
         let _res = insert_game(&game, db).await?;
+    }
+
+    for event in events {
+        super::dpdg_refresh::refresh_event_dpdg(&event, SETTINGS.year, db).await?;
     }
 
     Ok(())

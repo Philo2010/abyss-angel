@@ -217,7 +217,7 @@ pub struct HeaderInsert {
     pub auto_time: f32,
     pub dead: bool,
     pub dnf: bool,
-    /// Stamped by `stamp_dpdg` in check_bind; `None` until then.
+    /// Filled by `refresh_event_dpdg` after publish; `None` until then.
     /// DPDG against a single targeted bot, as a percentage and raw points.
     pub dpdg_team: Option<f32>,
     pub dpdg_team_raw: Option<f32>,
@@ -985,8 +985,8 @@ async fn to_full_am(header: HeaderFullEdit, db: &DatabaseConnection) -> Result<g
         auto_time: header.auto_time.map(Set).unwrap_or(NotSet),
         dead: header.dead.map(Set).unwrap_or(NotSet),
         dnf: header.dnf.map(Set).unwrap_or(NotSet),
-        // DPDG is server-computed only (stamp_dpdg / recalc_dpdg); this client
-        // edit path never touches it.
+        // DPDG is server-computed only (refresh_event_dpdg / recalc_dpdg); this
+        // client edit path never touches it.
         dpdg_team: NotSet,
         dpdg_team_raw: NotSet,
         dpdg_alliance: NotSet,

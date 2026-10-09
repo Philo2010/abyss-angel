@@ -81,7 +81,7 @@ macro_rules! enum_pct {
         Expr::case(
             Expr::col($column).eq(
                 Expr::val($variant.clone().into_value())
-                    .cast_as(Alias::new("climb_state")) // 👈 key fix
+                    .cast_as(Alias::new("climb_state")) 
             ),
             Expr::val(1)
         )

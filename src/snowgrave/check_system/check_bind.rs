@@ -1,121 +1,6 @@
-use sea_orm::{ColumnTrait, DatabaseConnection, DbErr, EntityTrait, ExprTrait, QueryFilter, QuerySelect};
-use sea_orm::sea_query::Alias;
-use std::collections::HashMap;
-use uuid::Uuid;
+use sea_orm::{DatabaseConnection, DbErr};
 
-use crate::{backenddb::game::{DefenceTarget, GamesInserts, game_dispatch}, entity::{genertic_header, sea_orm_active_enums::Stations}, SETTINGS, snowgrave::{self, check_system::{check_mid::check_mid, check_if_filled::check_if_filled, precheck::{precheck, PreCheckGame}}, datatypes::FailerInfo}};
-
-fn same_alliance(a: Stations, b: Stations) -> bool {
-    matches!(a, Stations::Red1 | Stations::Red2 | Stations::Red3) == matches!(b, Stations::Red1 | Stations::Red2 | Stations::Red3)
-}
-
-async fn team_avg_total_scores(event_code: &str, year_id: i32, db: &DatabaseConnection) -> Result<HashMap<(i32, bool), f32>, DbErr> {
-    let rows: Vec<(f64, i32, bool)> = genertic_header::Entity::find()
-        .filter(genertic_header::Column::GameTypeId.eq(year_id))
-        .filter(genertic_header::Column::EventCode.eq(event_code))
-        .filter(crate::backenddb::game::prescout_filter(false))
-        .select_only()
-        .column_as(genertic_header::Column::TotalScore.avg().cast_as(Alias::new("FLOAT8")), "total_score")
-        .column(genertic_header::Column::Team)
-        .column(genertic_header::Column::IsAbTeam)
-        .group_by(genertic_header::Column::Team)
-        .group_by(genertic_header::Column::IsAbTeam)
-        .into_tuple()
-        .all(db).await?;
-    Ok(rows.into_iter().map(|(score, team, is_ab_team)| ((team, is_ab_team), score as f32)).collect())
-}
-
-/// DPDG is only created for the main defender and equals the opposing teams'
-/// event averages minus their total scores for this match. Two forms are stamped:
-/// a percentage and a plain point difference. The value is split by defence
-/// target: a `Bot` target is scored against that one robot (the *team* metric),
-/// an `Alliance` target is averaged over all three opponents (the *alliance*
-/// metric). Exactly one side is populated per row; the other stays `None`.
-/// Computed here, during the checking phase, since that's the only time all
-/// opponent data is present.
-async fn stamp_dpdg(all_six: &mut PreCheckGame, db: &DatabaseConnection) -> Result<(), DbErr> {
-    let model = game_dispatch(SETTINGS.year);
-    let team_avg = team_avg_total_scores(&all_six.red1.header.event_code, model.get_year_id(), db).await?;
-
-    let all: [&GamesInserts; 6] = [
-        &all_six.red1, &all_six.red2, &all_six.red3,
-        &all_six.blue1, &all_six.blue2, &all_six.blue3,
-    ];
-    let all_scores: Vec<f32> = all.iter().map(|g| model.get_scores(&g.game).total_score).collect();
-    let all_info: Vec<(Stations, i32, bool)> = all.iter()
-        .map(|g| (g.header.station, g.header.team, g.header.is_ab_team))
-        .collect();
-
-    // Per defender: (team_percent, team_raw, alliance_percent, alliance_raw).
-    let dpdgs: Vec<(Option<f32>, Option<f32>, Option<f32>, Option<f32>)> =
-        all.iter().enumerate().map(|(i, g)| {
-            // DPDG only exists for the main defender; every other row stays NULL.
-            if !g.header.defence_main {
-                return (None, None, None, None);
-            }
-            let target = g.header.defence_target;
-
-            // Alliance defence counts every opponent; bot defence counts only the
-            // targeted robot.
-            let opp: Vec<usize> = all_info.iter().enumerate()
-                .filter(|(_, (station, _, _))| !same_alliance(*station, all_info[i].0))
-                .filter(|(_, (_, team, is_ab_team))| match target {
-                    DefenceTarget::Alliance => true,
-                    DefenceTarget::Bot(bot) => bot.number == *team && bot.is_ab_team == *is_ab_team,
-                })
-                .map(|(j, _)| j)
-                .collect();
-
-            // A targeted bot that isn't actually in this match leaves DPDG unset
-            // rather than silently reporting zero defensive impact.
-            if opp.is_empty() {
-                return (None, None, None, None);
-            }
-            let n = opp.len() as f32;
-
-            let percent: f32 = opp.iter()
-                .map(|&j| {
-                    let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
-                    if avg == 0.0 {
-                        0.0
-                    } else {
-                        (avg - all_scores[j]) / avg * 100.0
-                    }
-                })
-                .sum::<f32>() / n;
-
-            let raw: f32 = opp.iter()
-                .map(|&j| {
-                    let avg = team_avg.get(&(all_info[j].1, all_info[j].2)).copied().unwrap_or(0.0);
-                    if avg == 0.0 {
-                        0.0
-                    } else {
-                        avg - all_scores[j]
-                    }
-                })
-                .sum::<f32>() / n;
-
-            match target {
-                DefenceTarget::Alliance => (None, None, Some(percent), Some(raw)),
-                DefenceTarget::Bot(_) => (Some(percent), Some(raw), None, None),
-            }
-        }).collect();
-
-    for (game, (team, team_raw, alliance, alliance_raw)) in [
-        &mut all_six.red1, &mut all_six.red2, &mut all_six.red3,
-        &mut all_six.blue1, &mut all_six.blue2, &mut all_six.blue3,
-    ].into_iter().zip(dpdgs) {
-        game.header.dpdg_team = team;
-        game.header.dpdg_team_raw = team_raw;
-        game.header.dpdg_alliance = alliance;
-        game.header.dpdg_alliance_raw = alliance_raw;
-    }
-
-    Ok(())
-}
-
-
-
+use crate::{backenddb::game::GamesInserts, snowgrave::{self, check_system::{check_mid::check_mid, check_if_filled::check_if_filled, precheck::precheck}, datatypes::FailerInfo}};
 
 #[derive(Debug)]
 pub enum CheckBindReturn {
@@ -134,7 +19,7 @@ pub async fn check_bind(upcoming_game_id: i32, db: &DatabaseConnection) -> Resul
     };
 
     let data = match precheck(&game).await? {
-        super::precheck::PreCheckReturn::Passed(mut pre_check_game, mut error) => {
+        super::precheck::PreCheckReturn::Passed(pre_check_game, mut error) => {
             //run the new check
             let res = check_mid(&pre_check_game);
             match res {
@@ -162,7 +47,6 @@ pub async fn check_bind(upcoming_game_id: i32, db: &DatabaseConnection) -> Resul
                     for uuid in red_uuids {
                         error.insert(uuid);
                     }
-                    stamp_dpdg(&mut pre_check_game, db).await?;
 
                     let games = vec![pre_check_game.blue1, pre_check_game.blue2, pre_check_game.blue3];
 
@@ -236,17 +120,12 @@ pub async fn check_bind(upcoming_game_id: i32, db: &DatabaseConnection) -> Resul
                         error.insert(uuid);
                     }
 
-                    //we still calulate the value if we missed  
-                    stamp_dpdg(&mut pre_check_game, db).await?;
-
                     let games = vec![pre_check_game.red1, pre_check_game.red2, pre_check_game.red3];
 
                     return Ok(CheckBindReturn::Passed(games, error.into_iter().collect()));
                     
                 },
                 super::check_mid::CheckReturn::NoFail => {
-                    stamp_dpdg(&mut pre_check_game, db).await?;
-
                     let games = vec![pre_check_game.red1, pre_check_game.red2, pre_check_game.red3, pre_check_game.blue1, pre_check_game.blue2, pre_check_game.blue3];
 
                     return Ok(CheckBindReturn::Passed(games, error.into_iter().collect()));

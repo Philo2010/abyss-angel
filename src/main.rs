@@ -19,7 +19,7 @@ mod pick_list;
 const SETTINGS: crate::setting::Settings = Settings {
     year: 2026,
     bcrypt: 12,
-    db_path: "postgres://philipbedrosian@localhost/testdb",
+    db_path: "postgres://abyss_angel@localhost/abyss_angel",
     blue_api_key: "fZ2lDqVUFVvi4yyXXNZv604p1v6sjKAx6mEQlDiPGQp0KOfVinntdfp8E8My5YSj"
 };
 

@@ -8,6 +8,7 @@ pub mod check_mid;
 pub mod precheck;
 pub mod db_work;
 pub mod nobonoko;
+pub mod dpdg_refresh;
 
 // ── Check system configuration ────────────────────────────────────────────────
 //
