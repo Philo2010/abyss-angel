@@ -122,17 +122,23 @@ fn build_refresh(event_code: &str, year_id: i32) -> sea_orm::sea_query::UpdateSt
                 ),
         );
 
+    // `station` is a Postgres enum (`stations`); a prepared statement would bind
+    // the string literals below as `text`, and PostgreSQL has no
+    // `stations = text` operator (SQLSTATE 42883). Cast the column to text.
+    let h_is_red = h(Hc::Station)
+        .cast_as(Alias::new("text"))
+        .is_in(["red1", "red2", "red3"]);
+    let o_is_red = o(Hc::Station)
+        .cast_as(Alias::new("text"))
+        .is_in(["red1", "red2", "red3"]);
+
     let match_join = Condition::all()
         .add(o(Hc::GameTypeId).eq(h(Hc::GameTypeId)))
         .add(o(Hc::EventCode).eq(h(Hc::EventCode)))
         .add(o(Hc::MatchId).eq(h(Hc::MatchId)))
         .add(o(Hc::Set).eq(h(Hc::Set)))
         .add(o(Hc::TournamentLevel).eq(h(Hc::TournamentLevel)))
-        .add(
-            h(Hc::Station)
-                .is_in(["red1", "red2", "red3"])
-                .ne(o(Hc::Station).is_in(["red1", "red2", "red3"])),
-        )
+        .add(h_is_red.ne(o_is_red))
         .add(target_match);
 
     let eo_join = Condition::all()
