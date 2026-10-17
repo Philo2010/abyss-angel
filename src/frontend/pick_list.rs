@@ -14,9 +14,6 @@ pub struct GetPickListRequest {
 #[rocket_okapi::openapi]
 #[post("/api/pick_list", data = "<data>")]
 pub async fn get_pick_list(data: Json<GetPickListRequest>, db: &State<DatabaseConnection>, cookies: &CookieJar<'_>, client: &State<reqwest::Client>) -> Json<ApiResult<pick_list::get::PickLists>> {
-    if !auth::check::check_pick(cookies, db).await {
-        return Json(ApiResult::Error("Need to be admin!".to_string()));
-    }
     let res = match pick_list::get::get(db, data.include_midway, client).await {
         Ok(a) => a,
         Err(a) => {
