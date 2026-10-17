@@ -1,8 +1,8 @@
 use schemars::JsonSchema;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
-use crate::{entity::pit_upcoming, pit::pit::{self, PitHeaderInsert, PitInsert, PitInsertsSpecific}};
+use crate::{entity::{pit_header, pit_upcoming}, pit::pit::{self, PitHeaderInsert, PitInsert, PitInsertsSpecific}};
 
 #[derive(Deserialize, JsonSchema)]
 pub struct PitInsertForm {
@@ -23,6 +23,22 @@ pub async fn pit_insert(db: &DatabaseConnection, data: PitInsertForm) -> Result<
             return Err(DbErr::Custom("This scouter has not been selected yet!".to_string()));
         },
     };
+
+    if pit_data.pit_header_id.is_some() || pit_data.is_done {
+        return Err(DbErr::Custom("Pit has already been submitted. Use edit instead.".to_string()));
+    }
+
+    let existing_header = pit_header::Entity::find()
+        .filter(pit_header::Column::Team.eq(pit_data.team))
+        .filter(pit_header::Column::IsAbTeam.eq(pit_data.is_ab_team))
+        .filter(pit_header::Column::EventCode.eq(pit_data.event_code.clone()))
+        .one(db)
+        .await?;
+
+    if existing_header.is_some() {
+        return Err(DbErr::Custom("Pit has already been submitted. Use edit instead.".to_string()));
+    }
+
     let insert_pit = PitInsert {
         header: PitHeaderInsert {
             user,
