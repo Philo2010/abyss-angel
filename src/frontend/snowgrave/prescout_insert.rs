@@ -18,9 +18,10 @@ pub async fn prescout_insert(
     db: &State<DatabaseConnection>,
     cookies: &CookieJar<'_>,
 ) -> Json<ApiResult<String>> {
+    /* //No longer admin
     if !auth::check::check(cookies, db).await {
         return Json(ApiResult::Error("Need to be admin!".to_string()));
-    }
+    }*/
 
     let user = match auth::get_by_cookie::get(cookies) {
         Some(a) => a,
