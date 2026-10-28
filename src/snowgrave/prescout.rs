@@ -39,10 +39,13 @@ pub struct PrescoutInsert {
 }
 
 /// Store one prescout game. Returns the new header id.
-pub async fn insert_prescout(user: Uuid, data: PrescoutInsert, db: &DatabaseConnection) -> Result<i32, DbErr> {
+///
+/// `user` is `None` for an anonymous/GUEST submission — the header then carries
+/// an empty user vector, which keeps the row out of every per-scouter lookup.
+pub async fn insert_prescout(user: Option<Uuid>, data: PrescoutInsert, db: &DatabaseConnection) -> Result<i32, DbErr> {
     let insert = GamesInserts {
         header: HeaderInsert {
-            user: vec![user],
+            user: user.map(|u| vec![u]).unwrap_or_default(),
             team: data.team,
             is_ab_team: data.is_ab_team,
             match_id: data.match_id,
